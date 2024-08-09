@@ -1,15 +1,16 @@
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/shared/ui/button';
+import Link from 'next/link';
 
 export default function Tutorials() {
   const tutorials = [
-    { title: "Introduction to WebGL", difficulty: "Beginner", slug: "intro-to-webgl" },
-    { title: "Creating Your First 3D Scene", difficulty: "Beginner", slug: "first-3d-scene" },
-    { title: "Understanding Shaders", difficulty: "Intermediate", slug: "understanding-shaders" },
-    { title: "Advanced Lighting Techniques", difficulty: "Advanced", slug: "advanced-lighting" },
-    { title: "Implementing Post-Processing Effects", difficulty: "Advanced", slug: "post-processing" },
-    { title: "Building a WebGL Game", difficulty: "Advanced", slug: "webgl-game" },
+    { title: "Getting Started with WebGL", difficulty: "Beginner", slug: "getting-started-with-webgl" },
+    { title: "Geometric Primitives", difficulty: "Beginner", slug: "geometric-primitives" },
+    { title: "Drawing Ovals", difficulty: "Intermediate", slug: "drawing-ovals" },
+    { title: "Rendering Text", difficulty: "Intermediate", slug: "rendering-text" },
+    { title: "Color Interpolation", difficulty: "Advanced", slug: "color-interpolation" },
+    { title: "Camera Controls", difficulty: "Advanced", slug: "camera-controls" },
   ];
 
   return (
@@ -25,7 +26,7 @@ export default function Tutorials() {
               <h2 className="text-xl font-semibold mb-2">{tutorial.title}</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Difficulty: {tutorial.difficulty}</p>
               <Button variant="primary" asChild>
-                <a href={`/tutorials/${tutorial.slug}`}>Start Tutorial</a>
+                <Link href={`/tutorials/${tutorial.slug}`}>Start Tutorial</Link>
               </Button>
             </div>
           ))}
