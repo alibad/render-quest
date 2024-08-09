@@ -1,113 +1,121 @@
-import Image from "next/image";
+import {
+  BoxIcon,
+  CodeIcon,
+  BookOpenIcon,
+  RocketIcon,
+  GraduationCapIcon,
+} from 'lucide-react';
+
+import { LandingPrimaryImageCtaSection } from '@/components/landing/cta/LandingPrimaryCta';
+import { LandingProductFeaturesGrid } from '@/components/landing/LandingProductFeaturesGrid';
+import { LandingProductFeature } from '@/components/landing/LandingProductFeature';
+import { LandingFeatureList } from '@/components/landing/feature/LandingFeatureList';
+import { LandingSaleCtaSection } from '@/components/landing/cta/LandingSaleCta';
+import { LandingMarquee } from '@/components/landing/LandingMarquee';
+
+import { Button } from '@/components/shared/ui/button';
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+    <main>
+      <LandingPrimaryImageCtaSection
+        title="Master WebGL with Interactive Tutorials"
+        description="RenderQuest is your gateway to mastering 3D graphics programming. Dive into our interactive WebGL tutorials and transform your coding skills."
+        imageSrc="/images/webgl-hero.jpg"
+        imageAlt="WebGL 3D rendering example"
+        imagePosition="right"
+        withBackground
+        variant="primary"
+      >
+        <Button size="xl" className="p-7 text-xl" variant="primary" asChild>
+          <a href="#get-started">Start Learning Now</a>
+        </Button>
+      </LandingPrimaryImageCtaSection>
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+      <LandingProductFeaturesGrid
+        title="Why Choose RenderQuest?"
+        description="Our platform offers a unique blend of features to make your WebGL learning journey engaging and effective."
+      >
+        <LandingProductFeature
+          title="Interactive Tutorials"
+          description="Learn by doing with our hands-on, browser-based WebGL tutorials."
+          imageSrc="/images/interactive-tutorial.jpg"
+          imagePosition="center"
         />
-      </div>
+        <LandingProductFeature
+          title="Real-time Feedback"
+          description="Get instant feedback on your code and see your 3D creations come to life."
+          imageSrc="/images/realtime-feedback.jpg"
+          imagePosition="center"
+        />
+        <LandingProductFeature
+          title="Project-Based Learning"
+          description="Apply your skills to exciting 3D projects and build your portfolio."
+          imageSrc="/images/project-based.jpg"
+          imagePosition="center"
+        />
+        <LandingProductFeature
+          title="Community Support"
+          description="Join a vibrant community of WebGL enthusiasts and get help when you need it."
+          imageSrc="/images/community-support.jpg"
+          imagePosition="center"
+        />
+      </LandingProductFeaturesGrid>
 
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+      <LandingFeatureList
+        title="What You'll Learn"
+        description="Our comprehensive curriculum covers everything you need to become a WebGL expert."
+        withBackground
+        variant="secondary"
+        featureItems={[
+          {
+            title: "WebGL Fundamentals",
+            description: "Master the basics of 3D graphics programming with WebGL.",
+            icon: <BoxIcon className="w-8 h-8" />,
+          },
+          {
+            title: "Shader Programming",
+            description: "Learn to write vertex and fragment shaders for stunning visual effects.",
+            icon: <CodeIcon className="w-8 h-8" />,
+          },
+          {
+            title: "3D Math Concepts",
+            description: "Understand the mathematics behind 3D transformations and projections.",
+            icon: <BookOpenIcon className="w-8 h-8" />,
+          },
+          {
+            title: "Advanced Techniques",
+            description: "Explore advanced topics like shadow mapping, post-processing, and more.",
+            icon: <RocketIcon className="w-8 h-8" />,
+          },
+          {
+            title: "Game Development",
+            description: "Apply your WebGL skills to create interactive 3D games and simulations.",
+            icon: <GraduationCapIcon className="w-8 h-8" />,
+          },
+        ]}
+      />
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
+      <LandingSaleCtaSection
+        title="Ready to Start Your WebGL Journey?"
+        description="Join thousands of developers who have transformed their skills with RenderQuest."
+        ctaLabel="Get Started for Free"
+        ctaHref="#get-started"
+        withBackground
+        variant="primary"
+      />
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+      <LandingMarquee
+        withBackground
+        variant="secondary"
+        animationDirection="left"
+      >
+        <img src="/logos/company1.png" alt="Company 1" className="h-12 mx-8" />
+        <img src="/logos/company2.png" alt="Company 2" className="h-12 mx-8" />
+        <img src="/logos/company3.png" alt="Company 3" className="h-12 mx-8" />
+        <img src="/logos/company4.png" alt="Company 4" className="h-12 mx-8" />
+        <img src="/logos/company5.png" alt="Company 5" className="h-12 mx-8" />
+      </LandingMarquee>
     </main>
   );
 }
