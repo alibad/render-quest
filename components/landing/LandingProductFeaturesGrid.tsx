@@ -46,7 +46,6 @@ export const LandingProductFeaturesGrid = ({
       className: '!p-0 rounded-xl'.concat(
         variant === 'primary' ? ' fancy-glass' : ' fancy-glass-contrast',
       ),
-      minHeight: 0,
       innerClassName: 'p-4 lg:p-10 m-0 lg:m-0 h-full'.concat(
         variant === 'primary'
           ? ' bg-primary-100/20 dark:bg-primary-900/10'

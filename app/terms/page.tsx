@@ -9,7 +9,7 @@ export default function TermsOfService() {
         <h1 className="text-3xl font-bold mb-6">Terms of Service</h1>
         <div className="prose dark:prose-invert">
           <p>Last updated: [Date]</p>
-          <p>Please read these Terms of Service ("Terms", "Terms of Service") carefully before using the RenderQuest website (the "Service") operated by RenderQuest ("us", "we", or "our").</p>
+          <p>Please read these Terms of Service ("Terms", "Terms of Service") carefully before using the Render Quest website (the "Service") operated by Render Quest ("us", "we", or "our").</p>
           
           <h2>1. Terms</h2>
           <p>By accessing the Service, you agree to be bound by these Terms. If you disagree with any part of the terms, then you may not access the Service.</p>

@@ -36,7 +36,7 @@ export default function Home() {
         </LandingPrimaryImageCtaSection>
 
         <LandingProductFeaturesGrid
-          title="Why Choose RenderQuest?"
+          title="Why Choose Render Quest?"
           description="Our platform offers a unique blend of features to make your WebGL learning journey engaging and effective."
         >
           <LandingProductFeature
@@ -119,7 +119,7 @@ export default function Home() {
 
         <LandingSaleCtaSection
           title="Ready to Start Your WebGL Journey?"
-          description="Join thousands of developers who have transformed their skills with RenderQuest."
+          description="Join thousands of developers who have transformed their skills with Render Quest."
           ctaLabel="Get Started for Free"
           ctaHref="#get-started"
           withBackground

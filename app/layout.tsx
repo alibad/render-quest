@@ -15,7 +15,7 @@ const baseFont = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "RenderQuest - Master WebGL with Interactive Tutorials",
+  title: "Render Quest - Master WebGL with Interactive Tutorials",
   description: "Learn 3D graphics programming with our interactive WebGL tutorials. Transform your coding skills and create stunning visual experiences.",
 };
 
