@@ -3,7 +3,7 @@ import { LandingProductVideoFeature } from '@/components/landing/LandingProductV
 import clsx from 'clsx';
 import { Children, ReactElement, cloneElement } from 'react';
 
-type Child = ReactElement<any, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+type Child = ReactElement<any, any>;
 
 /**
  * A component meant to be used in the landing page.

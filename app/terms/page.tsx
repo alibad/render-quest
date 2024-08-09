@@ -9,7 +9,7 @@ export default function TermsOfService() {
         <h1 className="text-3xl font-bold mb-6">Terms of Service</h1>
         <div className="prose dark:prose-invert">
           <p>Last updated: [Date]</p>
-          <p>Please read these Terms of Service ("Terms", "Terms of Service") carefully before using the Render Quest website (the "Service") operated by Render Quest ("us", "we", or "our").</p>
+          <p>Please read these Terms of Service (&quot;Terms&quot;, &quot;Terms of Service&quot;) carefully before using the RenderQuest website (the &quot;Service&quot;) operated by RenderQuest (&quot;us&quot;, &quot;we&quot;, or &quot;our&quot;).</p>
           
           <h2>1. Terms</h2>
           <p>By accessing the Service, you agree to be bound by these Terms. If you disagree with any part of the terms, then you may not access the Service.</p>
@@ -33,7 +33,7 @@ export default function TermsOfService() {
           <p>[Explain how and when you might modify these terms]</p>
           
           <h2>8. Governing Law</h2>
-          <p>[Specify which laws govern the use of your service]</p>
+          <p>These Terms shall be governed and construed in accordance with the laws of Washignton, USA, without regard to its conflict of law provisions.</p>
         </div>
       </main>
       <Footer />

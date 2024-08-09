@@ -9,7 +9,7 @@ export default function PrivacyPolicy() {
         <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
         <div className="prose dark:prose-invert">
           <p>Last updated: [Date]</p>
-          <p>Render Quest ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how your personal information is collected, used, and disclosed by Render Quest.</p>
+          <p>Render Quest (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is committed to protecting your privacy. This Privacy Policy explains how your personal information is collected, used, and disclosed by RenderQuest.</p>
           
           <h2>Information We Collect</h2>
           <p>[Add details about the information you collect]</p>
@@ -27,10 +27,10 @@ export default function PrivacyPolicy() {
           <p>[Describe user rights regarding their data]</p>
           
           <h2>Changes to This Privacy Policy</h2>
-          <p>[Explain how you'll notify users of changes]</p>
+          <p>Explain how you will notify users of changes</p>
           
           <h2>Contact Us</h2>
-          <p>[Provide contact information for privacy-related queries]</p>
+          <p>If you have any questions about this Privacy Policy, please contact us at: info@humanquest.net</p>
         </div>
       </main>
       <Footer />
