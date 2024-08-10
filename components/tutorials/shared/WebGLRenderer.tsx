@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useToast } from '@/components/shared/ui/use-toast';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/ui/tabs';
@@ -9,10 +11,12 @@ export default function WebGLRenderer({ code }: { code: string }) {
   const { toast } = useToast();
 
   const addConsoleLog = useCallback((type: 'log' | 'error', ...args: any[]) => {
+    const timestamp = new Date().toLocaleTimeString();
     const message = args.map(arg => 
       typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
     ).join(' ');
-    setConsoleLogs(prevLogs => [...prevLogs, `${type.toUpperCase()}: ${message}`]);
+    setConsoleLogs(prevLogs => [...prevLogs, `${timestamp}: ${type.toUpperCase()}: ${message}`]);
+
     if (type === 'error') {
       toast({ title: 'Error', description: message, variant: 'destructive' });
       setRightTab('console');
@@ -29,10 +33,8 @@ export default function WebGLRenderer({ code }: { code: string }) {
       return;
     }
 
-    // Clear previous console logs
     setConsoleLogs([]);
 
-    // Override console methods
     const originalConsoleLog = console.log;
     const originalConsoleError = console.error;
 
@@ -47,21 +49,21 @@ export default function WebGLRenderer({ code }: { code: string }) {
     };
 
     try {
-      // Clear the canvas
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
-      // Dynamically run the code
       eval(code);
+      toast({ title: 'Success!', description: 'Code executed successfully.', variant: 'default' });
     } catch (error) {
-      console.error('Error executing code:', error);
+      console.error('Error executing WebGL code:', error);
+      toast({ title: 'Error', description: 'There was an error executing your code. See the console logs for details.', variant: 'destructive' });
     }
 
     return () => {
       console.log = originalConsoleLog;
       console.error = originalConsoleError;
     };
-  }, [code, addConsoleLog]);
+  }, [code, addConsoleLog, toast]);
 
   return (
     <div className="space-y-4">
@@ -76,7 +78,7 @@ export default function WebGLRenderer({ code }: { code: string }) {
         <TabsContent value="console">
           <div id="console-log" className="h-[calc(100vh-300px)] border border-gray-300 rounded overflow-auto p-4 bg-gray-100 font-mono text-sm">
             {consoleLogs.map((log, index) => (
-              <div key={index} className={log.startsWith('ERROR:') ? 'text-red-600' : 'text-gray-800'}>
+              <div key={index} className={log.includes('ERROR') ? 'text-red-600' : 'text-gray-800'}>
                 {log}
               </div>
             ))}
