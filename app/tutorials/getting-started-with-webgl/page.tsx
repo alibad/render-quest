@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -18,28 +18,61 @@ import { Toaster } from '@/components/shared/ui/toaster';
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
 export default function GettingStartedWithWebGLPage() {
-  const [currentView, setCurrentView] = useState<'intro' | 'tutorial'>('intro');
-  const [code, setCode] = useState(tutorialData.tutorialSteps[tutorialData.tutorialSteps.length - 1].code);
-  const [currentStep, setCurrentStep] = useState(-1);
+  const [currentView, setCurrentView] = useState<'intro' | 'tutorial' | 'final'>('intro');
+  const [code, setCode] = useState(tutorialData.tutorialSteps[0].code);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [leftTab, setLeftTab] = useState<'instructions' | 'source-code'>('instructions');
+  const [rightTab, setRightTab] = useState<'webgl' | 'console'>('webgl');
+  const [consoleLogs, setConsoleLogs] = useState('');
   const [iframeKey, setIframeKey] = useState(0);
+
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Store the original console.log function
+    const originalLog = console.log;
+  
+    // Redirect console.log to our custom log handler
+    console.log = (...args) => {
+      originalLog(...args); // Still output to the real console
+      setConsoleLogs(prevLogs => `${prevLogs}\n${args.join(' ')}`);
+    };
+  
+    // Cleanup function to reset console.log when component unmounts
+    return () => {
+      console.log = originalLog;
+    };
+  }, []);
+  
 
   const handleCodeChange = (newCode: string | undefined) => {
     setCode(newCode || '');
   };
 
   const handleStepChange = (step: number) => {
-    setCurrentStep(step);
-    setCode(tutorialData.tutorialSteps[step].code);
-    runCode(tutorialData.tutorialSteps[step].code);
+    if (step === tutorialData.tutorialSteps.length) {
+      // Switch to final view (full WebGL output)
+      setCurrentView('final');
+      setCurrentStep(step);
+      setCode(tutorialData.tutorialSteps[step - 1].code); // Last step code
+      runCode(tutorialData.tutorialSteps[step - 1].code);
+    } else {
+      setCurrentStep(step);
+      setCode(tutorialData.tutorialSteps[step].code);
+      runCode(tutorialData.tutorialSteps[step].code);
+    }
   };
 
   const handleRunCode = useCallback(() => {
+    if (rightTab !== 'webgl') {
+      setRightTab('webgl');
+    }
     toast({ title: 'Running Code...', description: 'Your code is being executed.', variant: 'default' });
     runCode(code);
-  }, [code]);
+  }, [code, rightTab]);
 
   const runCode = (codeToRun: string) => {
+    setConsoleLogs(''); // Clear previous logs
     const iframe = document.getElementById('webgl-frame') as HTMLIFrameElement;
 
     if (iframe) {
@@ -74,6 +107,12 @@ export default function GettingStartedWithWebGLPage() {
     runCode(tutorialData.tutorialSteps[0].code);
   };
 
+  const restartTutorial = () => {
+    setCurrentView('intro');
+    setCurrentStep(0);
+    setCode(tutorialData.tutorialSteps[0].code);
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -88,12 +127,22 @@ export default function GettingStartedWithWebGLPage() {
                 {tutorialData.introContent}
               </ReactMarkdown>
             </div>
+            <div className="h-96 border border-gray-300 rounded mt-4">
+              <iframe 
+                name="webgl-frame" 
+                id="webgl-frame"
+                width="100%" 
+                height="100%" 
+                key={iframeKey}
+                className="border border-gray-300 rounded"
+              />
+            </div>
             <Button onClick={startTutorial} className="mt-8">Start Tutorial</Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <Tabs defaultValue="instructions">
+              <Tabs value={leftTab} onValueChange={(value) => setLeftTab(value as 'instructions' | 'source-code')}>
                 <TabsList>
                   <TabsTrigger value="instructions">Instructions</TabsTrigger>
                   <TabsTrigger value="source-code">Source Code</TabsTrigger>
@@ -117,8 +166,8 @@ export default function GettingStartedWithWebGLPage() {
                       Previous
                     </Button>
                     <Button
-                      onClick={() => handleStepChange(Math.min(tutorialData.tutorialSteps.length - 1, currentStep + 1))}
-                      disabled={currentStep === tutorialData.tutorialSteps.length - 1}
+                      onClick={() => handleStepChange(Math.min(tutorialData.tutorialSteps.length, currentStep + 1))}
+                      disabled={currentStep === tutorialData.tutorialSteps.length}
                     >
                       Next
                     </Button>
@@ -141,13 +190,13 @@ export default function GettingStartedWithWebGLPage() {
                   </div>
                   <div className="flex justify-between mt-4">
                     <Button onClick={handleRunCode}>Run Code</Button>
-                    <Button onClick={startTutorial}>Restart Tutorial</Button>
+                    <Button onClick={restartTutorial}>Restart Tutorial</Button>
                   </div>
                 </TabsContent>
               </Tabs>
             </div>
             <div className="space-y-4">
-              <Tabs defaultValue="webgl">
+              <Tabs value={rightTab} onValueChange={(value) => setRightTab(value as 'webgl' | 'console')}>
                 <TabsList>
                   <TabsTrigger value="webgl">WebGL Output</TabsTrigger>
                   <TabsTrigger value="console">Console Logs</TabsTrigger>
@@ -164,7 +213,7 @@ export default function GettingStartedWithWebGLPage() {
                 </TabsContent>
                 <TabsContent value="console">
                   <div id="console-log" className="h-[calc(100vh-300px)] border border-gray-300 rounded overflow-auto p-4">
-                    {/* Console logs can be dynamically inserted here */}
+                    {consoleLogs}
                   </div>
                 </TabsContent>
               </Tabs>
