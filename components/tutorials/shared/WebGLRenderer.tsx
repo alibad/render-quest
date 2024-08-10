@@ -11,7 +11,7 @@ export default function WebGLRenderer({ code, onError, onOutput, shouldRun }: We
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    if (canvasRef.current) {
+    if (canvasRef.current && shouldRun) {
       const canvas = canvasRef.current;
       const gl = canvas.getContext('webgl');
 
@@ -28,27 +28,18 @@ export default function WebGLRenderer({ code, onError, onOutput, shouldRun }: We
         },
         error: (...args: any[]) => {
           output += 'Error: ' + args.join(' ') + '\n';
+          onError(output); // Pass the error directly
         }
       };
 
       try {
-        // Wrap the code in a function to provide a sandboxed environment
-        const wrappedCode = `
-          (function(gl, console) {
-            ${code}
-          })(gl, console);
-        `;
+        // Execute the provided WebGL code within a safe environment
+        new Function('gl', 'console', code)(gl, virtualConsole);
         
-        // Use Function constructor to create a sandboxed environment
-        new Function('gl', 'console', wrappedCode)(gl, virtualConsole);
-        
-        onError('');  // Clear any previous errors
+        onOutput(output); // Pass the output back to the parent component
       } catch (error) {
-        console.error('Error executing WebGL code:', error);
         onError(error instanceof Error ? error.message : String(error));
       }
-
-      onOutput(output);
     }
   }, [code, onError, onOutput, shouldRun]);
 
