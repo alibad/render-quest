@@ -74,6 +74,23 @@
   }
 }
 
+.console-error {
+  color: red;
+  white-space: pre-wrap;
+}
+
+.console-log {
+  color: black;
+  white-space: pre-wrap;
+}
+
+.console-timestamp {
+  color: gray;
+  white-space: pre-wrap;
+  font-style: italic;
+}
+
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

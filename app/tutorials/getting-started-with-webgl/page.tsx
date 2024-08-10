@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -8,12 +8,9 @@ import { Button } from '@/components/shared/ui/button';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import tutorialData from '@/data/tutorials/getting-started-with-webgl.json'; // Import the JSON data
-
-// Importing Tabs and Toast components from your shared UI components
+import tutorialData from '@/data/tutorials/getting-started-with-webgl.json';
+import WebGLRenderer from '@/components/tutorials/shared/WebGLRenderer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shared/ui/tabs';
-import { useToast } from '@/components/shared/ui/use-toast';
-import { Toaster } from '@/components/shared/ui/toaster';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
@@ -22,89 +19,25 @@ export default function GettingStartedWithWebGLPage() {
   const [code, setCode] = useState(tutorialData.tutorialSteps[0].code);
   const [currentStep, setCurrentStep] = useState(0);
   const [leftTab, setLeftTab] = useState<'instructions' | 'source-code'>('instructions');
-  const [rightTab, setRightTab] = useState<'webgl' | 'console'>('webgl');
-  const [consoleLogs, setConsoleLogs] = useState('');
-  const [iframeKey, setIframeKey] = useState(0);
+  const [lastCodeRun, setLastCodeRun] = useState(Date.now());
 
-  const { toast } = useToast();
-
-  useEffect(() => {
-    // Store the original console.log function
-    const originalLog = console.log;
-  
-    // Redirect console.log to our custom log handler
-    console.log = (...args) => {
-      originalLog(...args); // Still output to the real console
-      setConsoleLogs(prevLogs => `${prevLogs}\n${args.join(' ')}`);
-    };
-  
-    // Cleanup function to reset console.log when component unmounts
-    return () => {
-      console.log = originalLog;
-    };
-  }, []);
-  
+  const runCode = () => {
+    setLastCodeRun(Date.now());
+  };
 
   const handleCodeChange = (newCode: string | undefined) => {
     setCode(newCode || '');
   };
 
   const handleStepChange = (step: number) => {
-    if (step === tutorialData.tutorialSteps.length) {
-      // Switch to final view (full WebGL output)
-      setCurrentView('final');
-      setCurrentStep(step);
-      setCode(tutorialData.tutorialSteps[step - 1].code); // Last step code
-      runCode(tutorialData.tutorialSteps[step - 1].code);
-    } else {
-      setCurrentStep(step);
-      setCode(tutorialData.tutorialSteps[step].code);
-      runCode(tutorialData.tutorialSteps[step].code);
-    }
-  };
-
-  const handleRunCode = useCallback(() => {
-    if (rightTab !== 'webgl') {
-      setRightTab('webgl');
-    }
-    toast({ title: 'Running Code...', description: 'Your code is being executed.', variant: 'default' });
-    runCode(code);
-  }, [code, rightTab]);
-
-  const runCode = (codeToRun: string) => {
-    setConsoleLogs(''); // Clear previous logs
-    const iframe = document.getElementById('webgl-frame') as HTMLIFrameElement;
-
-    if (iframe) {
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = '/api/webgl-runtime';
-      form.target = iframe.name;  // Name of the iframe
-    
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'code';
-      input.value = codeToRun;
-      form.appendChild(input);
-    
-      document.body.appendChild(form);
-      form.submit();
-      document.body.removeChild(form);
-    
-      setIframeKey(prev => prev + 1);  // Force iframe refresh if needed
-  
-      toast({ title: 'Code executed successfully!', description: 'Check the output in the WebGL tab.', variant: 'default' });
-    } else {
-      console.error('WebGL frame not found.');
-      toast({ title: 'Error', description: 'WebGL frame not found. Please try refreshing the page or checking the iframe ID.', variant: 'destructive' });
-    }
+    setCurrentStep(step);
+    setCode(tutorialData.tutorialSteps[step]?.code || '');
   };
 
   const startTutorial = () => {
     setCurrentView('tutorial');
     setCurrentStep(0);
     setCode(tutorialData.tutorialSteps[0].code);
-    runCode(tutorialData.tutorialSteps[0].code);
   };
 
   const restartTutorial = () => {
@@ -127,16 +60,6 @@ export default function GettingStartedWithWebGLPage() {
                 {tutorialData.introContent}
               </ReactMarkdown>
             </div>
-            <div className="h-96 border border-gray-300 rounded mt-4">
-              <iframe 
-                name="webgl-frame" 
-                id="webgl-frame"
-                width="100%" 
-                height="100%" 
-                key={iframeKey}
-                className="border border-gray-300 rounded"
-              />
-            </div>
             <Button onClick={startTutorial} className="mt-8">Start Tutorial</Button>
           </div>
         ) : (
@@ -153,9 +76,7 @@ export default function GettingStartedWithWebGLPage() {
                       remarkPlugins={[remarkGfm]}
                       rehypePlugins={[rehypeRaw]}
                     >
-                      {currentStep === -1
-                        ? "This is the final result of the tutorial. Click 'Start Tutorial' to begin from the first step."
-                        : tutorialData.tutorialSteps[currentStep].instructions}
+                      {tutorialData.tutorialSteps[currentStep]?.instructions || ''}
                     </ReactMarkdown>
                   </div>
                   <div className="flex justify-between mt-4">
@@ -189,40 +110,17 @@ export default function GettingStartedWithWebGLPage() {
                     />
                   </div>
                   <div className="flex justify-between mt-4">
-                    <Button onClick={handleRunCode}>Run Code</Button>
+                    <Button onClick={runCode}>Run Code</Button>
                     <Button onClick={restartTutorial}>Restart Tutorial</Button>
                   </div>
                 </TabsContent>
               </Tabs>
             </div>
-            <div className="space-y-4">
-              <Tabs value={rightTab} onValueChange={(value) => setRightTab(value as 'webgl' | 'console')}>
-                <TabsList>
-                  <TabsTrigger value="webgl">WebGL Output</TabsTrigger>
-                  <TabsTrigger value="console">Console Logs</TabsTrigger>
-                </TabsList>
-                <TabsContent value="webgl">
-                  <iframe 
-                    name="webgl-frame" 
-                    id="webgl-frame"
-                    width="100%" 
-                    height="100%" 
-                    key={iframeKey}
-                    className="border border-gray-300 rounded"
-                  />
-                </TabsContent>
-                <TabsContent value="console">
-                  <div id="console-log" className="h-[calc(100vh-300px)] border border-gray-300 rounded overflow-auto p-4">
-                    {consoleLogs}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
+            <WebGLRenderer code={code} key={lastCodeRun}  />
           </div>
         )}
       </main>
       <Footer />
-      <Toaster /> {/* Toast notifications */}
     </div>
   );
 }
