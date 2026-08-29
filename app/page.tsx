@@ -6,6 +6,7 @@ import { HeroCanvas } from '@/components/site/HeroCanvas';
 import { LabCard } from '@/components/site/LabCard';
 import { LABS } from '@/lib/labs';
 import { ALL_RESOURCES, TRACKS } from '@/lib/resources';
+import { SHARED_SCENE, TECHNOLOGIES } from '@/lib/technologies';
 
 export default function Home() {
   const liveLabs = LABS.filter((lab) => lab.status === 'live').length;
@@ -79,6 +80,51 @@ export default function Home() {
           <div className="mt-7 grid gap-4 sm:grid-cols-2">
             {LABS.map((lab) => (
               <LabCard key={lab.slug} lab={lab} />
+            ))}
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-5 py-10">
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-4">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight">
+                Pick a technology
+              </h2>
+              <p className="mt-1.5 max-w-prose text-sm text-fg-muted">
+                {SHARED_SCENE.title} — WebGL, WebGPU, Three.js and vgpu rendering one
+                identical scene, so the only thing you are comparing is the code.
+              </p>
+            </div>
+            <Link
+              href="/tech"
+              className="shrink-0 font-mono text-2xs uppercase tracking-wider text-fg-faint transition-colors hover:text-accent"
+            >
+              Compare them →
+            </Link>
+          </div>
+
+          <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {TECHNOLOGIES.map((tech) => (
+              <Link
+                key={tech.slug}
+                href={`/tech/${tech.slug}`}
+                className="panel group flex flex-col p-4 transition-colors hover:border-line-strong hover:bg-ink-600/50"
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <h3 className="text-sm font-semibold tracking-tight text-fg">
+                    {tech.name}
+                  </h3>
+                  <span className="tabular font-mono text-2xs text-accent">
+                    ~{tech.linesForPlasma} lines
+                  </span>
+                </div>
+                <p className="mt-1 font-mono text-2xs uppercase tracking-wider text-fg-faint">
+                  {tech.kind}
+                </p>
+                <p className="mt-2.5 text-xs leading-relaxed text-fg-muted">
+                  {tech.tagline}
+                </p>
+              </Link>
             ))}
           </div>
         </section>

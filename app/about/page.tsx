@@ -74,7 +74,17 @@ export default function About() {
             ))}
           </ul>
           <p>
-            Alongside them, the{' '}
+            The{' '}
+            <Link href="/tech" className="link-accent">
+              Tech
+            </Link>{' '}
+            section renders one identical scene in WebGL, WebGPU, Three.js and vgpu,
+            so you can see what each layer does for you and what it costs you — the
+            first two actually running on the page, the other two honestly labelled
+            as code.
+          </p>
+          <p>
+            Alongside those, the{' '}
             <Link href="/learn" className="link-accent">
               Learn
             </Link>{' '}
