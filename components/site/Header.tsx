@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { Wordmark } from './Mark';
+import { SearchDialog } from './SearchDialog';
 import { ThemeToggle } from './ThemeToggle';
 
 const NAV = [
@@ -74,6 +75,7 @@ export function Header() {
         </ul>
 
         <div className="ml-auto flex items-center gap-1.5">
+          <SearchDialog />
           <a
             href={REPO}
             target="_blank"
