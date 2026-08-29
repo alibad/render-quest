@@ -4,13 +4,13 @@ import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
 import { HeroCanvas } from '@/components/site/HeroCanvas';
 import { LabCard } from '@/components/site/LabCard';
-import { LABS } from '@/lib/labs';
+import { ORDERED_LABS } from '@/lib/labs';
 import { ALL_RESOURCES, TRACKS } from '@/lib/resources';
 import { SHARED_SCENE, TECHNOLOGIES } from '@/lib/technologies';
 import { SITE_SUBHEAD, SITE_TAGLINE } from '@/lib/site';
 
 export default function Home() {
-  const liveLabs = LABS.filter((lab) => lab.status === 'live').length;
+  const liveLabs = ORDERED_LABS.filter((lab) => lab.status === 'live').length;
 
   return (
     <>
@@ -75,7 +75,7 @@ export default function Home() {
           </div>
 
           <div className="mt-7 grid gap-4 sm:grid-cols-2">
-            {LABS.map((lab) => (
+            {ORDERED_LABS.map((lab) => (
               <LabCard key={lab.slug} lab={lab} />
             ))}
           </div>

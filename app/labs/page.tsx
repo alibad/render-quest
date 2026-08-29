@@ -5,7 +5,7 @@ import { Header } from '@/components/site/Header';
 import Link from 'next/link';
 
 import { LabCard } from '@/components/site/LabCard';
-import { LABS } from '@/lib/labs';
+import { ORDERED_LABS } from '@/lib/labs';
 
 export const metadata: Metadata = {
   title: 'Labs',
@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 };
 
 export default function Labs() {
-  const live = LABS.filter((lab) => lab.status === 'live');
-  const building = LABS.filter((lab) => lab.status === 'building');
+  const live = ORDERED_LABS.filter((lab) => lab.status === 'live');
+  const building = ORDERED_LABS.filter((lab) => lab.status === 'building');
 
   return (
     <>

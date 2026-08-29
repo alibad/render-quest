@@ -79,6 +79,19 @@ export const LABS: Lab[] = [
     status: 'live',
   },
   {
+    slug: 'textures',
+    order: 5,
+    prereq: 'pipeline',
+    technology: 'webgl',
+    title: 'Textures & Sampling',
+    blurb:
+      'Wrap, filter and mip a texture, and see what each sampler setting actually costs you.',
+    takeaway:
+      'Why a texture looks wrong at a distance, and what mipmapping is really trading away.',
+    concepts: ['UV coordinates', 'filtering', 'mipmaps', 'wrap modes'],
+    status: 'live',
+  },
+  {
     slug: 'compute',
     order: 6,
     prereq: 'pipeline',
@@ -91,19 +104,6 @@ export const LABS: Lab[] = [
     takeaway:
       'What a compute shader is for, and the kind of problem that leaves WebGL behind entirely.',
     concepts: ['compute shader', 'storage buffers', 'workgroups', 'WGSL', 'instancing'],
-    status: 'live',
-  },
-  {
-    slug: 'textures',
-    order: 5,
-    prereq: 'pipeline',
-    technology: 'webgl',
-    title: 'Textures & Sampling',
-    blurb:
-      'Wrap, filter and mip a texture, and see what each sampler setting actually costs you.',
-    takeaway:
-      'Why a texture looks wrong at a distance, and what mipmapping is really trading away.',
-    concepts: ['UV coordinates', 'filtering', 'mipmaps', 'wrap modes'],
     status: 'live',
   },
   {

@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 
 import { GLOSSARY, GLOSSARY_SORTED, termId } from '../lib/glossary.ts';
 import { LABS, LIVE_LABS, ORDERED_LABS, labNeighbours } from '../lib/labs.ts';
+import { GLYPH_SLUGS } from '../components/site/LabGlyph.tsx';
 import { ALL_RESOURCES, TRACKS } from '../lib/resources.ts';
 import { TECHNOLOGIES } from '../lib/technologies.ts';
 
@@ -174,9 +175,47 @@ check('every live lab has at least one glossary term pointing at it', () => {
   }
 });
 
-check('ORDERED_LABS is actually ordered', () => {
-  const orders = ORDERED_LABS.map((lab) => lab.order);
-  assert.deepEqual(orders, [...orders].sort((a, b) => a - b));
+// This check used to sort `orders` and compare it against itself sorted, so it
+// passed no matter what and proved nothing. Meanwhile the home page and the
+// labs index both mapped over the raw `LABS` array, which was declared with
+// compute (6) sitting before textures (5) — so the contents page of a site
+// whose whole premise is a numbered sequence rendered 06 before 05.
+check('the LABS declaration is itself in sequence order', () => {
+  const orders = LABS.map((lab) => lab.order);
+  assert.deepEqual(
+    orders,
+    [...orders].sort((a, b) => a - b),
+    'LABS is declared out of order, so anything mapping it directly renders the sequence wrong',
+  );
+});
+
+check('ORDERED_LABS covers every lab exactly once', () => {
+  assert.equal(ORDERED_LABS.length, LABS.length);
+  assert.deepEqual(
+    [...ORDERED_LABS].map((lab) => lab.slug).sort(),
+    [...LABS].map((lab) => lab.slug).sort(),
+  );
+});
+
+// Three labs shipped with an empty plate on their card because LabGlyph was a
+// `switch` whose `default` returned null: adding a lab could not fail, it just
+// drew nothing. The glyphs are a record now, so the keys are countable.
+check('every lab has a diagram', () => {
+  for (const lab of LABS) {
+    assert.ok(
+      GLYPH_SLUGS.includes(lab.slug),
+      `${lab.slug} has no glyph, so its card renders an empty plate`,
+    );
+  }
+});
+
+check('no glyph exists for a lab that is not in the registry', () => {
+  for (const slug of GLYPH_SLUGS) {
+    assert.ok(
+      LABS.some((lab) => lab.slug === slug),
+      `glyph "${slug}" matches no lab, so it is dead code`,
+    );
+  }
 });
 
 console.log(`\n${passed} content checks passed`);
