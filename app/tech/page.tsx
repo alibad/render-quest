@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { PlasmaWebGL } from '@/components/tech/PlasmaWebGL';
 import { TechnologyChooser } from '@/components/tech/TechnologyChooser';
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
@@ -34,6 +35,20 @@ export default function Tech() {
         <p className="mt-5 inline-block rounded-lg border border-line bg-ink-800 px-4 py-2.5 font-mono text-xs text-accent">
           {SHARED_SCENE.formula}
         </p>
+
+        {/*
+          The page opens by saying every technology below renders one identical
+          thing, and then showed it zero times. Here is that thing, running — so
+          the comparison starts from the picture rather than from a promise.
+        */}
+        {/* GLCanvas draws its own frame, so this only bounds the width. */}
+        <figure className="mt-8 max-w-2xl">
+          <PlasmaWebGL />
+          <figcaption className="mt-2.5 text-xs text-fg-faint">
+            The reference scene, running here in WebGL. Every technology page
+            renders this same image — only the code around it changes.
+          </figcaption>
+        </figure>
 
         <section className="mt-12">
           <h2 className="text-lg font-semibold tracking-tight">
