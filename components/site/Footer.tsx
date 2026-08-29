@@ -14,7 +14,7 @@ export function Footer() {
             Every lab runs live on your GPU. Nothing here is pre-rendered.
           </p>
         </div>
-        <div className="flex gap-5 text-xs text-fg-faint">
+        <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs text-fg-faint">
           <Link href="/labs" className="transition-colors hover:text-fg">
             Labs
           </Link>
