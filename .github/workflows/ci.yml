@@ -22,3 +22,21 @@ jobs:
         run: npm test
       - name: Build
         run: npx next build
+
+  # Separate job because it needs a browser, and `npm run build` — which Vercel
+  # also runs — must stay installable without one.
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npx next build
+      - name: Rendering smoke test
+        run: npm run test:render

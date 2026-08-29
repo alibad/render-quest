@@ -72,10 +72,20 @@ export function GLCanvas<P>({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // `preserveDrawingBuffer` is off in normal use — keeping the buffer around
+    // costs a copy every frame for a feature nothing on the site needs. The
+    // rendering smoke test sets this flag before the app loads, because
+    // otherwise the drawing buffer is cleared the moment it is composited and
+    // there is no way to check that a lab drew anything at all.
+    const capturable =
+      typeof window !== 'undefined' &&
+      (window as { __RQ_CAPTURE__?: boolean }).__RQ_CAPTURE__ === true;
+
     const gl = canvas.getContext('webgl', {
       antialias: true,
       alpha: true,
       premultipliedAlpha: false,
+      preserveDrawingBuffer: capturable,
     });
 
     if (!gl) {
