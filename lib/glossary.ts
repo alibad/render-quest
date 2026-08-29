@@ -267,7 +267,36 @@ export const GLOSSARY: Term[] = [
     term: 'Instancing',
     definition:
       'Drawing the same geometry many times in one call, with per-instance data supplying what differs. The saving is not in triangles but in draw calls, which is usually where the CPU time actually goes.',
-    see: ['Compute shader', 'Vertex'],
+    lab: 'instancing',
+    see: ['Draw call', 'Instance index', 'Batching'],
+  },
+  {
+    term: 'Draw call',
+    definition:
+      'One instruction from the CPU telling the GPU to render something. Each one costs CPU time to validate and submit whether it draws two triangles or two million, which is why a scene can be limited by how many times you asked rather than by how much you asked for.',
+    lab: 'instancing',
+    see: ['Instancing', 'CPU-bound', 'Batching'],
+  },
+  {
+    term: 'Instance index',
+    definition:
+      'The counter a vertex shader reads to know which copy it is drawing — `gl_InstanceID` in GLSL, `@builtin(instance_index)` in WGSL. It is what turns one set of vertices into a field of objects, by indexing per-instance data with it.',
+    lab: 'instancing',
+    see: ['Instancing', 'Storage buffer', 'Vertex'],
+  },
+  {
+    term: 'Batching',
+    definition:
+      'Merging things that would have been separate draw calls into one — same material, same buffer, submitted together. Instancing is the case where the merged objects are identical; batching more generally is why engines fight so hard to keep materials uniform.',
+    lab: 'instancing',
+    see: ['Draw call', 'Instancing'],
+  },
+  {
+    term: 'CPU-bound',
+    definition:
+      'When the frame time is set by how fast the CPU can prepare and submit work rather than by how fast the GPU can execute it. The tell is that reducing triangles changes nothing while reducing draw calls changes everything.',
+    lab: 'instancing',
+    see: ['Draw call', 'Instancing'],
   },
   {
     term: 'Uniform',

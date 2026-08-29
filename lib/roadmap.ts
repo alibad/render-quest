@@ -100,9 +100,9 @@ export const ROADMAP: RoadmapPhase[] = [
     items: [
       {
         title: 'Draw calls & instancing',
-        what: 'Draw the same object ten thousand times and watch where the time goes.',
-        why: 'Why the number of draw calls matters more than the number of triangles is the single most useful performance idea, and nothing here teaches it.',
-        state: 'next',
+        what: 'Draw the same object ten thousand times and watch where the time goes. Both modes render the identical picture from the identical buffer through the identical shader; only the number of times the CPU asks changes, and the measured cost changes with it.',
+        why: 'Why the number of draw calls matters more than the number of triangles is the single most useful performance idea, and nothing here taught it. Built — and it moved the CPU figure by more than ten times while the triangle count never budged.',
+        state: 'done',
       },
       {
         title: 'Colour and gamma',

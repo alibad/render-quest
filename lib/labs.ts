@@ -118,8 +118,8 @@ export const LABS: Lab[] = [
       'Draw the same object ten thousand times and watch where the time actually goes.',
     takeaway:
       'Why the number of draw calls matters more than the number of triangles.',
-    concepts: ['instancing', 'draw calls', 'render bundles', 'CPU cost'],
-    status: 'building',
+    concepts: ['instancing', 'draw calls', 'instance_index', 'CPU cost'],
+    status: 'live',
   },
 ];
 
