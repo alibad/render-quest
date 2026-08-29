@@ -53,8 +53,7 @@ export default function Home() {
             <div>
               <HeroCanvas />
               <p className="mt-3 text-2xs leading-relaxed text-fg-faint">
-                Live WebGL, rendering right now — the projection lab with its controls
-                taken away. The cyan wireframe is a camera&rsquo;s view frustum,
+                Rendering right now — the projection lab with its controls taken away. The cyan wireframe is a camera&rsquo;s view frustum,
                 breathing as its field of view changes.
               </p>
             </div>
@@ -192,8 +191,9 @@ export default function Home() {
         <section className="mx-auto max-w-6xl px-5 pb-6 pt-4">
           <div className="grid gap-8 border-t border-line pt-10 sm:grid-cols-3">
             <Principle title="No framework in the way">
-              Raw WebGL and a few hundred lines of matrix maths. The plumbing a scene
-              graph would hide is the actual subject, so none of it is hidden.
+              Raw WebGL and WebGPU, and a few hundred lines of matrix maths. The
+              plumbing a scene graph would hide is the actual subject, so none of it
+              is hidden.
             </Principle>
             <Principle title="The maths is on screen">
               Every lab shows the live matrix next to the render. The coloured columns

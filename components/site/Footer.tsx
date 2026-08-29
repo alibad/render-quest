@@ -11,7 +11,7 @@ export function Footer() {
           <p className="text-xs leading-relaxed text-fg-faint">
             Render Quest — interactive graphics, built in the open.
             <br />
-            Every lab runs on real WebGL in your browser. Nothing is pre-rendered.
+            Every lab runs live on your GPU. Nothing here is pre-rendered.
           </p>
         </div>
         <div className="flex gap-5 text-xs text-fg-faint">

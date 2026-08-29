@@ -42,12 +42,23 @@ export default function About() {
 
           <h2 className="pt-4 text-base font-semibold text-fg">How it is built</h2>
           <p>
-            Raw WebGL, deliberately. There is no scene graph and no rendering
-            framework in the way, because the plumbing a framework hides — contexts,
-            buffers, attribute pointers, the perspective divide — is the actual
-            subject. The matrix library is a few hundred readable lines, and it ships
-            with a numeric test suite: every claim the site makes about a projection
-            matrix is checked on every commit, not asserted in prose.
+            Raw WebGL and WebGPU, deliberately — no scene graph, no rendering
+            framework. The plumbing a framework hides — contexts, buffers, attribute
+            pointers, the perspective divide — is the actual subject. The matrix
+            library is a few hundred readable lines and ships with a numeric test
+            suite: every claim the site makes about a projection matrix is checked on
+            every commit, not asserted in prose.
+          </p>
+          <p>
+            Most labs are built on WebGL, and that is a decision about reach rather
+            than a preference. A matrix does not care which API multiplies it, so the
+            concepts transfer unchanged — and where a lab genuinely cannot be built on
+            WebGL, like the compute one, it says so and uses WebGPU. Which to reach for
+            in your own work is a separate question, and the{' '}
+            <Link href="/tech" className="link-accent">
+              technology guide
+            </Link>{' '}
+            has a tool that answers it.
           </p>
           <p>
             The visuals are the same story. Nothing on this site is stock art or a
