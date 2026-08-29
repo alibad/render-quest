@@ -105,13 +105,19 @@ export default function About() {
             building games, arranged in the order that makes each one easier than the
             last.
           </p>
-          {building.length > 0 ? (
-            <p>
-              More labs are in progress:{' '}
-              {building.map((lab) => lab.title).join(', ')}. They ship when they teach
-              something properly, not before.
-            </p>
-          ) : null}
+          <p>
+            What comes next, and what was proposed and turned down, is on the{' '}
+            <Link href="/roadmap" className="link-accent">
+              roadmap
+            </Link>
+            {building.length > 0 ? (
+              <>
+                {' '}— including the labs still in progress:{' '}
+                {building.map((lab) => lab.title).join(', ')}
+              </>
+            ) : null}
+            . They ship when they teach something properly, not before.
+          </p>
 
           <p className="pt-4">
             Built by Ali Bader Eddin. The source is{' '}

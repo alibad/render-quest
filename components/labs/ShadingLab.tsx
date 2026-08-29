@@ -7,8 +7,10 @@ import {
   ControlGroup,
   ResetButton,
   Segmented,
+  Presets,
   Slider,
   Toggle,
+  type Preset,
 } from '@/components/lab/Controls';
 import { AxisKey, LabLayout } from '@/components/lab/LabLayout';
 import { LabSource } from '@/components/lab/LabSource';
@@ -306,6 +308,29 @@ export function ShadingLab() {
     [controls.correctNormals, model],
   );
 
+const PRESETS: Preset<ShadingControls>[] = [
+  {
+    label: 'The normal-matrix bug',
+    note: 'The sphere is squashed and the normals are being transformed by the model matrix directly. Watch the highlight sit in the wrong place. Turn "inverse-transpose" back on and it snaps to where the light actually is.',
+    values: { stretch: 0.4, correctNormals: false, model: 'phong', specular: 0.9, shininess: 48 },
+  },
+  {
+    label: 'Gouraud loses the highlight',
+    note: 'Lighting computed per vertex, with a tight specular. The highlight is smaller than a triangle, so interpolation smears it into a blotch — or drops it entirely. Switch to Phong and it reappears.',
+    values: { model: 'gouraud', specular: 1.2, shininess: 120, stretch: 1, correctNormals: true },
+  },
+  {
+    label: 'Just the diffuse term',
+    note: 'Specular and ambient at zero. This is pure Lambert — brightness is nothing but the cosine of the angle between the normal and the light.',
+    values: { ambient: 0, specular: 0, diffuse: 1.1, model: 'phong', stretch: 1 },
+  },
+  {
+    label: 'See the facets',
+    note: 'Flat shading: one normal per triangle. You are now looking at the mesh rather than the surface it approximates.',
+    values: { model: 'flat', specular: 0.3, stretch: 1, correctNormals: true },
+  },
+];
+
   return (
     <LabLayout
       readoutTitle="The shading equation"
@@ -329,6 +354,13 @@ export function ShadingLab() {
       }
       controls={
         <>
+          <ControlGroup title="Start here">
+            <Presets
+              presets={PRESETS}
+              onApply={(values) => setControls((prev) => ({ ...prev, ...values }))}
+            />
+          </ControlGroup>
+
           <ControlGroup
             title="Shading model"
             action={<ResetButton onClick={() => setControls(DEFAULTS)} />}

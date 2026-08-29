@@ -15,6 +15,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/tech', priority: 0.9 },
     { path: '/learn', priority: 0.9 },
     { path: '/glossary', priority: 0.7 },
+    { path: '/roadmap', priority: 0.5 },
     { path: '/about', priority: 0.5 },
     { path: '/privacy', priority: 0.2 },
   ];

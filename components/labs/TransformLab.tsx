@@ -7,8 +7,10 @@ import {
   ControlGroup,
   ResetButton,
   Segmented,
+  Presets,
   Slider,
   Toggle,
+  type Preset,
 } from '@/components/lab/Controls';
 import { MatrixProduct } from '@/components/lab/MatrixView';
 import { AxisKey, LabLayout } from '@/components/lab/LabLayout';
@@ -197,6 +199,29 @@ export function TransformLab() {
         { label: 'T  translate', matrix: T },
       ];
 
+const PRESETS: Preset<TransformDefaults>[] = [
+  {
+    label: 'Mirror it',
+    note: 'Scale x is −1. The cube is inside out — look at the red arm, now pointing the other way. A reflection is a scale, not a rotation, and no rotation can produce it.',
+    values: { sx: -1, sy: 1, sz: 1, rx: 0, ry: 25, rz: 0, tx: 1.4, ty: 0.5, tz: 0 },
+  },
+  {
+    label: 'Order matters',
+    note: 'Same translate, rotate and scale — but composed S · R · T. The translation is now being rotated and scaled along with everything else, which is why the cube is nowhere near where you asked for.',
+    values: { order: 'srt', tx: 1.4, ty: 0.5, tz: 0, ry: 55, sx: 1.6, sy: 1.6, sz: 1.6 },
+  },
+  {
+    label: 'Squash one axis',
+    note: 'Non-uniform scale. The basis vectors are no longer the same length, and they are no longer perpendicular to the faces — which is the whole reason normals need their own matrix.',
+    values: { sx: 2.2, sy: 0.4, sz: 1, ry: 35, tx: 0, ty: 0, tz: 0 },
+  },
+  {
+    label: 'Back to identity',
+    note: 'Every slider neutral. The matrix is the identity, and the cube sits exactly on its wireframe ghost — which is what "no transform" looks like.',
+    values: { tx: 0, ty: 0, tz: 0, rx: 0, ry: 0, rz: 0, sx: 1, sy: 1, sz: 1, order: 'trs' },
+  },
+];
+
   return (
     <LabLayout
       canvas={
@@ -211,6 +236,13 @@ export function TransformLab() {
       }
       controls={
         <>
+          <ControlGroup title="Start here">
+            <Presets
+              presets={PRESETS}
+              onApply={(values) => setParams((prev) => ({ ...prev, ...values }))}
+            />
+          </ControlGroup>
+
           <ControlGroup
             title="Translate"
             action={<ResetButton onClick={() => setParams((p) => ({ ...p, tx: 0, ty: 0, tz: 0 }))} />}

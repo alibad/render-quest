@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 type AxisTone = 'x' | 'y' | 'z' | 'neutral';
 
@@ -156,6 +156,65 @@ export function ControlGroup({
       </div>
       <div className="space-y-3">{children}</div>
     </section>
+  );
+}
+
+export interface Preset<T> {
+  label: string;
+  /** One sentence on what to look at once it is applied. */
+  note: string;
+  values: Partial<T>;
+}
+
+/**
+ * Named starting points.
+ *
+ * Every lab opens with nine to sixteen controls and no indication of which one
+ * is worth moving. A preset is a saved state with a name — the cheap version of
+ * a guided tour, needing no tour framework, and the note says what to look at
+ * once it lands.
+ */
+export function Presets<T>({
+  presets,
+  onApply,
+}: {
+  presets: Preset<T>[];
+  onApply: (values: Partial<T>) => void;
+}) {
+  const [applied, setApplied] = useState<string | null>(null);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {presets.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            onClick={() => {
+              onApply(preset.values);
+              setApplied(preset.label);
+            }}
+            className={`rounded-md border px-2.5 py-1.5 text-left text-2xs transition-colors ${
+              applied === preset.label
+                ? 'border-accent/40 bg-accent/15 text-accent'
+                : 'border-line text-fg-muted hover:border-line-strong hover:text-fg'
+            }`}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+      {applied ? (
+        <p className="text-2xs leading-relaxed text-fg-faint">
+          {presets.find((preset) => preset.label === applied)?.note}
+        </p>
+      ) : (
+        <p className="text-2xs leading-relaxed text-fg-faint">
+          Not sure where to start? Any of these sets the controls to something worth
+          looking at.
+        </p>
+      )}
+    </div>
   );
 }
 

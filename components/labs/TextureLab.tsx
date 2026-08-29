@@ -3,7 +3,14 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import { GLCanvas, type SceneFactory } from '@/components/lab/GLCanvas';
-import { ControlGroup, ResetButton, Segmented, Slider } from '@/components/lab/Controls';
+import {
+  ControlGroup,
+  Presets,
+  ResetButton,
+  Segmented,
+  Slider,
+  type Preset,
+} from '@/components/lab/Controls';
 import { AxisKey, LabLayout } from '@/components/lab/LabLayout';
 import { LabSource } from '@/components/lab/LabSource';
 import { useTheme } from '@/components/site/ThemeProvider';
@@ -180,6 +187,29 @@ export function TextureLab() {
 
   const usesMips = USES_MIPMAPS[controls.minFilter];
 
+const PRESETS: Preset<TextureControls>[] = [
+  {
+    label: 'Watch it boil',
+    note: 'Nearest, no mip chain, tiled hard. The distance shimmers as the camera holds still — that is aliasing, hundreds of texels fighting over one pixel.',
+    values: { minFilter: 'nearest', magFilter: 'nearest', repeat: 16 },
+  },
+  {
+    label: 'Mipmaps fix it',
+    note: 'Same tiling, trilinear filtering. The shimmer is gone, because there is now always a mip level where one texel is about one pixel.',
+    values: { minFilter: 'linear-mip-linear', magFilter: 'linear', repeat: 16 },
+  },
+  {
+    label: 'Clamp smears',
+    note: 'One tile, clamped, pushed off-centre. Outside 0…1 the edge texel repeats forever — that stripe is CLAMP_TO_EDGE doing exactly what it says.',
+    values: { wrapS: 'clamp', wrapT: 'clamp', repeat: 1, offset: 0.45 },
+  },
+  {
+    label: 'Mirror hides the seam',
+    note: 'Mirrored repeat flips alternate tiles, so the borders meet themselves and the seam disappears. Watch the amber marker alternate direction.',
+    values: { wrapS: 'mirror', wrapT: 'mirror', repeat: 4, offset: 0 },
+  },
+];
+
   return (
     <LabLayout
       readoutTitle="What the sampler is doing"
@@ -202,6 +232,13 @@ export function TextureLab() {
       }
       controls={
         <>
+          <ControlGroup title="Start here">
+            <Presets
+              presets={PRESETS}
+              onApply={(values) => setControls((prev) => ({ ...prev, ...values }))}
+            />
+          </ControlGroup>
+
           <ControlGroup
             title="Minification"
             action={<ResetButton onClick={() => setControls(DEFAULTS)} />}

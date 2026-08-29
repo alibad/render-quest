@@ -27,6 +27,9 @@ export function Footer() {
           <Link href="/glossary" className="transition-colors hover:text-fg">
             Glossary
           </Link>
+          <Link href="/roadmap" className="transition-colors hover:text-fg">
+            Roadmap
+          </Link>
           <Link href="/about" className="transition-colors hover:text-fg">
             About
           </Link>
