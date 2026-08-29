@@ -89,7 +89,7 @@ export const LABS: Lab[] = [
     takeaway:
       'Why a texture looks wrong at a distance, and what mipmapping is really trading away.',
     concepts: ['UV coordinates', 'filtering', 'mipmaps', 'wrap modes'],
-    status: 'building',
+    status: 'live',
   },
   {
     slug: 'instancing',
