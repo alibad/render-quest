@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { GLCanvas, type SceneFactory } from '@/components/lab/GLCanvas';
+import { CopyLink } from '@/components/lab/CopyLink';
+import { useLabState } from '@/components/lab/useLabState';
 import {
   ControlGroup,
   ResetButton,
@@ -210,7 +212,7 @@ const SOURCE = [
 ];
 
 export function ProjectionLab() {
-  const [controls, setParams] = useState<ProjectionControls>(DEFAULTS);
+  const [controls, setParams, shareQuery] = useLabState(DEFAULTS);
   const { palette } = useTheme();
   const params = useMemo<ProjectionParams>(
     () => ({ ...controls, palette }),
@@ -231,7 +233,7 @@ export function ProjectionLab() {
       }
       return next;
     });
-  }, []);
+  }, [setParams]);
 
   const onDrag = useCallback((dx: number, dy: number) => {
     setParams((prev) => ({
@@ -239,7 +241,7 @@ export function ProjectionLab() {
       azimuth: prev.azimuth - dx * 0.008,
       elevation: Math.max(-0.2, Math.min(1.2, prev.elevation + dy * 0.006)),
     }));
-  }, []);
+  }, [setParams]);
 
   const projection = useMemo(() => buildProjection(controls), [controls]);
   const isPerspective = params.mode === 'perspective';
@@ -350,6 +352,10 @@ export function ProjectionLab() {
               </>
             )}
           </p>
+          {/* Last in the column: it describes the state above it. */}
+          <div className="border-t border-line pt-5">
+            <CopyLink query={shareQuery} />
+          </div>
         </>
       }
       readout={

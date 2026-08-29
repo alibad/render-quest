@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { GLCanvas, type SceneFactory } from '@/components/lab/GLCanvas';
+import { CopyLink } from '@/components/lab/CopyLink';
+import { useLabState } from '@/components/lab/useLabState';
 import {
   ControlGroup,
   ResetButton,
@@ -160,7 +162,7 @@ const SOURCE = [
 ];
 
 export function TransformLab() {
-  const [controls, setParams] = useState<TransformDefaults>(DEFAULTS);
+  const [controls, setParams, shareQuery] = useLabState(DEFAULTS);
   const { palette } = useTheme();
   const params = useMemo<TransformParams>(
     () => ({ ...controls, palette }),
@@ -172,7 +174,7 @@ export function TransformLab() {
     value: TransformDefaults[K],
   ) => {
     setParams((prev) => ({ ...prev, [key]: value }));
-  }, []);
+  }, [setParams]);
 
   const onDrag = useCallback((dx: number, dy: number) => {
     setParams((prev) => ({
@@ -183,7 +185,7 @@ export function TransformLab() {
         Math.min(1.35, prev.elevation + dy * 0.008),
       ),
     }));
-  }, []);
+  }, [setParams]);
 
   const { T, R, S, M } = useMemo(() => composeModel(params), [params]);
 
@@ -294,6 +296,10 @@ const PRESETS: Preset<TransformDefaults>[] = [
             <Toggle label="Original position" checked={params.showGhost} onChange={(v) => set('showGhost', v)} />
             <Toggle label="Basis vectors" checked={params.showBasis} onChange={(v) => set('showBasis', v)} />
           </ControlGroup>
+          {/* Last in the column: it describes the state above it. */}
+          <div className="border-t border-line pt-5">
+            <CopyLink query={shareQuery} />
+          </div>
         </>
       }
       readout={

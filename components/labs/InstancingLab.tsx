@@ -11,7 +11,9 @@ import {
   Toggle,
   type Preset,
 } from '@/components/lab/Controls';
+import { CopyLink } from '@/components/lab/CopyLink';
 import { LabLayout } from '@/components/lab/LabLayout';
+import { useLabState } from '@/components/lab/useLabState';
 import { LabSource } from '@/components/lab/LabSource';
 import { useTheme } from '@/components/site/ThemeProvider';
 import { lookAt, multiply, perspective } from '@/lib/math/mat4';
@@ -236,7 +238,14 @@ for (let i = 0; i < count; i++) {
 
 export function InstancingLab() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [controls, setControls] = useState<InstancingControls>(DEFAULTS);
+  // A shared link is user input that reaches a draw loop: `?count=1e9` in
+  // per-object mode would issue a billion draw calls and hang the tab.
+  const [controls, setControls, shareQuery] = useLabState(DEFAULTS, {
+    count: (value) => Number.isInteger(value) && value >= 1 && value <= MAX_INSTANCES,
+    mode: (value) => value === 'instanced' || value === 'per-object',
+    scale: (value) => value >= 0.3 && value <= 2.5,
+    spin: (value) => value >= 0 && value <= 2,
+  });
   const [status, setStatus] = useState<Status>('checking');
   const [detail, setDetail] = useState('');
   const [stats, setStats] = useState({ cpu: 0, fps: 0 });
@@ -257,7 +266,7 @@ export function InstancingLab() {
     <K extends keyof InstancingControls>(key: K, value: InstancingControls[K]) => {
       setControls((prev) => ({ ...prev, [key]: value }));
     },
-    [],
+    [setControls],
   );
 
   useEffect(() => {
@@ -642,6 +651,10 @@ export function InstancingLab() {
           </ControlGroup>
 
           <ResetButton onClick={() => setControls(DEFAULTS)} />
+          {/* Last in the column: it describes the state above it. */}
+          <div className="border-t border-line pt-5">
+            <CopyLink query={shareQuery} />
+          </div>
         </>
       }
       readout={

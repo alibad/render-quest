@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { GLCanvas, type SceneFactory } from '@/components/lab/GLCanvas';
+import { CopyLink } from '@/components/lab/CopyLink';
+import { useLabState } from '@/components/lab/useLabState';
 import {
   ControlGroup,
   Presets,
@@ -171,7 +173,7 @@ const SOURCE = [
 ];
 
 export function TextureLab() {
-  const [controls, setControls] = useState<TextureControls>(DEFAULTS);
+  const [controls, setControls, shareQuery] = useLabState(DEFAULTS);
   const { palette } = useTheme();
   const params = useMemo<TextureParams>(
     () => ({ ...controls, palette }),
@@ -183,7 +185,7 @@ export function TextureLab() {
     value: TextureControls[K],
   ) => {
     setControls((prev) => ({ ...prev, [key]: value }));
-  }, []);
+  }, [setControls]);
 
   const usesMips = USES_MIPMAPS[controls.minFilter];
 
@@ -325,6 +327,10 @@ const PRESETS: Preset<TextureControls>[] = [
               CLAMP_TO_EDGE doing exactly what it says.
             </p>
           </ControlGroup>
+          {/* Last in the column: it describes the state above it. */}
+          <div className="border-t border-line pt-5">
+            <CopyLink query={shareQuery} />
+          </div>
         </>
       }
       readout={

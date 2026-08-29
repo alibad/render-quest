@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { GLCanvas, type SceneFactory } from '@/components/lab/GLCanvas';
+import { CopyLink } from '@/components/lab/CopyLink';
+import { useLabState } from '@/components/lab/useLabState';
 import {
   ControlGroup,
   ResetButton,
@@ -279,7 +281,7 @@ const SOURCE = [
 ];
 
 export function ShadingLab() {
-  const [controls, setControls] = useState<ShadingControls>(DEFAULTS);
+  const [controls, setControls, shareQuery] = useLabState(DEFAULTS);
   const { palette } = useTheme();
   const params = useMemo<ShadingParams>(
     () => ({ ...controls, palette }),
@@ -291,7 +293,7 @@ export function ShadingLab() {
     value: ShadingControls[K],
   ) => {
     setControls((prev) => ({ ...prev, [key]: value }));
-  }, []);
+  }, [setControls]);
 
   const onDrag = useCallback((dx: number, dy: number) => {
     setControls((prev) => ({
@@ -299,7 +301,7 @@ export function ShadingLab() {
       azimuth: prev.azimuth - dx * 0.008,
       elevation: Math.max(-1.2, Math.min(1.2, prev.elevation + dy * 0.008)),
     }));
-  }, []);
+  }, [setControls]);
 
   const stretched = Math.abs(controls.stretch - 1) > 0.02;
   const model = useMemo(() => scaling(1, controls.stretch, 1), [controls.stretch]);
@@ -415,6 +417,10 @@ const PRESETS: Preset<ShadingControls>[] = [
                 : 'At uniform scale both choices agree — which is exactly why this bug survives so long in real codebases. Stretch y and the difference appears.'}
             </p>
           </ControlGroup>
+          {/* Last in the column: it describes the state above it. */}
+          <div className="border-t border-line pt-5">
+            <CopyLink query={shareQuery} />
+          </div>
         </>
       }
       readout={

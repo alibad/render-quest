@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { GLCanvas, type SceneFactory } from '@/components/lab/GLCanvas';
+import { CopyLink } from '@/components/lab/CopyLink';
+import { useLabState } from '@/components/lab/useLabState';
 import { ControlGroup, ResetButton, Toggle } from '@/components/lab/Controls';
 import { AxisKey, LabLayout } from '@/components/lab/LabLayout';
 import { LabSource } from '@/components/lab/LabSource';
@@ -230,7 +232,7 @@ const SOURCE = [
 ];
 
 export function PipelineLab() {
-  const [controls, setControls] = useState<PipelineControls>(DEFAULTS);
+  const [controls, setControls, shareQuery] = useLabState(DEFAULTS);
   const { palette } = useTheme();
   const params = useMemo<PipelineParams>(
     () => ({ ...controls, palette }),
@@ -243,7 +245,7 @@ export function PipelineLab() {
       azimuth: prev.azimuth - dx * 0.008,
       elevation: Math.max(-1.2, Math.min(1.2, prev.elevation + dy * 0.007)),
     }));
-  }, []);
+  }, [setControls]);
 
   const trace = useMemo(() => traceVertex(TRACKED, CTX), []);
   const space = SPACES[controls.stage];
@@ -349,6 +351,10 @@ export function PipelineLab() {
               onChange={(v) => setControls((p) => ({ ...p, showGrid: v }))}
             />
           </ControlGroup>
+          {/* Last in the column: it describes the state above it. */}
+          <div className="border-t border-line pt-5">
+            <CopyLink query={shareQuery} />
+          </div>
         </>
       }
       readout={

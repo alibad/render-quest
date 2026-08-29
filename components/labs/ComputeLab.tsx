@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ControlGroup, ResetButton, Slider, Toggle } from '@/components/lab/Controls';
+import { CopyLink } from '@/components/lab/CopyLink';
 import { LabLayout } from '@/components/lab/LabLayout';
+import { useLabState } from '@/components/lab/useLabState';
 import { LabSource } from '@/components/lab/LabSource';
 import { useTheme } from '@/components/site/ThemeProvider';
 import type { CanvasPalette } from '@/lib/theme';
@@ -185,7 +187,11 @@ const SOURCE = [
 
 export function ComputeLab() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [controls, setControls] = useState<ComputeControls>(DEFAULTS);
+  // The count sizes a dispatch and a draw of six vertices per particle, so an
+  // out-of-range value from a link is a hung tab rather than a wrong picture.
+  const [controls, setControls, shareQuery] = useLabState(DEFAULTS, {
+    count: (value) => Number.isInteger(value) && value >= 1 && value <= MAX_PARTICLES,
+  });
   const [status, setStatus] = useState<Status>('checking');
   const [detail, setDetail] = useState('');
   const { palette, theme } = useTheme();
@@ -205,7 +211,7 @@ export function ComputeLab() {
     value: ComputeControls[K],
   ) => {
     setControls((prev) => ({ ...prev, [key]: value }));
-  }, []);
+  }, [setControls]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -535,6 +541,10 @@ export function ComputeLab() {
             passes; it never sees a particle. That is the difference a compute stage
             makes.
           </p>
+          {/* Last in the column: it describes the state above it. */}
+          <div className="border-t border-line pt-5">
+            <CopyLink query={shareQuery} />
+          </div>
         </>
       }
       readout={
