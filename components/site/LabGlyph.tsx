@@ -2,25 +2,34 @@
  * A small diagram per lab — each one depicts the thing the lab actually
  * teaches, so the cards read as a contents page rather than decoration.
  *
- * SVG rather than four more WebGL contexts: crisp at any size, theme-aware
- * through currentColor, and free.
+ * SVG rather than seven more GL contexts: crisp at any size, theme-aware
+ * through the palette tokens, and free.
+ *
+ * Keyed by slug in one record rather than a `switch` with a `default`. The
+ * switch silently returned nothing for any slug it had not been taught, so
+ * three labs shipped with a hole where the diagram goes. A record has a
+ * countable set of keys, which `test/content.test.ts` compares against the
+ * lab registry — a lab added without a glyph now fails the build.
  */
 
 const BOX = 'h-full w-full';
 
+const GLYPHS: Record<string, () => JSX.Element> = {
+  transform: TransformGlyph,
+  projection: ProjectionGlyph,
+  pipeline: PipelineGlyph,
+  shading: ShadingGlyph,
+  textures: TexturesGlyph,
+  compute: ComputeGlyph,
+  instancing: InstancingGlyph,
+};
+
+/** Every slug that has a diagram. Asserted against the lab registry in tests. */
+export const GLYPH_SLUGS = Object.keys(GLYPHS);
+
 export function LabGlyph({ slug }: { slug: string }) {
-  switch (slug) {
-    case 'transform':
-      return <TransformGlyph />;
-    case 'projection':
-      return <ProjectionGlyph />;
-    case 'pipeline':
-      return <PipelineGlyph />;
-    case 'shading':
-      return <ShadingGlyph />;
-    default:
-      return null;
-  }
+  const Glyph = GLYPHS[slug];
+  return Glyph ? <Glyph /> : null;
 }
 
 /** A 4x4 grid of cells with the translation column picked out. */
@@ -153,6 +162,159 @@ function ShadingGlyph() {
         strokeLinecap="round"
       />
       <circle cx="61" cy="5" r="2.6" className="fill-amber" />
+    </svg>
+  );
+}
+
+/**
+ * A checkerboard plane running to the horizon, with the mip chain that keeps
+ * it from breaking up. The plane is the lab's own scene; the falloff toward
+ * the far edge is exactly the artefact the lab is about.
+ */
+function TexturesGlyph() {
+  // Rows bunch up toward the horizon, which is what makes the plane read as
+  // going away rather than as a flat grid.
+  const rowY = [48, 38.5, 31, 25.5, 21.5, 18.5, 16.2, 14.5];
+  const NEAR_Y = 48;
+  const SPAN = NEAR_Y - 14;
+  const edges = (y: number) => {
+    const t = (NEAR_Y - y) / SPAN;
+    return { left: 2 + 24 * t, right: 66 - 24 * t };
+  };
+
+  const cells = [];
+  const COLS = 8;
+  for (let r = 0; r < rowY.length - 1; r++) {
+    const y0 = rowY[r];
+    const y1 = rowY[r + 1];
+    const e0 = edges(y0);
+    const e1 = edges(y1);
+    for (let c = 0; c < COLS; c++) {
+      if ((r + c) % 2 !== 0) continue;
+      const a0 = e0.left + ((e0.right - e0.left) * c) / COLS;
+      const b0 = e0.left + ((e0.right - e0.left) * (c + 1)) / COLS;
+      const a1 = e1.left + ((e1.right - e1.left) * c) / COLS;
+      const b1 = e1.left + ((e1.right - e1.left) * (c + 1)) / COLS;
+      cells.push(
+        <path
+          key={`${r}-${c}`}
+          d={`M${a0.toFixed(2)} ${y0} L${b0.toFixed(2)} ${y0} L${b1.toFixed(2)} ${y1} L${a1.toFixed(2)} ${y1} Z`}
+          className="fill-fg"
+          // Fading with distance stands in for the detail a mip level drops.
+          opacity={(0.5 - r * 0.06).toFixed(2)}
+        />,
+      );
+    }
+  }
+
+  return (
+    <svg viewBox="0 0 68 56" className={BOX} aria-hidden>
+      <path
+        d="M2 48 L66 48 L42 14 L26 14 Z"
+        className="fill-accent/10 stroke-accent/45"
+        strokeWidth="1.1"
+        strokeLinejoin="round"
+      />
+      {cells}
+      {/* The mip chain, each level half the last. */}
+      <g className="fill-accent/25 stroke-accent" strokeWidth="1">
+        <rect x="3" y="3" width="9" height="9" rx="1.2" />
+        <rect x="15" y="6" width="6" height="6" rx="1" />
+        <rect x="24" y="8.5" width="3.5" height="3.5" rx="0.8" />
+      </g>
+    </svg>
+  );
+}
+
+/**
+ * Particles on a vortex with the trails they sweep — the shape the lab settles
+ * into once the swirl balances the pull inward.
+ */
+function ComputeGlyph() {
+  const TURNS = 2.4;
+  const COUNT = 40;
+  const at = (t: number) => {
+    const angle = t * TURNS * Math.PI * 2;
+    const radius = 2.5 + t * t * 24;
+    return [34 + Math.cos(angle) * radius * 1.2, 28 + Math.sin(angle) * radius * 0.8];
+  };
+
+  const dots = [];
+  for (let i = 0; i < COUNT; i++) {
+    const t = i / (COUNT - 1);
+    const [x, y] = at(t);
+    dots.push(
+      <circle
+        key={i}
+        cx={x.toFixed(2)}
+        cy={y.toFixed(2)}
+        r={(0.85 + t * 1.6).toFixed(2)}
+        className={t > 0.74 ? 'fill-amber' : 'fill-accent'}
+        opacity={(0.4 + t * 0.55).toFixed(2)}
+      />,
+    );
+  }
+
+  // A sampled trail along the same curve, so the ring reads as motion.
+  let trail = '';
+  for (let i = 0; i <= 60; i++) {
+    const [x, y] = at(i / 60);
+    trail += `${i === 0 ? 'M' : 'L'}${x.toFixed(2)} ${y.toFixed(2)} `;
+  }
+
+  return (
+    <svg viewBox="0 0 68 56" className={BOX} aria-hidden>
+      <path
+        d={trail}
+        className="stroke-accent/30"
+        strokeWidth="0.9"
+        fill="none"
+        strokeLinecap="round"
+      />
+      {dots}
+    </svg>
+  );
+}
+
+/**
+ * One mesh drawn many times: the lead instance solid, the rest sharing it.
+ * Draw calls are the lesson, so the repeated copies are the whole picture.
+ */
+function InstancingGlyph() {
+  const boxes = [];
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 5; col++) {
+      const lead = row === 0 && col === 0;
+      boxes.push(
+        <rect
+          key={`${row}-${col}`}
+          x={7 + col * 11.5}
+          y={8 + row * 12}
+          width="8"
+          height="8"
+          rx="1.4"
+          className={
+            lead
+              ? 'fill-accent/40 stroke-accent'
+              : 'fill-fg-faint/20 stroke-fg-faint/60'
+          }
+          strokeWidth={lead ? 1.5 : 1}
+        />,
+      );
+    }
+  }
+  return (
+    <svg viewBox="0 0 68 56" className={BOX} aria-hidden>
+      {boxes}
+      {/* One buffer feeding all of them — the point of instancing. */}
+      <path
+        d="M11 40 L11 47 L58 47"
+        className="stroke-accent/60"
+        strokeWidth="1.2"
+        fill="none"
+        strokeLinecap="round"
+        strokeDasharray="2.5 2.5"
+      />
     </svg>
   );
 }

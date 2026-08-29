@@ -9,20 +9,37 @@ export function LabCard({ lab, children }: { lab: Lab; children?: React.ReactNod
   const body = (
     <>
       {children}
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <span className="font-mono text-2xs text-fg-faint">
-            {String(lab.order).padStart(2, '0')}
-          </span>
-          <div className="h-12 w-16 shrink-0 transition-transform duration-300 group-hover:-translate-y-0.5">
+      {/*
+        The diagram gets a plate of its own rather than sitting loose in the
+        corner at icon size. On a contents page the picture is what you scan,
+        so it is the first and largest thing in the card; the number and the
+        API badge ride in the corners of it.
+      */}
+      <div className="relative mb-4 h-28 overflow-hidden rounded-lg border border-line/70 bg-ink-800/70">
+        {/* The same blueprint grid the body uses, so the plate reads as a
+            drawing surface instead of an empty box. */}
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-[0.55]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgb(var(--grid-line) / 0.07) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--grid-line) / 0.07) 1px, transparent 1px)',
+            backgroundSize: '12px 12px',
+          }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-[1.06]">
+          <div className="aspect-[68/56] h-[86%]">
             <LabGlyph slug={lab.slug} />
           </div>
         </div>
+        <span className="absolute left-2.5 top-2 font-mono text-2xs text-fg-faint">
+          {String(lab.order).padStart(2, '0')}
+        </span>
         <span
-          className={`rounded border px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wider ${
+          className={`absolute right-2.5 top-2 rounded border px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wider ${
             lab.technology === 'webgpu'
               ? 'border-amber/35 bg-amber/10 text-amber'
-              : 'border-line-strong text-fg-faint'
+              : 'border-line-strong bg-ink-800/80 text-fg-faint'
           }`}
         >
           {lab.technology === 'webgpu' ? 'WebGPU' : 'WebGL'}
