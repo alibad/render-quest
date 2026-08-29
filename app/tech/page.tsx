@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { TechnologyChooser } from '@/components/tech/TechnologyChooser';
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
 import { SHARED_SCENE, TECHNOLOGIES } from '@/lib/technologies';
@@ -34,7 +35,23 @@ export default function Tech() {
           {SHARED_SCENE.formula}
         </p>
 
-        <div className="mt-12 overflow-x-auto">
+        <section className="mt-12">
+          <h2 className="text-lg font-semibold tracking-tight">
+            Which should you use?
+          </h2>
+          <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">
+            There is no best one — there is a best one for a target. Answer three
+            questions and see what falls out, along with the reasoning.
+          </p>
+          <div className="mt-5">
+            <TechnologyChooser />
+          </div>
+        </section>
+
+        <h2 className="mt-14 text-lg font-semibold tracking-tight">
+          Side by side
+        </h2>
+        <div className="mt-5 overflow-x-auto">
           <table className="w-full min-w-[42rem] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-line text-fg-faint">
