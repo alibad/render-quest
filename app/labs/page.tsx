@@ -5,6 +5,7 @@ import { Header } from '@/components/site/Header';
 import Link from 'next/link';
 
 import { LabCard } from '@/components/site/LabCard';
+import { LabsTailCard } from '@/components/site/LabsTailCard';
 import { ORDERED_LABS } from '@/lib/labs';
 
 export const metadata: Metadata = {
@@ -51,6 +52,7 @@ export default function Labs() {
           {live.map((lab) => (
             <LabCard key={lab.slug} lab={lab} />
           ))}
+          <LabsTailCard />
         </div>
 
         {building.length > 0 ? (
