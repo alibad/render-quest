@@ -37,6 +37,7 @@ struct Params {
   aspect: f32,
   swirl: f32,
   brightness: f32,
+  dark: f32,
 };
 
 @group(0) @binding(0) var<storage, read_write> particles: array<Particle>;
@@ -121,9 +122,18 @@ fn fs(in: VSOut) -> @location(0) vec4f {
   let warm = vec3f(1.0, 0.72, 0.35);
   let colour = mix(cool, warm, heat);
 
-  // Scaled down because 60,000 additively-blended sprites saturate to white
-  // long before they look like anything.
-  return vec4f(colour * falloff * rparams.brightness, falloff * rparams.brightness);
+  let b = rparams.brightness;
+
+  if (rparams.dark > 0.5) {
+    // Additive on a dark ground: overlapping sprites accumulate into light.
+    // Scaled down because 60,000 of them saturate to white long before they
+    // look like anything.
+    return vec4f(colour * falloff * b, falloff * b);
+  }
+
+  // On a light ground adding light does nothing — the background is already
+  // near white. Deepen the colour instead and let alpha do the accumulating.
+  return vec4f(colour * 0.42, falloff * b * 1.9);
 }
 `;
 
@@ -168,12 +178,14 @@ export function ComputeLab() {
   const [controls, setControls] = useState<ComputeControls>(DEFAULTS);
   const [status, setStatus] = useState<Status>('checking');
   const [detail, setDetail] = useState('');
-  const { palette } = useTheme();
+  const { palette, theme } = useTheme();
 
   const controlsRef = useRef(controls);
   controlsRef.current = controls;
   const paletteRef = useRef(palette);
   paletteRef.current = palette;
+  const isDarkRef = useRef(theme === 'dark');
+  isDarkRef.current = theme === 'dark';
   // Attractor in clip space; follows the pointer, drifts on its own otherwise.
   const attractorRef = useRef<[number, number] | null>(null);
   const resetRef = useRef(0);
@@ -240,24 +252,55 @@ export function ComputeLab() {
           compute: { module: shaderModule, entryPoint: 'cs' },
         });
 
-        const renderPipeline = device.createRenderPipeline({
-          layout: 'auto',
-          vertex: { module: shaderModule, entryPoint: 'vs' },
-          fragment: {
-            module: shaderModule,
-            entryPoint: 'fs',
-            targets: [
-              {
-                format,
-                // Additive: overlapping particles accumulate into brightness.
-                blend: {
-                  color: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
-                  alpha: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
-                },
-              },
-            ],
+        // Blend state is baked into a pipeline, so the two grounds need two of
+        // them. `layout: 'auto'` would give each its own implicit bind group
+        // layout, and a bind group made from one is then invalid on the other —
+        // so the layout is declared once, explicitly, and shared.
+        const renderBindGroupLayout = device.createBindGroupLayout({
+          entries: [
+            {
+              binding: 0,
+              visibility: GPUShaderStage.VERTEX,
+              buffer: { type: 'read-only-storage' },
+            },
+            {
+              binding: 1,
+              visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+              buffer: { type: 'uniform' },
+            },
+          ],
+        });
+        const renderPipelineLayout = device.createPipelineLayout({
+          bindGroupLayouts: [renderBindGroupLayout],
+        });
+
+        const makeRenderPipeline = (blend: GPUBlendState) =>
+          device!.createRenderPipeline({
+            layout: renderPipelineLayout,
+            vertex: { module: shaderModule, entryPoint: 'vs' },
+            fragment: {
+              module: shaderModule,
+              entryPoint: 'fs',
+              targets: [{ format, blend }],
+            },
+            primitive: { topology: 'triangle-list' },
+          });
+
+        const additivePipeline = makeRenderPipeline({
+          color: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
+          alpha: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
+        });
+        const alphaPipeline = makeRenderPipeline({
+          color: {
+            srcFactor: 'src-alpha',
+            dstFactor: 'one-minus-src-alpha',
+            operation: 'add',
           },
-          primitive: { topology: 'triangle-list' },
+          alpha: {
+            srcFactor: 'src-alpha',
+            dstFactor: 'one-minus-src-alpha',
+            operation: 'add',
+          },
         });
 
         // The same buffer, bound read_write for compute and read for render.
@@ -268,8 +311,9 @@ export function ComputeLab() {
             { binding: 1, resource: { buffer: paramsBuffer } },
           ],
         });
+        // One bind group, valid on both pipelines because they share a layout.
         const renderBind = device.createBindGroup({
-          layout: renderPipeline.getBindGroupLayout(0),
+          layout: renderBindGroupLayout,
           entries: [
             { binding: 0, resource: { buffer: particleBuffer } },
             { binding: 1, resource: { buffer: paramsBuffer } },
@@ -319,6 +363,7 @@ export function ComputeLab() {
           params[7] = canvas.width / canvas.height;
           params[8] = current.swirl;
           params[9] = current.brightness;
+          params[10] = isDarkRef.current ? 1 : 0;
           device.queue.writeBuffer(paramsBuffer, 0, params);
 
           const encoder = device.createCommandEncoder();
@@ -340,7 +385,9 @@ export function ComputeLab() {
               },
             ],
           });
-          render.setPipeline(renderPipeline);
+          render.setPipeline(
+            isDarkRef.current ? additivePipeline : alphaPipeline,
+          );
           render.setBindGroup(0, renderBind);
           render.draw(current.count * 6);
           render.end();
