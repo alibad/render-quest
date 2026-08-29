@@ -12,7 +12,7 @@
     "check:links": "tsx scripts/check-links.ts"
   },
   "engines": {
-    "node": ">=18.18"
+    "node": "24.x"
   },
   "dependencies": {
     "next": "14.2.5",
@@ -23,6 +23,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@webgpu/types": "^0.1.72",
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
     "postcss": "^8",
