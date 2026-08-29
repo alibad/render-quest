@@ -11,6 +11,7 @@ const NAV = [
   { href: '/labs', label: 'Labs' },
   { href: '/tech', label: 'Tech' },
   { href: '/learn', label: 'Learn' },
+  { href: '/glossary', label: 'Glossary' },
   { href: '/about', label: 'About' },
 ];
 
@@ -41,7 +42,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-line/70 bg-ink-900/85 backdrop-blur-md">
       <nav className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-5">
-        <Link href="/" className="rounded-md" aria-label="Render Quest home">
+        <Link href="/" className="rounded-md" title="Render Quest home">
           <Wordmark />
         </Link>
 

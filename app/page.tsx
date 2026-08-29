@@ -14,7 +14,7 @@ export default function Home() {
   return (
     <>
       <Header />
-      <main>
+      <main id="main-content">
         <section className="mx-auto max-w-6xl px-5 pb-10 pt-12 sm:pt-16">
           <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
             <div className="animate-fade-up">

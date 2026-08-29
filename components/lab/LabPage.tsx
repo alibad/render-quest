@@ -9,7 +9,7 @@ export function LabPage({ lab, children }: { lab: Lab; children: React.ReactNode
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-6xl px-5 py-10">
+      <main id="main-content" className="mx-auto max-w-6xl px-5 py-10">
         <nav className="mb-6">
           <Link
             href="/labs"
