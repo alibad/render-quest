@@ -12,6 +12,7 @@ import {
 } from '@/components/lab/Controls';
 import { MatrixView } from '@/components/lab/MatrixView';
 import { AxisKey, LabLayout } from '@/components/lab/LabLayout';
+import { LabSource } from '@/components/lab/LabSource';
 import { cube, grid } from '@/lib/gl/geometry';
 import {
   eyeRays,
@@ -25,6 +26,10 @@ import {
   createSceneKit,
   uploadLines,
   uploadMesh,
+  LIT_FRAGMENT,
+  LIT_VERTEX,
+  FLAT_VERTEX,
+  FLAT_FRAGMENT,
 } from '@/lib/gl/scene';
 import {
   degToRad,
@@ -197,9 +202,16 @@ const createCameraScene: SceneFactory<ProjectionParams> = (gl) => {
   };
 };
 
+const SOURCE = [
+  { label: 'Vertex shader', language: 'glsl' as const, source: LIT_VERTEX.trim() },
+  { label: 'Fragment shader', language: 'glsl' as const, source: LIT_FRAGMENT.trim() },
+  { label: 'Line vertex shader', language: 'glsl' as const, source: FLAT_VERTEX.trim() },
+  { label: 'Line fragment shader', language: 'glsl' as const, source: FLAT_FRAGMENT.trim() },
+];
+
 export function ProjectionLab() {
   const [controls, setParams] = useState<ProjectionControls>(DEFAULTS);
-  const { theme, palette } = useTheme();
+  const { palette } = useTheme();
   const params = useMemo<ProjectionParams>(
     () => ({ ...controls, palette }),
     [controls, palette],
@@ -238,7 +250,6 @@ export function ProjectionLab() {
       canvas={
         <div className="space-y-4">
           <GLCanvas
-            key={`world-${theme}`}
             create={createWorldScene}
             params={params}
             onDrag={onDrag}
@@ -261,7 +272,6 @@ export function ProjectionLab() {
             }
           />
           <GLCanvas
-            key={`camera-${theme}`}
             create={createCameraScene}
             params={params}
             aspect={CAMERA_ASPECT}
@@ -350,6 +360,7 @@ export function ProjectionLab() {
           highlightChanges={false}
         />
       }
+      source={<LabSource samples={SOURCE} />}
       readoutCaption={
         isPerspective ? (
           <>

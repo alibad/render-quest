@@ -150,6 +150,12 @@ export function GLCanvas<P>({
       observer.disconnect();
       canvas.removeEventListener('webglcontextlost', onContextLost);
       scene.dispose?.();
+      // Deliberately NOT calling WEBGL_lose_context here. getContext() returns
+      // the *same* context object for a given canvas, so losing it on cleanup
+      // breaks any remount that reuses the element — React's StrictMode
+      // double-invoke does exactly that, and the canvas comes back dead. The
+      // context is released when the canvas is collected; the churn that
+      // actually mattered was the per-theme remount, and that is gone.
     };
     // The scene is built once per mount; `create` is read through a ref.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -211,7 +217,13 @@ export function GLCanvas<P>({
           ref={canvasRef}
           aria-label={label}
           role="img"
-          className={`block h-full w-full touch-none ${
+          // touch-action: only claim the gesture on canvases that actually
+          // orbit, and only horizontally. `none` everywhere meant a visitor who
+          // began a scroll on the canvas got a page that refused to move, which
+          // reads as broken rather than as principled. pan-y leaves vertical
+          // scrolling to the browser and delivers horizontal drags to us.
+          style={{ touchAction: onDrag ? 'pan-y' : 'auto' }}
+          className={`block h-full w-full ${
             onDrag ? 'cursor-grab active:cursor-grabbing' : ''
           }`}
         />

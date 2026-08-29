@@ -3,7 +3,14 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 
 import { ThemeProvider } from '@/components/site/ThemeProvider';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
-import { AUTHOR, REPO_URL, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/lib/site';
+import {
+  AUTHOR,
+  REPO_URL,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TITLE,
+  SITE_URL,
+} from '@/lib/site';
 
 import './globals.css';
 
@@ -22,7 +29,7 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Render Quest — learn graphics by moving the numbers',
+    default: SITE_TITLE,
     template: '%s — Render Quest',
   },
   description:
@@ -41,13 +48,13 @@ export const metadata: Metadata = {
     type: 'website',
     url: SITE_URL,
     siteName: 'Render Quest',
-    title: 'Render Quest — learn graphics by moving the numbers',
+    title: SITE_TITLE,
     description:
       'Interactive labs for computer graphics. Drag a matrix and watch the geometry move. Real WebGL, running live in the browser.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Render Quest — learn graphics by moving the numbers',
+    title: SITE_TITLE,
     description:
       'Interactive labs for computer graphics. Drag a matrix and watch the geometry move.',
   },

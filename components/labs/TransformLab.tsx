@@ -12,12 +12,18 @@ import {
 } from '@/components/lab/Controls';
 import { MatrixProduct } from '@/components/lab/MatrixView';
 import { AxisKey, LabLayout } from '@/components/lab/LabLayout';
+import { LabSource } from '@/components/lab/LabSource';
 import { axes, boxWireframe, cube, grid } from '@/lib/gl/geometry';
 import {
   beginFrame,
   createSceneKit,
+  updateLineColors,
   uploadLines,
   uploadMesh,
+  LIT_FRAGMENT,
+  LIT_VERTEX,
+  FLAT_VERTEX,
+  FLAT_FRAGMENT,
 } from '@/lib/gl/scene';
 import {
   degToRad,
@@ -96,9 +102,20 @@ const createScene: SceneFactory<TransformParams> = (gl, initial) => {
   const localAxes = uploadLines(gl, basisGeo.positions, basisGeo.colors);
   const ident = identity();
 
+  // The axes carry per-vertex colour, so they are the one thing here that a
+  // theme change invalidates. Re-upload rather than rebuild the scene.
+  let appliedPalette = initial.palette;
+
   return {
     draw({ width, height, params }) {
       const { palette } = params;
+
+      if (palette !== appliedPalette) {
+        appliedPalette = palette;
+        updateLineColors(gl, worldAxes, axes(1.6, palette).colors);
+        updateLineColors(gl, localAxes, axes(1, palette).colors);
+      }
+
       beginFrame(gl, width, height, palette);
 
       const eye = orbitToCartesian(params.azimuth, params.elevation, 7.5);
@@ -133,9 +150,16 @@ const createScene: SceneFactory<TransformParams> = (gl, initial) => {
   };
 };
 
+const SOURCE = [
+  { label: 'Vertex shader', language: 'glsl' as const, source: LIT_VERTEX.trim() },
+  { label: 'Fragment shader', language: 'glsl' as const, source: LIT_FRAGMENT.trim() },
+  { label: 'Line vertex shader', language: 'glsl' as const, source: FLAT_VERTEX.trim() },
+  { label: 'Line fragment shader', language: 'glsl' as const, source: FLAT_FRAGMENT.trim() },
+];
+
 export function TransformLab() {
   const [controls, setParams] = useState<TransformDefaults>(DEFAULTS);
-  const { theme, palette } = useTheme();
+  const { palette } = useTheme();
   const params = useMemo<TransformParams>(
     () => ({ ...controls, palette }),
     [controls, palette],
@@ -177,7 +201,6 @@ export function TransformLab() {
     <LabLayout
       canvas={
         <GLCanvas
-          key={theme}
           create={createScene}
           params={params}
           onDrag={onDrag}
@@ -247,6 +270,7 @@ export function TransformLab() {
           result={{ label: `M = ${params.order === 'trs' ? 'T · R · S' : 'S · R · T'}`, matrix: M }}
         />
       }
+      source={<LabSource samples={SOURCE} />}
       readoutCaption={
         <>
           The first three columns of <span className="text-fg-muted">M</span> are the

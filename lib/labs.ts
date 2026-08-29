@@ -9,6 +9,10 @@ export type LabTechnology = 'webgl' | 'webgpu';
 
 export interface Lab {
   slug: string;
+  /** Position in the intended sequence. Sorted on, not just documented. */
+  order: number;
+  /** The lab whose ideas this one assumes. Verified acyclic in test/content.test.ts. */
+  prereq?: string;
   title: string;
   /** The API this particular lab runs on, and why it had to be that one. */
   technology: LabTechnology;
@@ -25,6 +29,7 @@ export interface Lab {
 export const LABS: Lab[] = [
   {
     slug: 'transform',
+    order: 1,
     technology: 'webgl',
     title: 'The Model Matrix',
     blurb:
@@ -36,6 +41,8 @@ export const LABS: Lab[] = [
   },
   {
     slug: 'projection',
+    order: 2,
+    prereq: 'transform',
     technology: 'webgl',
     title: 'Projection & the Frustum',
     blurb:
@@ -47,6 +54,8 @@ export const LABS: Lab[] = [
   },
   {
     slug: 'pipeline',
+    order: 3,
+    prereq: 'projection',
     technology: 'webgl',
     title: 'Coordinate Spaces',
     blurb:
@@ -58,6 +67,8 @@ export const LABS: Lab[] = [
   },
   {
     slug: 'shading',
+    order: 4,
+    prereq: 'transform',
     technology: 'webgl',
     title: 'Light & Normals',
     blurb:
@@ -69,6 +80,8 @@ export const LABS: Lab[] = [
   },
   {
     slug: 'compute',
+    order: 6,
+    prereq: 'pipeline',
     technology: 'webgpu',
     technologyReason:
       'WebGL has no compute shaders. This lab cannot be built on it — not slowly, not with a workaround. It is the clearest case for choosing WebGPU.',
@@ -82,6 +95,8 @@ export const LABS: Lab[] = [
   },
   {
     slug: 'textures',
+    order: 5,
+    prereq: 'pipeline',
     technology: 'webgl',
     title: 'Textures & Sampling',
     blurb:
@@ -93,6 +108,8 @@ export const LABS: Lab[] = [
   },
   {
     slug: 'instancing',
+    order: 7,
+    prereq: 'compute',
     technology: 'webgpu',
     technologyReason:
       'The lesson is CPU cost per draw call, which is precisely where WebGPU differs most from WebGL.',
@@ -106,7 +123,22 @@ export const LABS: Lab[] = [
   },
 ];
 
-export const LIVE_LABS = LABS.filter((lab) => lab.status === 'live');
+const byOrder = (a: Lab, b: Lab) => a.order - b.order;
+
+/** Every lab, in the intended sequence. */
+export const ORDERED_LABS = [...LABS].sort(byOrder);
+
+export const LIVE_LABS = ORDERED_LABS.filter((lab) => lab.status === 'live');
+
+/** The live lab before and after this one, for the end-of-lab footer. */
+export function labNeighbours(slug: string): { previous?: Lab; next?: Lab } {
+  const index = LIVE_LABS.findIndex((lab) => lab.slug === slug);
+  if (index === -1) return {};
+  return {
+    previous: index > 0 ? LIVE_LABS[index - 1] : undefined,
+    next: index < LIVE_LABS.length - 1 ? LIVE_LABS[index + 1] : undefined,
+  };
+}
 
 export const LAB_TECHNOLOGIES: { id: LabTechnology; label: string }[] = [
   { id: 'webgl', label: 'WebGL' },

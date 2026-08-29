@@ -15,7 +15,7 @@ import type { Mesh } from './geometry';
 import type { Mat4 } from '../math/mat4';
 import type { CanvasPalette } from '../theme';
 
-const LIT_VERTEX = `
+export const LIT_VERTEX = `
 attribute vec3 aPosition;
 attribute vec3 aNormal;
 attribute vec3 aColor;
@@ -36,7 +36,7 @@ void main() {
 }
 `;
 
-const LIT_FRAGMENT = `
+export const LIT_FRAGMENT = `
 precision mediump float;
 
 varying vec3 vNormal;
@@ -54,7 +54,7 @@ void main() {
 }
 `;
 
-const FLAT_VERTEX = `
+export const FLAT_VERTEX = `
 attribute vec3 aPosition;
 attribute vec3 aColor;
 
@@ -69,7 +69,7 @@ void main() {
 }
 `;
 
-const FLAT_FRAGMENT = `
+export const FLAT_FRAGMENT = `
 precision mediump float;
 varying vec3 vColor;
 uniform float uOpacity;
@@ -121,6 +121,22 @@ export function uploadLines(
     colors: createBuffer(gl, colorData),
     count: vertexCount,
   };
+}
+
+/**
+ * Replaces a line set's per-vertex colours in place.
+ *
+ * Needed because the axes carry real per-vertex colour rather than a uniform
+ * tint, so a theme change used to mean rebuilding the whole scene — which threw
+ * away a GL context and recompiled every shader on each toggle.
+ */
+export function updateLineColors(
+  gl: WebGLRenderingContext,
+  handle: LineHandle,
+  colors: Float32Array,
+): void {
+  gl.bindBuffer(gl.ARRAY_BUFFER, handle.colors);
+  gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
 }
 
 export interface SceneKit {

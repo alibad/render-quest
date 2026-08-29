@@ -9,7 +9,7 @@
 import assert from 'node:assert/strict';
 
 import { GLOSSARY, GLOSSARY_SORTED, termId } from '../lib/glossary.ts';
-import { LABS, LIVE_LABS } from '../lib/labs.ts';
+import { LABS, LIVE_LABS, ORDERED_LABS, labNeighbours } from '../lib/labs.ts';
 import { ALL_RESOURCES, TRACKS } from '../lib/resources.ts';
 import { TECHNOLOGIES } from '../lib/technologies.ts';
 
@@ -108,6 +108,75 @@ check('every live lab has concepts and a stated takeaway', () => {
     assert.ok(lab.concepts.length > 0, `${lab.title} has no concepts`);
     assert.ok(lab.takeaway.length > 20, `${lab.title} has no real takeaway`);
   }
+});
+
+check('lab order values are unique and every lab has one', () => {
+  const orders = LABS.map((lab) => lab.order);
+  assert.equal(new Set(orders).size, LABS.length, 'duplicate order value');
+  for (const order of orders) assert.ok(Number.isInteger(order) && order > 0);
+});
+
+check('every prerequisite names a lab that exists and comes earlier', () => {
+  const byslug = new Map(LABS.map((lab) => [lab.slug, lab]));
+  for (const lab of LABS) {
+    if (!lab.prereq) continue;
+    const prereq = byslug.get(lab.prereq);
+    assert.ok(prereq, `${lab.slug} requires unknown lab ${lab.prereq}`);
+    assert.ok(
+      prereq.order < lab.order,
+      `${lab.slug} requires ${lab.prereq}, which comes later in the order`,
+    );
+  }
+});
+
+check('the prerequisite graph is acyclic', () => {
+  const byslug = new Map(LABS.map((lab) => [lab.slug, lab]));
+  for (const start of LABS) {
+    const seen = new Set([start.slug]);
+    let current = start.prereq;
+    while (current) {
+      assert.ok(!seen.has(current), `cycle through ${current}`);
+      seen.add(current);
+      current = byslug.get(current)?.prereq;
+    }
+  }
+});
+
+check('a live lab never depends on one that is not live', () => {
+  for (const lab of LIVE_LABS) {
+    if (!lab.prereq) continue;
+    assert.ok(
+      LIVE_LABS.some((other) => other.slug === lab.prereq),
+      `${lab.slug} requires ${lab.prereq}, which is not live`,
+    );
+  }
+});
+
+check('neighbours chain through every live lab exactly once', () => {
+  assert.equal(labNeighbours(LIVE_LABS[0].slug).previous, undefined);
+  assert.equal(labNeighbours(LIVE_LABS[LIVE_LABS.length - 1].slug).next, undefined);
+  const walked = [LIVE_LABS[0].slug];
+  let cursor = labNeighbours(LIVE_LABS[0].slug).next;
+  while (cursor) {
+    walked.push(cursor.slug);
+    cursor = labNeighbours(cursor.slug).next;
+  }
+  assert.deepEqual(walked, LIVE_LABS.map((lab) => lab.slug));
+});
+
+check('every live lab has at least one glossary term pointing at it', () => {
+  for (const lab of LIVE_LABS) {
+    const terms = GLOSSARY.filter((term) => term.lab === lab.slug);
+    assert.ok(
+      terms.length > 0,
+      `${lab.slug} has no glossary terms, so its vocabulary panel would be empty`,
+    );
+  }
+});
+
+check('ORDERED_LABS is actually ordered', () => {
+  const orders = ORDERED_LABS.map((lab) => lab.order);
+  assert.deepEqual(orders, [...orders].sort((a, b) => a - b));
 });
 
 console.log(`\n${passed} content checks passed`);

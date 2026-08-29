@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { GLCanvas, type SceneFactory } from '@/components/lab/GLCanvas';
 import { ControlGroup, ResetButton, Segmented, Slider } from '@/components/lab/Controls';
 import { AxisKey, LabLayout } from '@/components/lab/LabLayout';
+import { LabSource } from '@/components/lab/LabSource';
 import { useTheme } from '@/components/site/ThemeProvider';
 import { bindAttribute, createBuffer, createProgram } from '@/lib/gl/program';
 import { beginFrame } from '@/lib/gl/scene';
@@ -157,9 +158,14 @@ const MAG_FILTER_NOTE: Record<MagFilter, string> = {
   linear: 'Bilinear blend between the four nearest texels — soft edges up close.',
 };
 
+const SOURCE = [
+  { label: 'Vertex shader', language: 'glsl' as const, source: VERTEX.trim() },
+  { label: 'Fragment shader', language: 'glsl' as const, source: FRAGMENT.trim() },
+];
+
 export function TextureLab() {
   const [controls, setControls] = useState<TextureControls>(DEFAULTS);
-  const { theme, palette } = useTheme();
+  const { palette } = useTheme();
   const params = useMemo<TextureParams>(
     () => ({ ...controls, palette }),
     [controls, palette],
@@ -179,7 +185,6 @@ export function TextureLab() {
       readoutTitle="What the sampler is doing"
       canvas={
         <GLCanvas
-          key={theme}
           create={createScene}
           params={params}
           aspect={16 / 9}
@@ -293,6 +298,7 @@ export function TextureLab() {
           <Stat label="wrap" value={`${controls.wrapS[0].toUpperCase()} / ${controls.wrapT[0].toUpperCase()}`} />
         </dl>
       }
+      source={<LabSource samples={SOURCE} />}
       readoutCaption={
         <>
           The far end of this plane compresses hundreds of texels into one pixel. A

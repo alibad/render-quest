@@ -91,6 +91,20 @@ export const GLOSSARY: Term[] = [
     see: ['View matrix', 'Projection matrix', 'Model space'],
   },
   {
+    term: 'Basis vectors',
+    definition:
+      'The three vectors a transform sends the x, y and z axes to. They are literally the first three columns of the matrix, which is why colouring those columns and colouring the axes on screen shows the same thing twice.',
+    lab: 'transform',
+    see: ['Model matrix', 'Homogeneous coordinates', 'Vertex'],
+  },
+  {
+    term: 'Composition order',
+    definition:
+      'The order matrices are multiplied in, which is not commutative and reads right to left: in T · R · S the scale reaches the vertex first. Swap two and the object goes somewhere else entirely.',
+    lab: 'transform',
+    see: ['Model matrix', 'Basis vectors'],
+  },
+  {
     term: 'Model space',
     definition:
       'The coordinate system a mesh was authored in, centred on its own origin. Nothing has happened to it yet.',
@@ -178,6 +192,82 @@ export const GLOSSARY: Term[] = [
       'The bright spot where a surface reflects the light source towards the eye. Its tightness is controlled by a shininess exponent; its presence is most of what makes a material look wet, polished or metallic.',
     lab: 'shading',
     see: ['Phong shading', 'Normal'],
+  },
+  {
+    term: 'Texel',
+    definition:
+      'One pixel of a texture, as opposed to one pixel of the screen. The whole business of texture filtering is deciding what to do when those two do not line up.',
+    lab: 'textures',
+    see: ['Texture', 'Mipmap', 'Filtering'],
+  },
+  {
+    term: 'Texture',
+    definition:
+      'An image sampled by a shader. Usually colour, but just as often a normal map, a height field, a mask, or an arbitrary lookup table — to the GPU it is only structured memory you can interpolate.',
+    lab: 'textures',
+    see: ['Texel', 'UV coordinates', 'Filtering'],
+  },
+  {
+    term: 'UV coordinates',
+    definition:
+      'The 2D coordinates that say where on a texture a vertex samples from, conventionally 0 to 1 across the image. Called u and v so as not to collide with x, y and z.',
+    lab: 'textures',
+    see: ['Texture', 'Wrap mode', 'Attribute'],
+  },
+  {
+    term: 'Wrap mode',
+    definition:
+      'What the sampler does with a UV outside 0…1. Repeat tiles it, clamp smears the edge texel outward, mirror flips alternate tiles so the seams line up.',
+    lab: 'textures',
+    see: ['UV coordinates', 'Texture'],
+  },
+  {
+    term: 'Mipmap',
+    definition:
+      'The same texture pre-shrunk by half repeatedly, so there is always a level where one texel is about one pixel. Costs a third more memory and removes an entire class of artefact.',
+    lab: 'textures',
+    see: ['Aliasing', 'Filtering', 'Texel'],
+  },
+  {
+    term: 'Filtering',
+    definition:
+      'How the sampler combines texels. Nearest takes one; bilinear blends four; trilinear blends bilinear results from two mip levels. Minification and magnification are set separately because they are different problems.',
+    lab: 'textures',
+    see: ['Mipmap', 'Texel', 'Aliasing'],
+  },
+  {
+    term: 'Aliasing',
+    definition:
+      'What happens when a signal is sampled too sparsely to represent it — jagged edges, and the crawling shimmer on a detailed texture seen at a distance. Mipmaps and anti-aliasing are two different answers to it.',
+    lab: 'textures',
+    see: ['Mipmap', 'Filtering', 'Rasterisation'],
+  },
+  {
+    term: 'Compute shader',
+    definition:
+      'A shader that is not part of the drawing pipeline. It has no vertices and no fragments — just a grid of invocations reading and writing buffers. WebGL has no such stage at all.',
+    lab: 'compute',
+    see: ['Workgroup', 'Storage buffer', 'Shader'],
+  },
+  {
+    term: 'Storage buffer',
+    definition:
+      'GPU memory a shader can write to as well as read, unlike a uniform. It is what lets simulation state live on the GPU across frames instead of being shipped back and forth.',
+    lab: 'compute',
+    see: ['Compute shader', 'Uniform', 'Workgroup'],
+  },
+  {
+    term: 'Workgroup',
+    definition:
+      'The unit a compute dispatch is divided into — a small block of invocations that run together and can share memory. You choose the size; 64 is a common default because it maps well to the hardware.',
+    lab: 'compute',
+    see: ['Compute shader', 'Storage buffer'],
+  },
+  {
+    term: 'Instancing',
+    definition:
+      'Drawing the same geometry many times in one call, with per-instance data supplying what differs. The saving is not in triangles but in draw calls, which is usually where the CPU time actually goes.',
+    see: ['Compute shader', 'Vertex'],
   },
   {
     term: 'Uniform',

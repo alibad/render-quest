@@ -10,8 +10,13 @@ export function LabCard({ lab, children }: { lab: Lab; children?: React.ReactNod
     <>
       {children}
       <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="h-12 w-16 shrink-0 transition-transform duration-300 group-hover:-translate-y-0.5">
-          <LabGlyph slug={lab.slug} />
+        <div className="flex items-start gap-3">
+          <span className="font-mono text-2xs text-fg-faint">
+            {String(lab.order).padStart(2, '0')}
+          </span>
+          <div className="h-12 w-16 shrink-0 transition-transform duration-300 group-hover:-translate-y-0.5">
+            <LabGlyph slug={lab.slug} />
+          </div>
         </div>
         <span
           className={`rounded border px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wider ${

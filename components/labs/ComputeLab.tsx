@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ControlGroup, ResetButton, Slider, Toggle } from '@/components/lab/Controls';
 import { LabLayout } from '@/components/lab/LabLayout';
+import { LabSource } from '@/components/lab/LabSource';
 import { useTheme } from '@/components/site/ThemeProvider';
 import type { CanvasPalette } from '@/lib/theme';
 
@@ -172,6 +173,15 @@ function seedParticles(): Float32Array {
   }
   return data;
 }
+
+const SOURCE = [
+  {
+    label: 'The compute and render shaders',
+    language: 'wgsl' as const,
+    source: SHADER.trim(),
+    note: 'One module. The compute entry point steps the storage buffer; the vertex entry point reads the same buffer back. Nothing round-trips through the CPU.',
+  },
+];
 
 export function ComputeLab() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -535,6 +545,7 @@ export function ComputeLab() {
           <Stat label="floats from CPU" value="8" />
         </dl>
       }
+      source={<LabSource samples={SOURCE} />}
       readoutCaption={
         <>
           {dispatches.toLocaleString()} workgroups of {WORKGROUP_SIZE}, dispatched once

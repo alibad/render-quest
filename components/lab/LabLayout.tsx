@@ -13,33 +13,44 @@ export function LabLayout({
   readout,
   readoutCaption,
   readoutTitle = 'The matrix',
+  source,
 }: {
   canvas: ReactNode;
   controls: ReactNode;
   readout?: ReactNode;
   readoutCaption?: ReactNode;
   readoutTitle?: string;
+  /** The shader source this lab runs, shown in a collapsible panel. */
+  source?: ReactNode;
 }) {
+  // Explicit grid placement rather than DOM order, because the two orders differ:
+  // on a wide screen the readout sits under the canvas with controls beside both;
+  // on a phone the controls must come SECOND, directly under the canvas they
+  // drive. A slider two screens below the render it changes teaches nothing.
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-      <div className="space-y-6">
-        {canvas}
-        {readout ? (
-          <div className="panel p-5">
-            <h2 className="eyebrow mb-4">{readoutTitle}</h2>
-            {readout}
-            {readoutCaption ? (
-              <p className="mt-5 max-w-prose border-t border-line pt-4 text-xs leading-relaxed text-fg-faint">
-                {readoutCaption}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+      <div className="lg:col-start-1 lg:row-start-1">{canvas}</div>
 
-      <aside className="panel h-fit space-y-6 p-5 lg:sticky lg:top-6">
+      <aside className="panel h-fit space-y-6 p-5 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:sticky lg:top-6">
         {controls}
       </aside>
+
+      {readout || source ? (
+        <div className="space-y-5 lg:col-start-1 lg:row-start-2">
+          {readout ? (
+            <div className="panel p-5">
+              <h2 className="eyebrow mb-4">{readoutTitle}</h2>
+              {readout}
+              {readoutCaption ? (
+                <p className="mt-5 max-w-prose border-t border-line pt-4 text-xs leading-relaxed text-fg-faint">
+                  {readoutCaption}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          {source}
+        </div>
+      ) : null}
     </div>
   );
 }

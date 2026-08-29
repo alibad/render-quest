@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { GLCanvas, type SceneFactory } from '@/components/lab/GLCanvas';
 import { ControlGroup, ResetButton, Toggle } from '@/components/lab/Controls';
 import { AxisKey, LabLayout } from '@/components/lab/LabLayout';
+import { LabSource } from '@/components/lab/LabSource';
 import { useTheme } from '@/components/site/ThemeProvider';
 import { axes, boxWireframe, grid } from '@/lib/gl/geometry';
 import { frustumCorners, frustumEdges } from '@/lib/gl/frustum';
@@ -21,6 +22,10 @@ import {
   beginFrame,
   createDynamicLines,
   createSceneKit,
+  LIT_FRAGMENT,
+  LIT_VERTEX,
+  FLAT_VERTEX,
+  FLAT_FRAGMENT,
 } from '@/lib/gl/scene';
 import {
   degToRad,
@@ -217,9 +222,16 @@ const createScene: SceneFactory<PipelineParams> = (gl, initial) => {
   };
 };
 
+const SOURCE = [
+  { label: 'Vertex shader', language: 'glsl' as const, source: LIT_VERTEX.trim() },
+  { label: 'Fragment shader', language: 'glsl' as const, source: LIT_FRAGMENT.trim() },
+  { label: 'Line vertex shader', language: 'glsl' as const, source: FLAT_VERTEX.trim() },
+  { label: 'Line fragment shader', language: 'glsl' as const, source: FLAT_FRAGMENT.trim() },
+];
+
 export function PipelineLab() {
   const [controls, setControls] = useState<PipelineControls>(DEFAULTS);
-  const { theme, palette } = useTheme();
+  const { palette } = useTheme();
   const params = useMemo<PipelineParams>(
     () => ({ ...controls, palette }),
     [controls, palette],
@@ -251,7 +263,6 @@ export function PipelineLab() {
       readoutTitle="One vertex, all the way down"
       canvas={
         <GLCanvas
-          key={theme}
           create={createScene}
           params={params}
           onDrag={onDrag}
@@ -391,6 +402,7 @@ export function PipelineLab() {
           </table>
         </div>
       }
+      source={<LabSource samples={SOURCE} />}
       readoutCaption={
         <>
           One corner of the cube, followed the whole way. Watch{' '}

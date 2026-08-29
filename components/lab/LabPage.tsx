@@ -1,11 +1,14 @@
 import Link from 'next/link';
 
+import { LabFooter } from '@/components/lab/LabFooter';
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
-import type { Lab } from '@/lib/labs';
+import { getLab, type Lab } from '@/lib/labs';
 
 /** Shared chrome around every lab: title, takeaway, and the lab itself. */
 export function LabPage({ lab, children }: { lab: Lab; children: React.ReactNode }) {
+  const prereq = lab.prereq ? getLab(lab.prereq) : undefined;
+
   return (
     <>
       <Header />
@@ -21,6 +24,9 @@ export function LabPage({ lab, children }: { lab: Lab; children: React.ReactNode
 
         <header className="mb-8 max-w-prose">
           <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="font-mono text-2xs uppercase tracking-wider text-fg-faint">
+              Lab {lab.order}
+            </span>
             <Link
               href={`/tech/${lab.technology === 'webgpu' ? 'webgpu' : 'webgl'}`}
               className={`rounded border px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wider transition-colors ${
@@ -43,6 +49,18 @@ export function LabPage({ lab, children }: { lab: Lab; children: React.ReactNode
               {lab.takeaway}
             </span>
           </p>
+          {prereq ? (
+            <p className="mt-2.5 flex gap-2 text-sm leading-relaxed text-fg-faint">
+              <span className="mt-[0.35rem] h-1 w-1 shrink-0 rounded-full bg-line-strong" />
+              <span>
+                <span className="text-fg-muted">Assumes:</span>{' '}
+                <Link href={`/labs/${prereq.slug}`} className="link-accent">
+                  {prereq.title}
+                </Link>
+                . It will still make sense without it, but that one comes first.
+              </span>
+            </p>
+          ) : null}
           {lab.technologyReason ? (
             <p className="mt-2.5 flex gap-2 text-sm leading-relaxed text-fg-faint">
               <span className="mt-[0.35rem] h-1 w-1 shrink-0 rounded-full bg-amber" />
@@ -55,6 +73,8 @@ export function LabPage({ lab, children }: { lab: Lab; children: React.ReactNode
         </header>
 
         {children}
+
+        <LabFooter lab={lab} />
       </main>
       <Footer />
     </>

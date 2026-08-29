@@ -11,6 +11,7 @@ import {
   Toggle,
 } from '@/components/lab/Controls';
 import { AxisKey, LabLayout } from '@/components/lab/LabLayout';
+import { LabSource } from '@/components/lab/LabSource';
 import { useTheme } from '@/components/site/ThemeProvider';
 import { grid } from '@/lib/gl/geometry';
 import { flatShaded, normalLines, uvSphere } from '@/lib/gl/sphere';
@@ -268,9 +269,16 @@ const createScene: SceneFactory<ShadingParams> = (gl) => {
 
 /* ---------------------------------------------------------------------- UI */
 
+const SOURCE = [
+  { label: 'The lighting maths', language: 'glsl' as const, source: LIGHTING.trim() },
+  { label: 'Gouraud vertex shader', language: 'glsl' as const, source: GOURAUD_VS.trim() },
+  { label: 'Phong vertex shader', language: 'glsl' as const, source: PHONG_VS.trim() },
+  { label: 'Phong fragment shader', language: 'glsl' as const, source: PHONG_FS.trim() },
+];
+
 export function ShadingLab() {
   const [controls, setControls] = useState<ShadingControls>(DEFAULTS);
-  const { theme, palette } = useTheme();
+  const { palette } = useTheme();
   const params = useMemo<ShadingParams>(
     () => ({ ...controls, palette }),
     [controls, palette],
@@ -303,7 +311,6 @@ export function ShadingLab() {
       readoutTitle="The shading equation"
       canvas={
         <GLCanvas
-          key={theme}
           create={createScene}
           params={params}
           onDrag={onDrag}
@@ -400,6 +407,7 @@ colour = base × (`}<Term value={controls.ambient} label="ambient" />
           </div>
         </div>
       }
+      source={<LabSource samples={SOURCE} />}
       readoutCaption={
         <>
           A normal is not a position: it describes an orientation, so it does not

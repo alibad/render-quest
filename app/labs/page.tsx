@@ -24,11 +24,16 @@ export default function Labs() {
       <main id="main-content" className="mx-auto max-w-6xl px-5 py-14">
         <p className="eyebrow">Labs</p>
         <h1 className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-balance">
-          One idea per lab, with the controls to it.
+          Printed matrices hold still. These do not.
         </h1>
         <p className="mt-4 max-w-prose text-sm leading-relaxed text-fg-muted">
-          Everything here runs live in your browser. Drag inside any canvas to orbit
-          the camera.
+          One idea per lab, with the controls to it. Everything here runs live in your
+          browser — drag inside any canvas to orbit the camera.
+        </p>
+        <p className="mt-3 max-w-prose text-sm leading-relaxed text-fg-faint">
+          They are numbered, and the numbering is not decoration: each one assumes the
+          ideas of the one before it. Start anywhere you like — but if a lab refers to
+          something it has not explained, the lab it came from is the previous number.
         </p>
         <p className="mt-3 max-w-prose text-sm leading-relaxed text-fg-faint">
           A matrix does not care which API multiplies it, so most labs are built on

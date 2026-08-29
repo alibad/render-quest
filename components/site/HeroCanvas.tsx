@@ -100,10 +100,9 @@ const createHero: SceneFactory<HeroParams> = (gl) => {
 };
 
 export function HeroCanvas({ className }: { className?: string }) {
-  const { theme, palette } = useTheme();
+  const { palette } = useTheme();
   return (
     <GLCanvas
-      key={theme}
       create={createHero}
       params={{ palette }}
       aspect={16 / 10}

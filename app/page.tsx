@@ -7,6 +7,7 @@ import { LabCard } from '@/components/site/LabCard';
 import { LABS } from '@/lib/labs';
 import { ALL_RESOURCES, TRACKS } from '@/lib/resources';
 import { SHARED_SCENE, TECHNOLOGIES } from '@/lib/technologies';
+import { SITE_SUBHEAD, SITE_TAGLINE } from '@/lib/site';
 
 export default function Home() {
   const liveLabs = LABS.filter((lab) => lab.status === 'live').length;
@@ -20,13 +21,10 @@ export default function Home() {
             <div className="animate-fade-up">
               <p className="eyebrow">Interactive graphics labs</p>
               <h1 className="mt-4 text-4xl font-semibold leading-[1.08] tracking-tight text-balance sm:text-5xl">
-                Learn graphics by moving the numbers.
+                {SITE_TAGLINE}
               </h1>
               <p className="mt-5 max-w-prose text-base leading-relaxed text-fg-muted">
-                A transform is not a table of sixteen numbers — it is a motion, and you
-                cannot see a motion on a static page. So here you drag the numbers
-                themselves and watch the matrix, the geometry and the pixels change
-                together.
+                {SITE_SUBHEAD}
               </p>
               <dl className="mt-7 flex flex-wrap gap-x-8 gap-y-3">
                 <Stat value={String(liveLabs)} label="interactive labs" />
