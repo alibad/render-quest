@@ -1,144 +1,191 @@
-import {
-  BoxIcon,
-  CodeIcon,
-  BookOpenIcon,
-  RocketIcon,
-  GraduationCapIcon,
-} from 'lucide-react';
+import Link from 'next/link';
 
-import { LandingPrimaryImageCtaSection } from '@/components/landing/cta/LandingPrimaryCta';
-import { LandingProductFeaturesGrid } from '@/components/landing/LandingProductFeaturesGrid';
-import { LandingProductFeature } from '@/components/landing/LandingProductFeature';
-import { LandingFeatureList } from '@/components/landing/feature/LandingFeatureList';
-import { LandingSaleCtaSection } from '@/components/landing/cta/LandingSaleCta';
-
-import { Button } from '@/components/shared/ui/button';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
+import { Footer } from '@/components/site/Footer';
+import { Header } from '@/components/site/Header';
+import { HeroCanvas } from '@/components/site/HeroCanvas';
+import { LabCard } from '@/components/site/LabCard';
+import { LABS } from '@/lib/labs';
+import { ALL_RESOURCES, TRACKS } from '@/lib/resources';
 
 export default function Home() {
+  const liveLabs = LABS.filter((lab) => lab.status === 'live').length;
+
   return (
     <>
       <Header />
       <main>
-        <LandingPrimaryImageCtaSection
-          title="Master WebGL with Interactive Tutorials"
-          description="Render Quest is your gateway to mastering 3D graphics programming. Dive into our interactive WebGL tutorials and transform your coding skills."
-          imageSrc="/images/webgl-hero-image.jpg"
-          imageAlt="3D rendering example created with WebGL"
-          imagePosition="right"
-          withBackground
-          variant="primary"
-        >
-          <Button size="xl" className="p-7 text-xl" variant="primary" asChild>
-            <a href="#tutorial-gallery">Start Learning Now</a>
-          </Button>
-        </LandingPrimaryImageCtaSection>
+        <section className="mx-auto max-w-6xl px-5 pb-10 pt-12 sm:pt-16">
+          <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+            <div className="animate-fade-up">
+              <p className="eyebrow">Interactive graphics labs</p>
+              <h1 className="mt-4 text-4xl font-semibold leading-[1.08] tracking-tight text-balance sm:text-5xl">
+                Learn graphics by moving the numbers.
+              </h1>
+              <p className="mt-5 max-w-prose text-base leading-relaxed text-fg-muted">
+                A transform is not a table of sixteen numbers — it is a motion, and you
+                cannot see a motion on a static page. So here you drag the numbers
+                themselves and watch the matrix, the geometry and the pixels change
+                together.
+              </p>
+              <dl className="mt-7 flex flex-wrap gap-x-8 gap-y-3">
+                <Stat value={String(liveLabs)} label="interactive labs" />
+                <Stat value={String(ALL_RESOURCES.length)} label="curated resources" />
+                <Stat value="0" label="stock images" />
+              </dl>
 
-        <LandingProductFeaturesGrid
-          title="Why Choose Render Quest?"
-          description="Our platform offers a unique blend of features to make your WebGL learning journey engaging and effective."
-        >
-          <LandingProductFeature
-            title="Interactive Tutorials"
-            description="Learn by doing with our hands-on, browser-based WebGL tutorials."
-            imagePosition="center"
-            imageSrc="/images/interactive-tutorials.jpg"
-            imageAlt="Interactive WebGL tutorial interface"
-          />
-          <LandingProductFeature
-            title="Real-time Feedback"
-            description="Get instant feedback on your code and see your 3D creations come to life."
-            imagePosition="center"
-            imageSrc="/images/realtime-feedback.jpg"
-            imageAlt="Real-time 3D rendering feedback"
-          />
-          <LandingProductFeature
-            title="Project-Based Learning"
-            description="Apply your skills to exciting 3D projects and build your portfolio."
-            imagePosition="center"
-            imageSrc="/images/project-based-learning.jpg"
-            imageAlt="3D project showcase"
-          />
-          <LandingProductFeature
-            title="Community Support"
-            description="Join a vibrant community of WebGL enthusiasts and get help when you need it."
-            imagePosition="center"
-            imageSrc="/images/community-support.jpg"
-            imageAlt="WebGL community discussion"
-          />
-        </LandingProductFeaturesGrid>
-        
-        <LandingFeatureList
-          title="What You'll Learn"
-          description="Our comprehensive curriculum covers everything you need to become a WebGL expert."
-          withBackground
-          variant="secondary"
-          featureItems={[
-            {
-              title: "WebGL Fundamentals",
-              description: "Master the basics of 3D graphics programming with WebGL.",
-              icon: <BoxIcon className="w-8 h-8" />,
-            },
-            {
-              title: "Shader Programming",
-              description: "Learn to write vertex and fragment shaders for stunning visual effects.",
-              icon: <CodeIcon className="w-8 h-8" />,
-            },
-            {
-              title: "3D Math Concepts",
-              description: "Understand the mathematics behind 3D transformations and projections.",
-              icon: <BookOpenIcon className="w-8 h-8" />,
-            },
-            {
-              title: "Advanced Techniques",
-              description: "Explore advanced topics like shadow mapping, post-processing, and more.",
-              icon: <RocketIcon className="w-8 h-8" />,
-            },
-            {
-              title: "Game Development",
-              description: "Apply your WebGL skills to create interactive 3D games and simulations.",
-              icon: <GraduationCapIcon className="w-8 h-8" />,
-            },
-          ]}
-        />
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Link
+                  href="/labs/transform"
+                  className="rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-ink-900 transition-colors hover:bg-accent/85"
+                >
+                  Open the first lab
+                </Link>
+                <Link
+                  href="/labs"
+                  className="rounded-lg border border-line px-5 py-2.5 text-sm text-fg-muted transition-colors hover:border-line-strong hover:text-fg"
+                >
+                  See all labs
+                </Link>
+              </div>
+            </div>
 
-        <section id="tutorial-gallery" className="py-16 bg-gray-100 dark:bg-gray-800">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold mb-8 text-center">WebGL Tutorial Gallery</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <TutorialCard title="Getting Started with WebGL" difficulty="Beginner" />
-              <TutorialCard title="Creating 3D Shapes" difficulty="Beginner" />
-              <TutorialCard title="Introduction to Shaders" difficulty="Intermediate" />
-              <TutorialCard title="Texture Mapping Techniques" difficulty="Intermediate" />
-              <TutorialCard title="Lighting and Shadows" difficulty="Advanced" />
-              <TutorialCard title="Particle Systems in WebGL" difficulty="Advanced" />
+            <div>
+              <HeroCanvas />
+              <p className="mt-3 text-2xs leading-relaxed text-fg-faint">
+                Live WebGL, rendering right now — the projection lab with its controls
+                taken away. The cyan wireframe is a camera&rsquo;s view frustum,
+                breathing as its field of view changes.
+              </p>
             </div>
           </div>
         </section>
 
-        <LandingSaleCtaSection
-          title="Ready to Start Your WebGL Journey?"
-          description="Join thousands of developers who have transformed their skills with Render Quest."
-          ctaLabel="Get Started for Free"
-          ctaHref="#get-started"
-          withBackground
-          variant="primary"
-        />
+        <section className="mx-auto max-w-6xl px-5 py-10">
+          <div className="flex items-end justify-between gap-6 border-b border-line pb-4">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight">The labs</h2>
+              <p className="mt-1.5 text-sm text-fg-muted">
+                Each one isolates a single idea and gives you the controls to it.
+              </p>
+            </div>
+            <Link
+              href="/labs"
+              className="shrink-0 font-mono text-2xs uppercase tracking-wider text-fg-faint transition-colors hover:text-accent"
+            >
+              All labs →
+            </Link>
+          </div>
+
+          <div className="mt-7 grid gap-4 sm:grid-cols-2">
+            {LABS.map((lab) => (
+              <LabCard key={lab.slug} lab={lab} />
+            ))}
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-5 py-10">
+          <div className="panel overflow-hidden">
+            <div className="grid gap-8 p-7 sm:p-9 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <div>
+                <p className="eyebrow">Learn</p>
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-balance">
+                  Then read the best of what everyone else has written.
+                </h2>
+                <p className="mt-4 max-w-prose text-sm leading-relaxed text-fg-muted">
+                  The labs cover the spine. For the rest there is a curated path of{' '}
+                  {ALL_RESOURCES.length} resources across graphics and game
+                  development — courses, books, interactive explainers and tools,
+                  each with a line on why it earns your evenings, arranged so every
+                  stage makes the next one easier. Most are free. Every link is
+                  checked.
+                </p>
+                <Link
+                  href="/learn"
+                  className="mt-6 inline-flex rounded-lg border border-line px-5 py-2.5 text-sm text-fg-muted transition-colors hover:border-line-strong hover:text-fg"
+                >
+                  Open the reading path
+                </Link>
+              </div>
+
+              <div className="grid content-start gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                {TRACKS.map((track) => (
+                  <Link
+                    key={track.id}
+                    href="/learn"
+                    className="group h-fit rounded-lg border border-line bg-ink-800/60 p-4 transition-colors hover:border-line-strong hover:bg-ink-600/50"
+                  >
+                    <div className="flex items-baseline justify-between gap-2">
+                      <h3 className="text-sm font-semibold tracking-tight text-fg">
+                        {track.title}
+                      </h3>
+                      <span className="font-mono text-2xs text-accent">
+                        {track.stages.reduce((n, s2) => n + s2.resources.length, 0)}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-xs leading-relaxed text-fg-muted">
+                      {track.tagline}
+                    </p>
+                    <ul className="mt-3 space-y-1">
+                      {track.stages.map((stage) => (
+                        <li
+                          key={stage.id}
+                          className="flex items-center gap-2 font-mono text-2xs text-fg-faint"
+                        >
+                          <span className="h-px w-3 bg-line-strong" />
+                          {stage.title}
+                        </li>
+                      ))}
+                    </ul>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-5 pb-6 pt-4">
+          <div className="grid gap-8 border-t border-line pt-10 sm:grid-cols-3">
+            <Principle title="No framework in the way">
+              Raw WebGL and a few hundred lines of matrix maths. The plumbing a scene
+              graph would hide is the actual subject, so none of it is hidden.
+            </Principle>
+            <Principle title="The maths is on screen">
+              Every lab shows the live matrix next to the render. The coloured columns
+              in the readout are the coloured axes on the canvas — the same thing,
+              twice.
+            </Principle>
+            <Principle title="Checked, not asserted">
+              The matrix library ships with a numeric test suite. Claims about how a
+              projection behaves are verified on every commit rather than written down
+              and hoped for.
+            </Principle>
+          </div>
+        </section>
       </main>
       <Footer />
     </>
   );
 }
 
-function TutorialCard({ title, difficulty }: { title: string; difficulty: string }) {
+function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="bg-white dark:bg-gray-700 rounded-lg shadow-md p-6">
-      <h3 className="text-xl font-semibold mb-2">{title}</h3>
-      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Difficulty: {difficulty}</p>
-      <Button variant="secondary" size="sm" asChild>
-        <a href="#">Start Tutorial</a>
-      </Button>
+    <div>
+      <dt className="sr-only">{label}</dt>
+      <dd>
+        <span className="tabular font-mono text-xl font-semibold text-fg">
+          {value}
+        </span>
+        <span className="ml-2 text-xs text-fg-faint">{label}</span>
+      </dd>
+    </div>
+  );
+}
+
+function Principle({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3 className="text-sm font-semibold tracking-tight text-fg">{title}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-fg-muted">{children}</p>
     </div>
   );
 }

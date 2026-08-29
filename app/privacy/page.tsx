@@ -1,36 +1,72 @@
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
+import type { Metadata } from 'next';
 
-export default function PrivacyPolicy() {
+import Link from 'next/link';
+
+import { Footer } from '@/components/site/Footer';
+import { Header } from '@/components/site/Header';
+
+export const metadata: Metadata = {
+  title: 'Privacy',
+  description: 'What Render Quest collects: nothing.',
+};
+
+export default function Privacy() {
   return (
     <>
       <Header />
-      <main className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
-        <div className="prose dark:prose-invert">
-          <p>Last updated: [Date]</p>
-          <p>Render Quest (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is committed to protecting your privacy. This Privacy Policy explains how your personal information is collected, used, and disclosed by RenderQuest.</p>
-          
-          <h2>Information We Collect</h2>
-          <p>[Add details about the information you collect]</p>
-          
-          <h2>How We Use Your Information</h2>
-          <p>[Explain how you use the collected information]</p>
-          
-          <h2>Information Sharing and Disclosure</h2>
-          <p>[Describe how and when you might share user information]</p>
-          
-          <h2>Data Security</h2>
-          <p>[Explain your security measures]</p>
-          
-          <h2>Your Rights</h2>
-          <p>[Describe user rights regarding their data]</p>
-          
-          <h2>Changes to This Privacy Policy</h2>
-          <p>Explain how you will notify users of changes</p>
-          
-          <h2>Contact Us</h2>
-          <p>If you have any questions about this Privacy Policy, please contact us at: info@humanquest.net</p>
+      <main className="mx-auto max-w-3xl px-5 py-16">
+        <p className="eyebrow">Privacy</p>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight">
+          There is nothing to collect.
+        </h1>
+        <div className="mt-8 space-y-5 text-sm leading-relaxed text-fg-muted">
+          <p>
+            Render Quest has no accounts, no sign-in, no newsletter and no comment
+            section. It sets no cookies and runs no analytics, advertising or
+            fingerprinting scripts. Nothing you do here leaves your browser — slider
+            positions and camera angles live in page memory and are gone when you
+            close the tab.
+          </p>
+          <p>
+            Two things are remembered, both in your browser&rsquo;s local storage and
+            neither sent anywhere: your light or dark preference, and which items you
+            have ticked off on the{' '}
+            <Link href="/learn" className="link-accent">
+              Learn
+            </Link>{' '}
+            page. Clearing your site data removes both, and the site works fine
+            without them.
+          </p>
+          <p>
+            The site is served as static files by{' '}
+            <a
+              href="https://vercel.com"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-accent underline-offset-4 hover:underline"
+            >
+              Vercel
+            </a>
+            , which keeps its own operational request logs, and the two typefaces are
+            self-hosted at build time rather than fetched from Google. That is the
+            entire data story.
+          </p>
+          <p>
+            If that ever changes — if a lab starts saving your work, for instance —
+            this page changes with it, in plain language, before the feature ships.
+          </p>
+          <p className="text-fg-faint">
+            Questions:{' '}
+            <a
+              href="https://github.com/alibad/render-quest/issues"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-accent underline-offset-4 hover:underline"
+            >
+              open an issue
+            </a>
+            .
+          </p>
         </div>
       </main>
       <Footer />
