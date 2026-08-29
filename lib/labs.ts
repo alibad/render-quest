@@ -121,6 +121,19 @@ export const LABS: Lab[] = [
     concepts: ['instancing', 'draw calls', 'instance_index', 'CPU cost'],
     status: 'live',
   },
+  {
+    slug: 'colour',
+    order: 8,
+    prereq: 'shading',
+    technology: 'webgl',
+    title: 'Colour & Gamma',
+    blurb:
+      'Split one lit sphere down the middle and light the two halves in different colour spaces.',
+    takeaway:
+      'Why lighting maths done on sRGB numbers is wrong, and why the mistake looks like a style rather than a bug.',
+    concepts: ['sRGB', 'linear light', 'gamma', 'encode / decode'],
+    status: 'live',
+  },
 ];
 
 const byOrder = (a: Lab, b: Lab) => a.order - b.order;

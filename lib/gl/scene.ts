@@ -36,6 +36,14 @@ void main() {
 }
 `;
 
+/**
+ * Lighting in linear space, encoded for the display on the way out.
+ *
+ * This shader used to multiply sRGB-encoded numbers directly, which is the most
+ * common bug in real renderers precisely because it does not look like one — it
+ * looks like a lighting choice. Lab 8 exists to show the difference; this is the
+ * correction it prompted.
+ */
 export const LIT_FRAGMENT = `
 precision mediump float;
 
@@ -45,11 +53,19 @@ varying vec3 vColor;
 uniform float uOpacity;
 uniform float uAmbient;
 
+const float GAMMA = 2.2;
+
 void main() {
   vec3 lightDir = normalize(vec3(0.45, 0.85, 0.55));
   // Hemispheric wrap: never fully black, so back faces stay readable.
   float lambert = dot(normalize(vNormal), lightDir) * 0.5 + 0.5;
-  vec3 shaded = vColor * (uAmbient + 0.75 * lambert);
+
+  // Decode to light, do the arithmetic there, encode back. Multiplying the
+  // encoded values instead crushes the midtones and hardens the terminator.
+  vec3 base = pow(vColor, vec3(GAMMA));
+  vec3 lit = base * (uAmbient + 0.75 * lambert);
+  vec3 shaded = pow(lit, vec3(1.0 / GAMMA));
+
   gl_FragColor = vec4(shaded, uOpacity);
 }
 `;

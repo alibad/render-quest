@@ -350,6 +350,41 @@ export const GLOSSARY: Term[] = [
     see: ['Backface culling', 'Vertex'],
   },
   {
+    term: 'Lambert',
+    definition:
+      'The diffuse term: brightness proportional to how squarely a surface faces the light, and nothing else. It is the cosine of the angle between the normal and the light direction, clamped at zero so surfaces turned away are unlit rather than negatively lit.',
+    lab: 'shading',
+    see: ['Normal', 'Specular highlight', 'Linear colour'],
+  },
+  {
+    term: 'sRGB',
+    definition:
+      'The colour space almost every image, screen and colour picker uses. It is deliberately non-linear — more of its range is spent on dark tones, because eyes are more sensitive there — which means the numbers in it are not proportional to light.',
+    lab: 'colour',
+    see: ['Linear colour', 'Gamma', 'Gamma correction'],
+  },
+  {
+    term: 'Linear colour',
+    definition:
+      'Colour whose numbers are proportional to actual light, so doubling the number doubles the brightness. The only space in which adding two lights together, or multiplying by a Lambert term, means what the arithmetic says it means.',
+    lab: 'colour',
+    see: ['sRGB', 'Gamma correction', 'Lambert'],
+  },
+  {
+    term: 'Gamma',
+    definition:
+      'The exponent relating an encoded colour value to the light it stands for — about 2.2 for sRGB. Raising a value to that power decodes it to light; the reciprocal encodes it back.',
+    lab: 'colour',
+    see: ['sRGB', 'Linear colour'],
+  },
+  {
+    term: 'Gamma correction',
+    definition:
+      'Decoding colours to linear before lighting them and encoding the result back for display. Skipping it does not throw an error or look obviously broken — it darkens midtones and hardens the terminator, which reads as a lighting choice, which is why it ships.',
+    lab: 'colour',
+    see: ['Gamma', 'Linear colour', 'sRGB'],
+  },
+  {
     term: 'World space',
     definition:
       'The shared coordinate system the scene lives in, after each object’s model matrix has placed it. The only space where "next to" means what you think it means.',

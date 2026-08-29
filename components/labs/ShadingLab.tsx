@@ -84,8 +84,20 @@ const DEFAULTS: ShadingControls = {
 
 /* ------------------------------------------------------------------ shaders */
 
-/** Shared lighting maths, pasted into whichever stage evaluates it. */
+/**
+ * Shared lighting maths, pasted into whichever stage evaluates it.
+ *
+ * `shade()` returns LINEAR light, not a displayable colour. Encoding happens
+ * once, in the fragment stage, after any interpolation — which matters for
+ * Gouraud, where interpolating already-encoded values would be a second bug on
+ * top of the first. Lab 8 is the demonstration of why.
+ */
 const LIGHTING = `
+const float GAMMA = 2.2;
+
+vec3 toLinear(vec3 c) { return pow(c, vec3(GAMMA)); }
+vec3 toSrgb(vec3 c) { return pow(c, vec3(1.0 / GAMMA)); }
+
 vec3 shade(vec3 normal, vec3 worldPos) {
   vec3 N = normalize(normal);
   vec3 L = normalize(uLightDir);
@@ -100,7 +112,11 @@ vec3 shade(vec3 normal, vec3 worldPos) {
   vec3 H = normalize(L + V);
   float spec = lambert > 0.0 ? pow(max(dot(N, H), 0.0), uShininess) : 0.0;
 
-  return uBaseColor * (uAmbient + uDiffuse * lambert) + vec3(uSpecular * spec);
+  // The base colour is authored in sRGB; the light is not. Decoding first is
+  // what makes the specular falloff below a physical curve rather than a
+  // squashed approximation of one.
+  return toLinear(uBaseColor) * (uAmbient + uDiffuse * lambert)
+    + vec3(uSpecular * spec);
 }
 `;
 
@@ -134,7 +150,10 @@ void main() {
 const GOURAUD_FS = `
 precision mediump float;
 varying vec3 vShaded;
-void main() { gl_FragColor = vec4(vShaded, 1.0); }
+// vShaded arrives as interpolated LINEAR light. Encoding here rather than in
+// the vertex stage is the point: interpolating already-encoded values would
+// mix them in the wrong space and blur the highlight differently again.
+void main() { gl_FragColor = vec4(pow(vShaded, vec3(1.0 / 2.2)), 1.0); }
 `;
 
 /** Phong: the *normal* is interpolated and lighting runs per fragment. */
@@ -160,7 +179,7 @@ ${UNIFORMS}
 varying vec3 vNormal;
 varying vec3 vWorldPos;
 ${LIGHTING}
-void main() { gl_FragColor = vec4(shade(vNormal, vWorldPos), 1.0); }
+void main() { gl_FragColor = vec4(toSrgb(shade(vNormal, vWorldPos)), 1.0); }
 `;
 
 /* -------------------------------------------------------------------- scene */

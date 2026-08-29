@@ -106,9 +106,9 @@ export const ROADMAP: RoadmapPhase[] = [
       },
       {
         title: 'Colour and gamma',
-        what: 'A lab on linear versus sRGB, and an encode step in the shared lit shader.',
-        why: 'This one is a correction, not an addition: the shading lab currently demonstrates a specular falloff in the wrong colour space. Its cost grows with every lab added.',
-        state: 'next',
+        what: 'A slider splits one lit sphere down the middle and lights the two halves in different colour spaces — same geometry, same light, same Lambert term. Plus the encode step the shared lit shader was missing.',
+        why: 'This one was a correction, not an addition: every shader here multiplied sRGB-encoded numbers and wrote them straight out, so the shading lab demonstrated a specular falloff in the wrong space. Fixed in the shared shader and in both of the shading lab’s stages — for Gouraud the encode has to happen after interpolation, or it is a second bug on top of the first.',
+        state: 'done',
       },
       {
         title: 'Depth, blending and transparency',

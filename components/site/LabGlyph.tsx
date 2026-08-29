@@ -22,6 +22,7 @@ const GLYPHS: Record<string, () => JSX.Element> = {
   textures: TexturesGlyph,
   compute: ComputeGlyph,
   instancing: InstancingGlyph,
+  colour: ColourGlyph,
 };
 
 /** Every slug that has a diagram. Asserted against the lab registry in tests. */
@@ -314,6 +315,57 @@ function InstancingGlyph() {
         fill="none"
         strokeLinecap="round"
         strokeDasharray="2.5 2.5"
+      />
+    </svg>
+  );
+}
+
+/**
+ * A ramp split against itself: the encoded steps above, the light they actually
+ * stand for below. The gap between the two rows is the lab.
+ */
+function ColourGlyph() {
+  const STEPS = 9;
+  const bars = [];
+  for (let i = 0; i < STEPS; i++) {
+    const value = i / (STEPS - 1);
+    const light = Math.pow(value, 2.2);
+    const x = 4 + i * 6.8;
+    bars.push(
+      <g key={i}>
+        {/* Top: evenly spaced numbers, as a colour picker hands them to you. */}
+        <rect
+          x={x}
+          y="8"
+          width="5.6"
+          height="17"
+          rx="0.8"
+          fill={`rgb(${Math.round(value * 255)}, ${Math.round(value * 255)}, ${Math.round(value * 255)})`}
+          className="stroke-line-strong"
+          strokeWidth="0.5"
+        />
+        {/* Bottom: the light each of those numbers is actually worth. */}
+        <rect
+          x={x}
+          y="31"
+          width="5.6"
+          height="17"
+          rx="0.8"
+          fill={`rgb(${Math.round(light * 255)}, ${Math.round(light * 255)}, ${Math.round(light * 255)})`}
+          className="stroke-line-strong"
+          strokeWidth="0.5"
+        />
+      </g>,
+    );
+  }
+  return (
+    <svg viewBox="0 0 68 56" className={BOX} aria-hidden>
+      {bars}
+      <path
+        d="M4 28 L64 28"
+        className="stroke-accent"
+        strokeWidth="1"
+        strokeDasharray="2 2"
       />
     </svg>
   );
