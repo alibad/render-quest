@@ -2,164 +2,193 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * Tokens are space-separated RGB channels so Tailwind can apply opacity
+ * modifiers (`bg-surface/70`). Dark is the default; light overrides.
+ */
 @layer base {
-  :root {
-    --hard-shadow: 0px 29px 52px 0px rgba(0, 0, 0, 0.4),
-      22px 25px 16px 0px rgba(0, 0, 0, 0.2);
-    --hard-shadow-left: 0px 29px 52px 0px rgba(0, 0, 0, 0.4),
-      -22px 25px 16px 0px rgba(0, 0, 0, 0.2);
-    /* If you use Shadcn UI already, you should already have these variables defined */
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary-foreground: 355.7 100% 97.3%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --radius: 0.5rem;
-    --primary-lighter-hex: theme('colors.primary.200');
-    --secondary-lighter-hex: theme('colors.secondary.200');
-    --primary-dark-hex: theme('colors.primary.800');
-    --secondary-dark-hex: theme('colors.secondary.800');
+  :root,
+  :root[data-theme='dark'] {
+    --bg: 8 9 11;
+    --sunken: 14 16 20;
+    --surface: 19 22 28;
+    --raised: 26 30 38;
+    --hover: 34 39 50;
+
+    --line: 35 40 51;
+    --line-strong: 51 59 74;
+
+    --fg: 232 235 240;
+    --fg-muted: 148 157 174;
+    --fg-faint: 102 112 127;
+
+    --accent: 92 200 255;
+    --accent-dim: 47 137 184;
+    --accent-contrast: 8 9 11;
+
+    --axis-x: 255 107 107;
+    --axis-y: 110 231 160;
+    --axis-z: 92 157 255;
+    --amber: 255 180 84;
+    --red: 255 122 133;
+
+    --grid-line: 92 200 255;
+    --grid-alpha: 0.028;
+    --shadow-panel: 0 1px 0 0 rgba(255, 255, 255, 0.03) inset,
+      0 8px 24px -12px rgba(0, 0, 0, 0.8);
   }
 
-  .dark {
-    /* If you use Shadcn UI already, you can skip this block. */
-    --background: 20 14.3% 4.1%;
-    --foreground: 0 0% 95%;
-    --card: 24 9.8% 10%;
-    --card-foreground: 0 0% 95%;
-    --popover: 0 0% 9%;
-    --popover-foreground: 0 0% 95%;
-    --primary-foreground: 144.9 80.4% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 12 6.5% 15.1%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 85.7% 97.3%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
+  :root[data-theme='light'] {
+    --bg: 251 252 253;
+    --sunken: 244 246 249;
+    --surface: 255 255 255;
+    --raised: 248 250 252;
+    --hover: 238 242 247;
+
+    --line: 224 229 236;
+    --line-strong: 195 203 214;
+
+    --fg: 15 20 27;
+    --fg-muted: 88 98 113;
+    --fg-faint: 132 142 156;
+
+    --accent: 10 120 168;
+    --accent-dim: 116 176 202;
+    --accent-contrast: 255 255 255;
+
+    --axis-x: 205 55 55;
+    --axis-y: 22 130 72;
+    --axis-z: 40 95 195;
+    --amber: 176 108 10;
+    --red: 200 45 60;
+
+    --grid-line: 10 120 168;
+    --grid-alpha: 0.035;
+    --shadow-panel: 0 1px 2px 0 rgba(15, 20, 27, 0.04),
+      0 8px 24px -16px rgba(15, 20, 27, 0.18);
   }
 
-  *,
-  ::before,
-  ::after {
-    @apply border-gray-100 dark:border-neutral-800;
+  html {
+    scroll-behavior: smooth;
   }
 
-  * {
-    @apply font-sans;
+  body {
+    @apply bg-ink-900 text-fg antialiased;
+    /* A faint blueprint grid — the plane every lab draws on. */
+    background-image:
+      linear-gradient(
+        rgb(var(--grid-line) / var(--grid-alpha)) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        rgb(var(--grid-line) / var(--grid-alpha)) 1px,
+        transparent 1px
+      );
+    background-size: 48px 48px;
+    background-position: center top;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    @apply font-semibold font-display;
+  ::selection {
+    @apply bg-accent/25 text-fg;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent/70 ring-offset-2 ring-offset-ink-900;
+  }
+
+  /* Numerals in matrices must not shuffle sideways as values change. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
   }
 }
 
-.console-error {
-  color: red;
-  white-space: pre-wrap;
-}
+@layer components {
+  .panel {
+    @apply rounded-xl border border-line bg-ink-700/70 shadow-panel;
+  }
 
-.console-log {
-  color: black;
-  white-space: pre-wrap;
-}
+  .eyebrow {
+    @apply font-mono text-2xs uppercase tracking-[0.18em] text-fg-faint;
+  }
 
-.console-timestamp {
-  color: gray;
-  white-space: pre-wrap;
-  font-style: italic;
+  .link-accent {
+    @apply text-accent underline-offset-4 transition-colors hover:underline;
+  }
 }
-
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
-
-  /**
-   * Perspective (used for images etc.)
-   */
-  .perspective-none {
-    transform: none;
-  }
-
-  .perspective-left {
-    box-shadow: var(--hard-shadow);
-    transform: perspective(400em) rotateY(-15deg) rotateX(6deg)
-      skew(-8deg, 4deg) translate3d(-4%, -2%, 0) scale(0.8);
-  }
-
-  .perspective-right {
-    box-shadow: var(--hard-shadow-left);
-    transform: perspective(400em) rotateY(15deg) rotateX(6deg) skew(8deg, -4deg)
-      translate3d(4%, -2%, 0) scale(0.8);
-  }
-
-  .perspective-bottom {
-    box-shadow: var(--hard-shadow);
-    transform: translateY(-4%) perspective(400em) rotateX(18deg) scale(0.9);
-  }
-
-  .perspective-bottom-lg {
-    box-shadow: var(--hard-shadow);
-    transform: perspective(400em) translate3d(0, -6%, 0) rotateX(34deg)
-      scale(0.8);
-  }
-
-  .perspective-paper {
-    box-shadow: var(--hard-shadow);
-    transform: rotateX(40deg) rotate(40deg) scale(0.8);
-  }
-
-  .perspective-paper-left {
-    box-shadow: var(--hard-shadow-left);
-    transform: rotateX(40deg) rotate(-40deg) scale(0.8);
-  }
-
-  /**
-   * Custom shadows
-   */
-  .hard-shadow {
-    box-shadow: var(--hard-shadow);
-  }
-
-  .hard-shadow-left {
-    box-shadow: var(--hard-shadow-left);
-  }
-
-  /**
-   * Container utilities
-   */
-  .container-narrow {
-    @apply max-w-4xl;
-  }
-
-  .container-wide {
-    @apply xl:max-w-6xl;
-  }
-
-  .container-ultrawide {
-    @apply xl:max-w-7xl;
-  }
 }
 
+/* Range inputs: the primary instrument of the whole site, so they get a
+   deliberate look rather than the six different ones browsers ship. */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 1.25rem;
+  background: transparent;
+  cursor: ew-resize;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: rgb(var(--line-strong));
+}
+
+input[type='range']::-moz-range-track {
+  height: 3px;
+  border-radius: 999px;
+  background: rgb(var(--line-strong));
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5.5px;
+  border-radius: 999px;
+  background: rgb(var(--fg));
+  border: 1px solid rgb(var(--bg));
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgb(var(--fg));
+  border: 1px solid rgb(var(--bg));
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+}
+
+input[type='range']:hover::-webkit-slider-thumb,
+input[type='range']:focus-visible::-webkit-slider-thumb {
+  background: rgb(var(--accent));
+  box-shadow: 0 0 0 5px rgb(var(--accent) / 0.16);
+}
+
+input[type='range']:hover::-moz-range-thumb,
+input[type='range']:focus-visible::-moz-range-thumb {
+  background: rgb(var(--accent));
+  box-shadow: 0 0 0 5px rgb(var(--accent) / 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

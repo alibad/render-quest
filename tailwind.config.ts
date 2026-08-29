@@ -1,105 +1,80 @@
 import type { Config } from 'tailwindcss';
 import { fontFamily } from 'tailwindcss/defaultTheme';
-import { colors } from './data/config/colors';
+
+/**
+ * Render Quest looks like an instrument, not a brochure: near-black ground,
+ * hairline rules, one cyan accent for interaction, and the three axis colours
+ * reserved for X / Y / Z so they mean the same thing in the UI as on canvas.
+ */
+/** Wires a CSS custom property up so Tailwind opacity modifiers still work. */
+const token = (name: string) => `rgb(var(${name}) / <alpha-value>)`;
 
 const config: Config = {
-  darkMode: 'class',
   content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './lib/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
-      fontFamily: {
-        sans: ['var(--font-space-default)', ...fontFamily.sans],
-        display: ['var(--font-space-display)', ...fontFamily.sans],
-        cursive: ['cursive'],
-      },
-
       colors: {
-        primary: {
-          100: colors.primary.lighter,
-          200: colors.primary.lighter,
-          300: colors.primary.light,
-          400: colors.primary.light,
-          500: colors.primary.main,
-          600: colors.primary.main,
-          700: colors.primary.dark,
-          800: colors.primary.dark,
-          900: colors.primary.darker,
+        ink: {
+          900: token('--bg'), // page
+          800: token('--sunken'), // sunken / canvas
+          700: token('--surface'), // card
+          600: token('--raised'),
+          500: token('--hover'),
         },
-        secondary: {
-          100: colors.secondary.lighter,
-          200: colors.secondary.lighter,
-          300: colors.secondary.light,
-          400: colors.secondary.light,
-          500: colors.secondary.main,
-          600: colors.secondary.main,
-          700: colors.secondary.dark,
-          800: colors.secondary.dark,
-          900: colors.secondary.darker,
+        line: {
+          DEFAULT: token('--line'),
+          strong: token('--line-strong'),
         },
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: colors.primary.dark,
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
-        destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
-        },
-        muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
+        fg: {
+          DEFAULT: token('--fg'),
+          muted: token('--fg-muted'),
+          faint: token('--fg-faint'),
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
+          DEFAULT: token('--accent'),
+          dim: token('--accent-dim'),
+          contrast: token('--accent-contrast'),
         },
-        popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))',
+        // Axis colours. These are a convention, not decoration — the same
+        // three appear in the matrix readouts and in every rendered scene.
+        axis: {
+          x: token('--axis-x'),
+          y: token('--axis-y'),
+          z: token('--axis-z'),
         },
-        card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
-        },
+        amber: token('--amber'),
+        red: token('--red'),
       },
-
-      screens: {
-        '2xl': '1400px',
+      fontFamily: {
+        sans: ['var(--font-sans)', ...fontFamily.sans],
+        mono: ['var(--font-mono)', ...fontFamily.mono],
       },
-
+      fontSize: {
+        '2xs': ['0.6875rem', { lineHeight: '1rem' }],
+      },
+      maxWidth: {
+        prose: '68ch',
+      },
+      boxShadow: {
+        panel: 'var(--shadow-panel)',
+        glow: '0 0 0 1px rgb(var(--accent) / 0.25), 0 0 32px -8px rgb(var(--accent) / 0.35)',
+      },
       keyframes: {
-        marquee: {
-          '0%': {
-            transform: 'translateX(0)',
-          },
-          '100%': {
-            transform: 'translateX(-50%)',
-          },
+        'fade-up': {
+          from: { opacity: '0', transform: 'translateY(6px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
         },
       },
-
       animation: {
-        marquee: '30s marquee linear infinite',
-      },
-
-      backgroundImage: {
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic':
-          'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+        'fade-up': 'fade-up 0.4s ease-out both',
       },
     },
   },
-
-  plugins: [
-    require('tailwindcss-animate'),
-    require('@tailwindcss/forms'),
-    require('@tailwindcss/typography'),
-  ],
+  plugins: [],
 };
+
 export default config;
