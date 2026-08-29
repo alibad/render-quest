@@ -10,6 +10,7 @@ const lab = getLab('transform');
 export const metadata: Metadata = {
   title: lab?.title,
   description: lab?.blurb,
+  alternates: { canonical: '/labs/transform' },
 };
 
 export default function TransformLabPage() {

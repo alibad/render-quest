@@ -8,13 +8,14 @@ import { Header } from '@/components/site/Header';
 export const metadata: Metadata = {
   title: 'Privacy',
   description: 'What Render Quest collects: nothing.',
+  alternates: { canonical: '/privacy' },
 };
 
 export default function Privacy() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-3xl px-5 py-16">
+      <main id="main-content" className="mx-auto max-w-3xl px-5 py-16">
         <p className="eyebrow">Privacy</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">
           There is nothing to collect.

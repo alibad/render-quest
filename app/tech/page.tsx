@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: 'Technologies',
   description:
     'WebGL, WebGPU, Three.js and vgpu compared by rendering the identical scene in each — what every one is for, when to reach for it, and the actual code.',
+  alternates: { canonical: '/tech' },
 };
 
 const DEMO_LABEL: Record<string, string> = {
@@ -21,7 +22,7 @@ export default function Tech() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-6xl px-5 py-14">
+      <main id="main-content" className="mx-auto max-w-6xl px-5 py-14">
         <p className="eyebrow">Technologies</p>
         <h1 className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
           {SHARED_SCENE.title}.

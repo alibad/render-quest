@@ -24,6 +24,7 @@ export function generateMetadata({ params }: Params): Metadata {
   return {
     title: tech.name,
     description: `${tech.tagline} What ${tech.name} is for, when to reach for it, and the same scene written in it.`,
+    alternates: { canonical: `/tech/${tech.slug}` },
   };
 }
 
@@ -40,7 +41,7 @@ export default function TechnologyPage({ params }: Params) {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-4xl px-5 py-10">
+      <main id="main-content" className="mx-auto max-w-4xl px-5 py-10">
         <nav className="mb-6">
           <Link
             href="/tech"

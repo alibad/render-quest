@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: 'Labs',
   description:
     'Interactive WebGL labs: the model matrix, projection and the view frustum, and more in progress.',
+  alternates: { canonical: '/labs' },
 };
 
 export default function Labs() {
@@ -18,7 +19,7 @@ export default function Labs() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-6xl px-5 py-14">
+      <main id="main-content" className="mx-auto max-w-6xl px-5 py-14">
         <p className="eyebrow">Labs</p>
         <h1 className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-balance">
           One idea per lab, with the controls to it.

@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: 'About',
   description:
     'Why Render Quest exists, how the labs are built, and what is coming next.',
+  alternates: { canonical: '/about' },
 };
 
 export default function About() {
@@ -18,7 +19,7 @@ export default function About() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-3xl px-5 py-16">
+      <main id="main-content" className="mx-auto max-w-3xl px-5 py-16">
         <p className="eyebrow">About</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-balance">
           Graphics is a subject you have to move to understand.

@@ -10,6 +10,7 @@ const lab = getLab('projection');
 export const metadata: Metadata = {
   title: lab?.title,
   description: lab?.blurb,
+  alternates: { canonical: '/labs/projection' },
 };
 
 export default function ProjectionLabPage() {
