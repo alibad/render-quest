@@ -1,10 +1,14 @@
 {
   "compilerOptions": {
+    "target": "ES2020",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    // The test suite and scripts run through tsx, which resolves the explicit
+    // .ts extensions Node ESM wants. noEmit makes this safe.
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -17,7 +21,6 @@
         "name": "next"
       }
     ],
-    "typeRoots": ["./node_modules/@types", "./types"],
     "paths": {
       "@/*": ["./*"]
     }
