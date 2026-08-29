@@ -9,8 +9,19 @@ export function LabCard({ lab, children }: { lab: Lab; children?: React.ReactNod
   const body = (
     <>
       {children}
-      <div className="mb-4 h-12 w-16 shrink-0 transition-transform duration-300 group-hover:-translate-y-0.5">
-        <LabGlyph slug={lab.slug} />
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="h-12 w-16 shrink-0 transition-transform duration-300 group-hover:-translate-y-0.5">
+          <LabGlyph slug={lab.slug} />
+        </div>
+        <span
+          className={`rounded border px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wider ${
+            lab.technology === 'webgpu'
+              ? 'border-amber/35 bg-amber/10 text-amber'
+              : 'border-line-strong text-fg-faint'
+          }`}
+        >
+          {lab.technology === 'webgpu' ? 'WebGPU' : 'WebGL'}
+        </span>
       </div>
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-base font-semibold tracking-tight text-fg">

@@ -4,9 +4,16 @@
  * page that is not there.
  */
 
+/** Which GPU API a lab is built on. Labs teach concepts; this is the vehicle. */
+export type LabTechnology = 'webgl' | 'webgpu';
+
 export interface Lab {
   slug: string;
   title: string;
+  /** The API this particular lab runs on, and why it had to be that one. */
+  technology: LabTechnology;
+  /** Set when the lab genuinely cannot be built on the other API. */
+  technologyReason?: string;
   /** One line, shown on cards. */
   blurb: string;
   /** What you actually come away understanding. */
@@ -18,6 +25,7 @@ export interface Lab {
 export const LABS: Lab[] = [
   {
     slug: 'transform',
+    technology: 'webgl',
     title: 'The Model Matrix',
     blurb:
       'Move, turn and stretch an object by dragging the numbers that do it, and watch the matrix fill in as you go.',
@@ -28,6 +36,7 @@ export const LABS: Lab[] = [
   },
   {
     slug: 'projection',
+    technology: 'webgl',
     title: 'Projection & the Frustum',
     blurb:
       'See the camera’s frustum as an object in the world, and the picture it produces, side by side.',
@@ -38,6 +47,7 @@ export const LABS: Lab[] = [
   },
   {
     slug: 'pipeline',
+    technology: 'webgl',
     title: 'Coordinate Spaces',
     blurb:
       'Follow one vertex from model space to the pixel it lands on, one stage at a time.',
@@ -48,6 +58,7 @@ export const LABS: Lab[] = [
   },
   {
     slug: 'shading',
+    technology: 'webgl',
     title: 'Light & Normals',
     blurb:
       'Move a light around a surface and watch the shading model respond, term by term.',
@@ -56,9 +67,51 @@ export const LABS: Lab[] = [
     concepts: ['normals', 'lambert', 'specular', 'inverse-transpose'],
     status: 'live',
   },
+  {
+    slug: 'compute',
+    technology: 'webgpu',
+    technologyReason:
+      'WebGL has no compute shaders. This lab cannot be built on it — not slowly, not with a workaround. It is the clearest case for choosing WebGPU.',
+    title: 'Compute & Particles',
+    blurb:
+      'A hundred thousand particles moved entirely by the GPU, with no per-particle work on the CPU at all.',
+    takeaway:
+      'What a compute shader is for, and the kind of problem that leaves WebGL behind entirely.',
+    concepts: ['compute shader', 'storage buffers', 'workgroups', 'WGSL', 'instancing'],
+    status: 'live',
+  },
+  {
+    slug: 'textures',
+    technology: 'webgl',
+    title: 'Textures & Sampling',
+    blurb:
+      'Wrap, filter and mip a texture, and see what each sampler setting actually costs you.',
+    takeaway:
+      'Why a texture looks wrong at a distance, and what mipmapping is really trading away.',
+    concepts: ['UV coordinates', 'filtering', 'mipmaps', 'wrap modes'],
+    status: 'building',
+  },
+  {
+    slug: 'instancing',
+    technology: 'webgpu',
+    technologyReason:
+      'The lesson is CPU cost per draw call, which is precisely where WebGPU differs most from WebGL.',
+    title: 'Draw Calls & Instancing',
+    blurb:
+      'Draw the same object ten thousand times and watch where the time actually goes.',
+    takeaway:
+      'Why the number of draw calls matters more than the number of triangles.',
+    concepts: ['instancing', 'draw calls', 'render bundles', 'CPU cost'],
+    status: 'building',
+  },
 ];
 
 export const LIVE_LABS = LABS.filter((lab) => lab.status === 'live');
+
+export const LAB_TECHNOLOGIES: { id: LabTechnology; label: string }[] = [
+  { id: 'webgl', label: 'WebGL' },
+  { id: 'webgpu', label: 'WebGPU' },
+];
 
 export function getLab(slug: string): Lab | undefined {
   return LABS.find((lab) => lab.slug === slug);
