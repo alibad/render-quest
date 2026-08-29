@@ -8,7 +8,7 @@
     "build": "npm run test && next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx test/math.test.ts",
+    "test": "tsx test/math.test.ts && tsx test/content.test.ts",
     "check:links": "tsx scripts/check-links.ts"
   },
   "engines": {
