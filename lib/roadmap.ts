@@ -130,9 +130,9 @@ export const ROADMAP: RoadmapPhase[] = [
     items: [
       {
         title: 'A second reference scene across all four technologies',
-        what: 'A lit, depth-tested, spinning cube alongside the plasma — same geometry, four implementations.',
-        why: 'The plasma is a fullscreen effect and exercises almost no plumbing. A scene with a model matrix and a depth buffer is where the four technologies genuinely diverge.',
-        state: 'later',
+        what: 'A lit, depth-tested, spinning cube alongside the plasma — same geometry, four implementations, running in WebGL and WebGPU. Both line counts are in the comparison table, and the cube column is the more honest of the two.',
+        why: 'The plasma is a fullscreen effect and exercises almost no plumbing. A scene with three vertex attributes, an index buffer, a matrix chain, a normal transform and depth state is where the four genuinely diverge — WebGL sets each piece with a sticky global, WebGPU freezes the lot into a pipeline and hands you the depth texture.',
+        state: 'done',
       },
       {
         title: 'Give the chooser its own address',
