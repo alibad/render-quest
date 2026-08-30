@@ -3,12 +3,15 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { CodeBlock } from '@/components/tech/CodeBlock';
+import { CubeWebGL } from '@/components/tech/CubeWebGL';
+import { CubeWebGPU } from '@/components/tech/CubeWebGPU';
 import { PlasmaWebGL } from '@/components/tech/PlasmaWebGL';
 import { PlasmaWebGPU } from '@/components/tech/PlasmaWebGPU';
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
 import { ALL_RESOURCES } from '@/lib/resources';
-import { TECHNOLOGIES, getTechnology } from '@/lib/technologies';
+import { CUBE_SCENE, TECHNOLOGIES, getTechnology } from '@/lib/technologies';
+
 
 interface Params {
   params: { slug: string };
@@ -136,6 +139,59 @@ export default function TechnologyPage({ params }: Params) {
           </p>
           <div className="mt-5 space-y-5">
             {tech.samples.map((sample) => (
+              <CodeBlock key={sample.label} sample={sample} />
+            ))}
+          </div>
+        </section>
+
+        {/*
+          The second reference scene. The plasma is a full-screen effect and
+          compares almost nothing — no geometry, no camera, no depth buffer.
+          This is the one where the four actually diverge.
+        */}
+        <section className="mt-14 border-t border-line pt-10">
+          <h2 className="text-lg font-semibold tracking-tight">
+            {CUBE_SCENE.title}
+          </h2>
+          <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">
+            {CUBE_SCENE.description}
+          </p>
+          <p className="mt-3 font-mono text-2xs uppercase tracking-wider text-fg-faint">
+            ~{tech.linesForCube} lines here, against ~{tech.linesForPlasma} for the plasma
+          </p>
+
+          <div className="mt-5 max-w-2xl">
+            {tech.demo === 'webgl' ? (
+              <>
+                <CubeWebGL />
+                <p className="mt-2 font-mono text-2xs text-fg-faint">
+                  Live · running on WebGL in your browser right now
+                </p>
+              </>
+            ) : tech.demo === 'webgpu' ? (
+              <>
+                <CubeWebGPU />
+                <p className="mt-2 font-mono text-2xs text-fg-faint">
+                  Live · running on WebGPU in your browser right now
+                </p>
+              </>
+            ) : (
+              <div className="rounded-lg border border-dashed border-line-strong bg-ink-800 p-6">
+                <p className="max-w-prose text-sm leading-relaxed text-fg-muted">
+                  <span className="text-fg">Not running on this page</span>, for the
+                  same reason as above — {tech.name} is not a dependency of this
+                  site. The code is real; the picture it makes is the one on the{' '}
+                  <Link href="/tech/webgl" className="link-accent">
+                    WebGL
+                  </Link>{' '}
+                  page.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 space-y-5">
+            {tech.cubeSamples.map((sample) => (
               <CodeBlock key={sample.label} sample={sample} />
             ))}
           </div>

@@ -29,10 +29,14 @@ export interface Technology {
   demo: DemoSupport;
   /** Roughly how much code the plasma takes, for the comparison table. */
   linesForPlasma: number;
+  /** And the lit cube, which is where the four actually diverge. */
+  linesForCube: number;
   what: string[];
   reachFor: string[];
   avoid: string[];
   samples: CodeSample[];
+  /** The second reference scene: a lit, depth-tested, spinning cube. */
+  cubeSamples: CodeSample[];
   gotchas: { title: string; body: string }[];
   /** URLs that must match entries in lib/resources.ts. */
   learnUrls: string[];
@@ -60,6 +64,20 @@ fn fs(@location(0) uv: vec2f) -> @location(0) vec4f {
   return vec4f(colour, 1.0);
 }`;
 
+/**
+ * The second reference scene.
+ *
+ * The plasma compares almost nothing: no geometry, no camera, no depth buffer.
+ * A lit, depth-tested, spinning cube needs three vertex attributes, an index
+ * buffer, a matrix chain, a normal transform and depth state — and that list is
+ * exactly where the four technologies stop looking alike.
+ */
+export const CUBE_SCENE = {
+  title: 'A lit, spinning cube',
+  description:
+    'Twelve triangles, three vertex attributes, an index buffer, a model and a view-projection matrix, one directional light, backface culling and a depth buffer. The picture is identical in all four; the amount you have to write to get it is not.',
+} as const;
+
 export const TECHNOLOGIES: Technology[] = [
   {
     slug: 'webgl',
@@ -68,6 +86,7 @@ export const TECHNOLOGIES: Technology[] = [
     kind: 'Browser API · GLSL',
     demo: 'webgl',
     linesForPlasma: 42,
+    linesForCube: 118,
     homepage: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API',
     what: [
       'WebGL is OpenGL ES 2.0 (or 3.0, for WebGL2) exposed to JavaScript. It has shipped in every browser for over a decade, works on effectively every device you will meet, and needs no library, no build step and no permission prompt.',
@@ -119,6 +138,34 @@ function frame(now) {
 requestAnimationFrame(frame);`,
       },
     ],
+    cubeSamples: [
+      {
+        label: 'The plumbing',
+        language: 'typescript' as const,
+        source: `// Three attribute buffers, described one call at a time.
+for (const [name, buffer] of [
+  ['aPosition', positions],
+  ['aNormal', normals],
+  ['aColor', colors],
+] as const) {
+  const location = gl.getAttribLocation(program, name);
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.enableVertexAttribArray(location);
+  gl.vertexAttribPointer(location, 3, gl.FLOAT, false, 0, 0);
+}
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indices);
+
+// Depth and culling are global switches, flipped per draw.
+gl.enable(gl.DEPTH_TEST);
+gl.depthFunc(gl.LEQUAL);
+gl.enable(gl.CULL_FACE);
+
+gl.uniformMatrix4fv(uModel, false, model);
+gl.uniformMatrix4fv(uViewProjection, false, viewProjection);
+gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, 0);`,
+        note: 'Every piece of state here is global and sticky: whatever was enabled last is still enabled. That is the whole difference from WebGPU, which freezes the same information into a pipeline object up front.',
+      },
+    ],
     gotchas: [
       {
         title: 'One big triangle, not a quad',
@@ -147,6 +194,7 @@ requestAnimationFrame(frame);`,
     kind: 'Browser API · WGSL',
     demo: 'webgpu',
     linesForPlasma: 58,
+    linesForCube: 149,
     homepage: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API',
     what: [
       'WebGPU is the modern replacement for WebGL, modelled on Vulkan, Metal and D3D12 rather than on 2008-era OpenGL. It brings compute shaders, storage buffers, render bundles and an explicit pipeline model, and it uses its own shading language, WGSL, instead of GLSL.',
@@ -214,6 +262,37 @@ function frame(now) {
 }`,
       },
     ],
+    cubeSamples: [
+      {
+        label: 'The pipeline',
+        language: 'typescript' as const,
+        source: `// Everything WebGL sets with individual calls is declared once here,
+// and validated once here — the vertex layout and the depth state included.
+const pipeline = device.createRenderPipeline({
+  layout: device.createPipelineLayout({ bindGroupLayouts: [layout] }),
+  vertex: {
+    module: shaderModule,
+    entryPoint: 'vs',
+    buffers: [
+      { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }] },
+      { arrayStride: 12, attributes: [{ shaderLocation: 1, offset: 0, format: 'float32x3' }] },
+      { arrayStride: 12, attributes: [{ shaderLocation: 2, offset: 0, format: 'float32x3' }] },
+    ],
+  },
+  fragment: { module: shaderModule, entryPoint: 'fs', targets: [{ format }] },
+  primitive: { topology: 'triangle-list', cullMode: 'back' },
+  depthStencil: { format: 'depth24plus', depthWriteEnabled: true, depthCompare: 'less' },
+});
+
+// The depth texture is yours to allocate, and yours to resize.
+depth = device.createTexture({
+  size: { width: canvas.width, height: canvas.height },
+  format: 'depth24plus',
+  usage: GPUTextureUsage.RENDER_ATTACHMENT,
+});`,
+        note: 'More lines than WebGL for one cube and fewer for a hundred: validation happens once at pipeline creation rather than on every state change, which is the trade this API is making.',
+      },
+    ],
     gotchas: [
       {
         title: 'Everything is async, and adapters can be null',
@@ -240,6 +319,7 @@ function frame(now) {
     kind: 'Library · scene graph',
     demo: 'code-only',
     linesForPlasma: 22,
+    linesForCube: 31,
     homepage: 'https://threejs.org/',
     what: [
       'Three.js gives you the vocabulary you actually think in: scenes, meshes, materials, lights, cameras. It handles the buffer juggling, the matrix chain, the render loop and a great deal of cross-device sanity, and it has by far the largest ecosystem of loaders, controls and examples of anything here.',
@@ -284,6 +364,37 @@ renderer.setAnimationLoop((now) => {
         source: 'npm install three',
       },
     ],
+    cubeSamples: [
+      {
+        label: 'The whole thing',
+        language: 'javascript' as const,
+        source: `import * as THREE from 'three';
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+camera.position.set(0, 1.4, 4.2);
+camera.lookAt(0, 0, 0);
+
+const cube = new THREE.Mesh(
+  new THREE.BoxGeometry(1, 1, 1),
+  new THREE.MeshLambertMaterial({ vertexColors: true }),
+);
+scene.add(cube);
+
+const key = new THREE.DirectionalLight(0xffffff, 2);
+key.position.set(0.4, 0.8, 0.6);
+scene.add(key, new THREE.AmbientLight(0xffffff, 0.12));
+
+renderer.setAnimationLoop((t) => {
+  cube.rotation.y = t * 0.0006;
+  cube.rotation.x = t * 0.00035;
+  renderer.render(scene, camera);
+});`,
+        note: 'The depth buffer, the culling, the normal matrix, the vertex layout and the light rig are all still there — they are simply not yours to write. This is where the gap is widest: a quarter of the lines for a scene that takes real effort to get right by hand.',
+      },
+    ],
     gotchas: [
       {
         title: 'Dispose what you create',
@@ -307,6 +418,7 @@ renderer.setAnimationLoop((now) => {
     kind: 'Library · WebGPU + WGSL',
     demo: 'code-only',
     linesForPlasma: 12,
+    linesForCube: 26,
     homepage: 'https://vgpu.sh/',
     what: [
       'vgpu is a minimal WebGPU library from Vercel Labs. Its distinguishing idea is that WGSL files behave like TypeScript modules — you import a shader, the loader resolves its import graph at build time, and reflection keeps the bindings correct. A complete full-screen effect comes to about 25 KB gzipped.',
@@ -376,6 +488,32 @@ const nextConfig = {
 };
 
 export default nextConfig;`,
+      },
+    ],
+    cubeSamples: [
+      {
+        label: 'The whole thing',
+        language: 'typescript' as const,
+        source: `import { renderer, mesh, box, camera, light } from 'vgpu';
+
+const view = await renderer({ canvas });
+
+const spinning = mesh(box(1), { material: 'lambert', vertexColors: true });
+view.add(spinning);
+
+view.add(light.directional([0.4, 0.8, 0.6], { intensity: 0.9 }));
+view.add(light.ambient(0.12));
+
+view.camera = camera.perspective({
+  position: [0, 1.4, 4.2],
+  target: [0, 0, 0],
+  fov: 45,
+});
+
+view.frame((t) => {
+  spinning.rotation = [t * 0.35, t * 0.6, 0];
+});`,
+        note: 'A typed layer over WebGPU, so the pipeline, the depth texture and the bind groups are inferred from this description. Shortest of the four — and the one that teaches you least about what the GPU is doing, which is exactly the trade.',
       },
     ],
     gotchas: [

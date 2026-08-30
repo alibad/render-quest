@@ -51,13 +51,23 @@ export default function Tech() {
         </figure>
 
         <section className="mt-12">
-          <h2 className="text-lg font-semibold tracking-tight">
-            Which should you use?
-          </h2>
-          <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">
-            There is no best one — there is a best one for a target. Answer three
-            questions and see what falls out, along with the reasoning.
-          </p>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight">
+                Which should you use?
+              </h2>
+              <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">
+                There is no best one — there is a best one for a target. Answer three
+                questions and see what falls out, along with the reasoning.
+              </p>
+            </div>
+            <Link
+              href="/tech/choose"
+              className="shrink-0 font-mono text-2xs uppercase tracking-wider text-fg-faint transition-colors hover:text-accent"
+            >
+              Its own page →
+            </Link>
+          </div>
           <div className="mt-5">
             <TechnologyChooser />
           </div>
@@ -67,7 +77,7 @@ export default function Tech() {
           Side by side
         </h2>
         <div className="mt-5 overflow-x-auto">
-          <table className="w-full min-w-[42rem] border-collapse text-left text-sm">
+          <table className="w-full min-w-[48rem] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-line text-fg-faint">
                 <th className="pb-3 font-mono text-2xs font-normal uppercase tracking-wider">
@@ -77,7 +87,10 @@ export default function Tech() {
                   What it is
                 </th>
                 <th className="pb-3 text-right font-mono text-2xs font-normal uppercase tracking-wider">
-                  Lines for this scene
+                  Plasma
+                </th>
+                <th className="pb-3 text-right font-mono text-2xs font-normal uppercase tracking-wider">
+                  Lit cube
                 </th>
                 <th className="pb-3 pl-6 font-mono text-2xs font-normal uppercase tracking-wider">
                   Demo
@@ -96,8 +109,11 @@ export default function Tech() {
                     </Link>
                   </td>
                   <td className="py-4 pr-4 text-fg-muted">{tech.kind}</td>
-                  <td className="tabular py-4 text-right font-mono text-fg">
+                  <td className="tabular py-4 text-right font-mono text-fg-muted">
                     ~{tech.linesForPlasma}
+                  </td>
+                  <td className="tabular py-4 pl-4 text-right font-mono text-fg">
+                    ~{tech.linesForCube}
                   </td>
                   <td className="py-4 pl-6">
                     <span
@@ -116,7 +132,9 @@ export default function Tech() {
         <p className="mt-4 max-w-prose text-2xs leading-relaxed text-fg-faint">
           Line counts are for the plumbing around the shader, not a quality score —
           fewer lines means more is being done for you, which is exactly what you want
-          in one situation and exactly what you do not want in another.
+          in one situation and exactly what you do not want in another. The cube column
+          is the more honest of the two: the plasma has no geometry, no camera and no
+          depth buffer, so it barely exercises the differences at all.
         </p>
 
         <div className="mt-12 grid gap-4 sm:grid-cols-2">
