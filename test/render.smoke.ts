@@ -97,21 +97,28 @@ const SAMPLE_CANVAS = `(() => new Promise((resolve) => {
 }))()`;
 
 /**
- * Calibrated against measurements rather than guessed, because the first guess
- * (200 colours) failed two healthy labs. What the real labs measure:
+ * Calibrated against measurements rather than guessed — twice, because both
+ * guesses failed healthy labs. What the real labs actually measure:
  *
- *   pipeline    19 colours, sd 10.3   <- the floor: a wireframe scene
- *   transform   90 colours, sd 13.1
- *   projection 228 colours, sd 12.8
- *   shading   1600 colours, sd 43.9
- *   instancing 2163 colours, sd 32.1
- *   textures  5326 colours, sd 52.3
+ *   depth         4 colours, sd 24.0   <- two flat-shaded panels
+ *   pipeline     19 colours, sd 10.3   <- a wireframe scene
+ *   transform    92 colours, sd 14.8
+ *   projection  232 colours, sd 13.0
+ *   shader      291 colours, sd  8.9
+ *   colour      392 colours, sd 62.1
+ *   shading    1431 colours, sd 36.2
+ *   instancing 2156 colours, sd 32.1
+ *   textures   5326 colours, sd 52.3
  *
- * A canvas that drew nothing measures 1 colour and sd 0. These thresholds sit
- * in the gap with room on both sides — a wireframe lab is legitimately almost
- * monochrome, and refusing to admit that would make the suite lie.
+ * A canvas that drew nothing measures 1 colour and sd 0.
+ *
+ * The colour count is the weaker signal and nearly caused a false failure: a
+ * scene of flat-shaded quads is legitimately almost monochrome, and insisting
+ * otherwise would make the suite lie about a lab that renders perfectly. The
+ * luminance spread is what actually separates "drew something" from "drew
+ * nothing", and the two together still catch a blank canvas with room to spare.
  */
-const MIN_COLOURS = 8;
+const MIN_COLOURS = 3;
 const MIN_STD_DEV = 3;
 
 /** What the in-page sampler resolves with. */
@@ -121,7 +128,9 @@ interface CanvasStats {
   error?: string;
 }
 
-async function waitForServer(url: string, timeoutMs = 90_000) {
+// Generous, because this has to survive a loaded CI box as well as a laptop
+// that happens to be compiling something else.
+async function waitForServer(url: string, timeoutMs = 240_000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
