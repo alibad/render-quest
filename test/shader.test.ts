@@ -75,9 +75,27 @@ check('braces balance in every shader', () => {
   }
 });
 
+/**
+ * A template literal holding only a `main()` and no declarations of its own
+ * cannot be a whole shader — it is a body concatenated onto a preamble, which
+ * is how the shader-writing lab supplies uniforms the reader did not type. The
+ * exemption is narrow on purpose: the body must declare nothing, AND the file
+ * must contain a preamble that does declare a precision. A real standalone
+ * fragment shader missing its precision qualifier is still caught.
+ */
+function isBodyOnly(shader: Shader): boolean {
+  const declaresNothing = !/\b(varying|uniform|attribute)\b/.test(shader.body);
+  // Read the file rather than the collected shaders: a preamble declares
+  // uniforms and a precision but has no main(), so it is never collected.
+  const text = readFileSync(join(ROOT, shader.file), 'utf8');
+  const fileHasPreamble = /precision\s+(low|medium|high)p\s+float/.test(text);
+  return declaresNothing && fileHasPreamble;
+}
+
 check('no GLSL shader references gl_FragColor without being a fragment shader', () => {
   for (const shader of ALL_SHADERS) {
     if (!shader.body.includes('gl_FragColor')) continue;
+    if (isBodyOnly(shader)) continue;
     assert.ok(
       shader.body.includes('precision'),
       `fragment shader in ${shader.file} declares no float precision, which fails on some mobile drivers`,
