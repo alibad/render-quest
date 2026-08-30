@@ -36,6 +36,12 @@ const PAGES: { title: string; description: string; href: string }[] = [
     href: '/tech',
   },
   {
+    title: 'Which should you use?',
+    description:
+      'Three questions, a reasoned recommendation, and what the other three would have cost.',
+    href: '/tech/choose',
+  },
+  {
     title: 'Learn',
     description: 'A curated reading path through graphics and game development.',
     href: '/learn',
