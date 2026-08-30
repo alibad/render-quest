@@ -134,6 +134,32 @@ export const LABS: Lab[] = [
     concepts: ['sRGB', 'linear light', 'gamma', 'encode / decode'],
     status: 'live',
   },
+  {
+    slug: 'depth',
+    order: 9,
+    prereq: 'projection',
+    technology: 'webgl',
+    title: 'Depth & Transparency',
+    blurb:
+      'Make z-fighting happen on purpose, then fix it from the frustum — and find out why transparency needs sorting.',
+    takeaway:
+      'That depth precision is set by the near plane rather than the model, and that the depth buffer cannot answer the question transparency asks.',
+    concepts: ['depth buffer', 'z-fighting', 'blending', 'draw order'],
+    status: 'live',
+  },
+  {
+    slug: 'shader',
+    order: 10,
+    prereq: 'colour',
+    technology: 'webgl',
+    title: 'Write a Shader',
+    blurb:
+      'An editable fragment shader that recompiles as you type, with the driver’s own errors underneath.',
+    takeaway:
+      'That a shader is a function from a pixel coordinate to a colour, and that the errors are readable once something shows them to you.',
+    concepts: ['fragment shader', 'GLSL', 'compile errors', 'uniforms'],
+    status: 'live',
+  },
 ];
 
 const byOrder = (a: Lab, b: Lab) => a.order - b.order;

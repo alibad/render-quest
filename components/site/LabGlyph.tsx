@@ -23,6 +23,8 @@ const GLYPHS: Record<string, () => JSX.Element> = {
   compute: ComputeGlyph,
   instancing: InstancingGlyph,
   colour: ColourGlyph,
+  depth: DepthGlyph,
+  shader: ShaderGlyph,
 };
 
 /** Every slug that has a diagram. Asserted against the lab registry in tests. */
@@ -367,6 +369,52 @@ function ColourGlyph() {
         strokeWidth="1"
         strokeDasharray="2 2"
       />
+    </svg>
+  );
+}
+
+/**
+ * Two panels tearing into each other in bands — z-fighting as it actually
+ * appears, which is the thing people search for without knowing its name.
+ */
+function DepthGlyph() {
+  const bands = [];
+  for (let i = 0; i < 11; i++) {
+    // Irregular widths, because a regular stripe reads as a pattern rather
+    // than as a failure.
+    const y = 14 + i * 2.6;
+    const cut = 22 + ((i * 13) % 17);
+    bands.push(
+      <rect key={`a${i}`} x="10" y={y} width={cut} height="2.2" className="fill-axis-x" opacity="0.85" />,
+    );
+    bands.push(
+      <rect key={`b${i}`} x={10 + cut} y={y} width={44 - cut} height="2.2" className="fill-axis-z" opacity="0.85" />,
+    );
+  }
+  return (
+    <svg viewBox="0 0 68 56" className={BOX} aria-hidden>
+      {/* The two panels, seen almost edge on. */}
+      <path d="M10 12 L54 12 L54 44 L10 44 Z" className="fill-none stroke-line-strong" strokeWidth="1" />
+      {bands}
+    </svg>
+  );
+}
+
+/** A caret in a block of code, with the picture it compiles to beside it. */
+function ShaderGlyph() {
+  const lines = [26, 18, 30, 14, 22];
+  return (
+    <svg viewBox="0 0 68 56" className={BOX} aria-hidden>
+      <g className="fill-fg-faint/45">
+        {lines.map((width, i) => (
+          <rect key={i} x="5" y={12 + i * 7} width={width} height="3" rx="1.5" />
+        ))}
+      </g>
+      {/* The caret, on the line being typed. */}
+      <rect x="21" y="32.5" width="1.6" height="4" className="fill-accent" />
+      {/* What it compiles to. */}
+      <circle cx="52" cy="28" r="12" className="fill-accent/25 stroke-accent" strokeWidth="1.3" />
+      <circle cx="52" cy="28" r="5.5" className="fill-amber/70" />
     </svg>
   );
 }

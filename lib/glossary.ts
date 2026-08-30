@@ -40,8 +40,37 @@ export const GLOSSARY: Term[] = [
   {
     term: 'Depth buffer',
     definition:
-      'A per-pixel record of how far away the nearest thing drawn so far is, so a fragment behind it can be discarded. Also called the z-buffer. It is why you can draw geometry in any order and still get correct occlusion.',
-    see: ['Fragment', 'NDC'],
+      'A per-pixel record of how far away the nearest thing drawn so far is, so a fragment behind it can be discarded. Also called the z-buffer. It is why opaque geometry can be drawn in any order and still occlude correctly — and, because it only ever answers "what is nearest", why translucent geometry cannot.',
+    lab: 'depth',
+    see: ['Z-fighting', 'Depth precision', 'Alpha blending', 'Fragment'],
+  },
+  {
+    term: 'Z-fighting',
+    definition:
+      'Two surfaces close enough together that the depth buffer cannot tell which is in front, so the winner changes per pixel and per frame — a shimmering, tearing seam. Almost always fixed by moving the near plane out rather than by moving the geometry.',
+    lab: 'depth',
+    see: ['Depth precision', 'Depth buffer', 'Near and far planes'],
+  },
+  {
+    term: 'Depth precision',
+    definition:
+      'How finely the depth buffer can distinguish distances. It is distributed hyperbolically rather than evenly: most of the range is spent close to the camera, so the near plane governs precision far away and the far plane barely matters at all.',
+    lab: 'depth',
+    see: ['Z-fighting', 'Near and far planes', 'Perspective divide'],
+  },
+  {
+    term: 'Alpha blending',
+    definition:
+      'Combining a fragment with what is already in the framebuffer, weighted by its alpha. It is not commutative — red over green is not green over red — which is why translucent geometry has to be sorted back to front, on the CPU, every frame.',
+    lab: 'depth',
+    see: ['Draw order', 'Depth buffer', 'Fragment'],
+  },
+  {
+    term: 'Draw order',
+    definition:
+      'The sequence draws are submitted in. Irrelevant for opaque geometry, because the depth buffer sorts it for you; decisive for translucent geometry, because blending depends on what was underneath at the time.',
+    lab: 'depth',
+    see: ['Alpha blending', 'Depth buffer', 'Draw call'],
   },
   {
     term: 'Fragment',
@@ -355,6 +384,20 @@ export const GLOSSARY: Term[] = [
       'The diffuse term: brightness proportional to how squarely a surface faces the light, and nothing else. It is the cosine of the angle between the normal and the light direction, clamped at zero so surfaces turned away are unlit rather than negatively lit.',
     lab: 'shading',
     see: ['Normal', 'Specular highlight', 'Linear colour'],
+  },
+  {
+    term: 'Compile error',
+    definition:
+      'A shader that the driver refused. The message names a line and a reason, and is the single most useful thing on screen when a shader goes wrong — but only if something is showing it to you, which is why a failed shader usually presents as an unexplained black surface instead.',
+    lab: 'shader',
+    see: ['Shader', 'GLSL', 'Fragment shader'],
+  },
+  {
+    term: 'Fragment shader',
+    definition:
+      'The program run once per pixel a triangle covers, whose job is to return a colour. With a full-screen quad and no geometry to speak of, it becomes a pure function from pixel coordinate to colour — which is how most shader art is made.',
+    lab: 'shader',
+    see: ['Shader', 'Fragment', 'GLSL', 'Compile error'],
   },
   {
     term: 'sRGB',
