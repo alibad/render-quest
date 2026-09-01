@@ -7,13 +7,14 @@ import Link from 'next/link';
 import { LabCard } from '@/components/site/LabCard';
 import { LabsTailCard } from '@/components/site/LabsTailCard';
 import { ORDERED_LABS } from '@/lib/labs';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Labs',
   description:
-    'Interactive WebGL labs: the model matrix, projection and the view frustum, and more in progress.',
-  alternates: { canonical: '/labs' },
-};
+    'Ten interactive labs, in sequence: the model matrix, the view frustum, coordinate spaces, lighting, textures, colour and gamma, depth and transparency, compute, draw calls — and a shader you write yourself.',
+  path: '/labs',
+});
 
 export default function Labs() {
   const live = ORDERED_LABS.filter((lab) => lab.status === 'live');
@@ -29,7 +30,8 @@ export default function Labs() {
         </h1>
         <p className="mt-4 max-w-prose text-sm leading-relaxed text-fg-muted">
           One idea per lab, with the controls to it. Everything here runs live in your
-          browser — drag inside any canvas to orbit the camera.
+          browser — and where a lab has a camera to move, dragging inside its
+          canvas orbits it.
         </p>
         <p className="mt-3 max-w-prose text-sm leading-relaxed text-fg-faint">
           They are numbered, and the numbering is not decoration: each one assumes the

@@ -5,13 +5,14 @@ import { GlossaryExplorer } from '@/components/glossary/GlossaryExplorer';
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
 import { GLOSSARY } from '@/lib/glossary';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Glossary',
   description:
     'Plain definitions for the graphics vocabulary — clip space, the perspective divide, normal matrices, winding order — each linked to a lab that shows it.',
-  alternates: { canonical: '/glossary' },
-};
+  path: '/glossary',
+});
 
 export default function Glossary() {
   const withLab = GLOSSARY.filter((entry) => entry.lab).length;

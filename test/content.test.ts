@@ -13,6 +13,10 @@ import { LABS, LIVE_LABS, ORDERED_LABS, labNeighbours } from '../lib/labs.ts';
 import { GLYPH_SLUGS } from '../components/site/LabGlyph.tsx';
 import { ALL_RESOURCES, TRACKS } from '../lib/resources.ts';
 import { TECHNOLOGIES } from '../lib/technologies.ts';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+
+const ROOT = new URL('..', import.meta.url).pathname;
 
 let passed = 0;
 const check = (name: string, fn: () => void) => {
@@ -214,6 +218,84 @@ check('no glyph exists for a lab that is not in the registry', () => {
     assert.ok(
       LABS.some((lab) => lab.slug === slug),
       `glyph "${slug}" matches no lab, so it is dead code`,
+    );
+  }
+});
+
+
+/* --------------------------------------------------------------- routes ---
+ * Metadata bugs are invisible from inside the site: the pages look right, and
+ * the damage only shows when somebody shares a link. Every route on this site
+ * shared as the home page for weeks — Next merges metadata shallowly, so pages
+ * that set only `title` and `description` inherited the root layout's whole
+ * `openGraph` block, url included. These checks make that unrepeatable.
+ */
+
+const APP = join(ROOT, 'app');
+
+/** Every directory under app/ that renders a page, as a route path. */
+function pageRoutes(dir = APP, prefix = ''): { route: string; dir: string }[] {
+  const out: { route: string; dir: string }[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const child = join(dir, entry.name);
+    // Dynamic segments are included, not skipped. Excluding them is how
+    // /tech/[slug] stayed broken through the first pass of this very check: it
+    // builds its metadata in generateMetadata, which needs the helper just as
+    // much as a static page does.
+    const segment = `${prefix}/${entry.name}`;
+    if (existsSync(join(child, 'page.tsx'))) out.push({ route: segment, dir: child });
+    out.push(...pageRoutes(child, segment));
+  }
+  return out;
+}
+
+const ROUTES = [
+  { route: '/', dir: APP },
+  ...pageRoutes(),
+];
+
+check('every route builds its metadata through the shared helper', () => {
+  for (const { route, dir } of ROUTES) {
+    if (route === '/') continue; // the root layout carries the home page's own
+    const source = readFileSync(join(dir, 'page.tsx'), 'utf8');
+    assert.ok(
+      source.includes('pageMetadata('),
+      `${route} sets metadata by hand — it will inherit the root layout's openGraph and share as the home page`,
+    );
+  }
+});
+
+check('every route has its own social card', () => {
+  for (const { route, dir } of ROUTES) {
+    assert.ok(
+      existsSync(join(dir, 'opengraph-image.tsx')),
+      `${route} has no opengraph-image.tsx, so it falls back to the home page's card`,
+    );
+  }
+});
+
+check('nothing in the sitemap is unreachable from the site', () => {
+  const sitemap = readFileSync(join(ROOT, 'app/sitemap.ts'), 'utf8');
+  const listed = [...sitemap.matchAll(/path: '([^']*)'/g)].map((m) => m[1] || '/');
+
+  // Every href written anywhere in the app or the components.
+  const searched = [join(ROOT, 'app'), join(ROOT, 'components'), join(ROOT, 'lib')];
+  let hrefs = '';
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const child = join(dir, entry.name);
+      if (entry.isDirectory()) walk(child);
+      else if (/\.tsx?$/.test(entry.name)) hrefs += readFileSync(child, 'utf8');
+    }
+  };
+  for (const dir of searched) walk(dir);
+
+  for (const route of listed) {
+    if (route === '/') continue;
+    assert.ok(
+      hrefs.includes(`href="${route}"`) || hrefs.includes(`href: '${route}'`) || hrefs.includes(`'${route}'`),
+      `${route} is in the sitemap but nothing on the site links to it`,
     );
   }
 });

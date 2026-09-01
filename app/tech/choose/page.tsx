@@ -5,6 +5,7 @@ import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
 import { TechnologyChooser } from '@/components/tech/TechnologyChooser';
 import { TECHNOLOGIES } from '@/lib/technologies';
+import { pageMetadata } from '@/lib/metadata';
 
 /**
  * "Which should I use" is a question people type into a search box, and a
@@ -12,12 +13,12 @@ import { TECHNOLOGIES } from '@/lib/technologies';
  * that happens to contain one. The chooser lives here now and is embedded back
  * into /tech, rather than the other way round.
  */
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'WebGL, WebGPU, Three.js or vgpu — which should you use?',
   description:
     'Answer three questions about what you are building, who has to run it, and how much you want to write yourself — and get a reasoned recommendation, with the scoring shown rather than asserted.',
-  alternates: { canonical: '/tech/choose' },
-};
+  path: '/tech/choose',
+});
 
 export default function ChoosePage() {
   return (

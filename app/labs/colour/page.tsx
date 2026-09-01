@@ -4,14 +4,15 @@ import { notFound } from 'next/navigation';
 import { LabPage } from '@/components/lab/LabPage';
 import { ColourLab } from '@/components/labs/ColourLab';
 import { getLab } from '@/lib/labs';
+import { pageMetadata } from '@/lib/metadata';
 
 const lab = getLab('colour');
 
-export const metadata: Metadata = {
-  title: lab?.title,
-  description: lab?.blurb,
-  alternates: { canonical: '/labs/colour' },
-};
+export const metadata: Metadata = pageMetadata({
+  title: lab?.title ?? 'Lab',
+  description: lab?.blurb ?? '',
+  path: '/labs/colour',
+});
 
 export default function ColourLabPage() {
   if (!lab) notFound();

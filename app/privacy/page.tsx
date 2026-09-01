@@ -4,12 +4,14 @@ import Link from 'next/link';
 
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Privacy',
-  description: 'What Render Quest collects: nothing.',
-  alternates: { canonical: '/privacy' },
-};
+  description:
+    'What Render Quest collects: nothing. No accounts, no analytics, no cookies.',
+  path: '/privacy',
+});
 
 export default function Privacy() {
   return (

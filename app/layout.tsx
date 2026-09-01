@@ -44,19 +44,22 @@ export const metadata: Metadata = {
     'graphics programming',
   ],
   authors: [{ name: 'Ali Bader Eddin' }],
+  // Only the home page's card. Next merges metadata shallowly, so a child that
+  // sets `title` and `description` but no `openGraph` inherits this object
+  // whole — which is exactly how all 23 routes came to share as the home page,
+  // with the home page's title, description AND url. Every other route now
+  // builds its own through lib/metadata.ts; this stays for `/` alone.
   openGraph: {
     type: 'website',
     url: SITE_URL,
-    siteName: 'Render Quest',
+    siteName: SITE_NAME,
     title: SITE_TITLE,
-    description:
-      'Interactive labs for computer graphics. Drag a matrix and watch the geometry move. Real WebGL, running live in the browser.',
+    description: SITE_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
     title: SITE_TITLE,
-    description:
-      'Interactive labs for computer graphics. Drag a matrix and watch the geometry move.',
+    description: SITE_DESCRIPTION,
   },
   robots: { index: true, follow: true },
   alternates: { canonical: '/' },

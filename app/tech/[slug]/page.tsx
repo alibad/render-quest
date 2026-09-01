@@ -10,6 +10,7 @@ import { PlasmaWebGPU } from '@/components/tech/PlasmaWebGPU';
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
 import { ALL_RESOURCES } from '@/lib/resources';
+import { pageMetadata } from '@/lib/metadata';
 import { CUBE_SCENE, TECHNOLOGIES, getTechnology } from '@/lib/technologies';
 
 
@@ -24,11 +25,11 @@ export function generateStaticParams() {
 export function generateMetadata({ params }: Params): Metadata {
   const tech = getTechnology(params.slug);
   if (!tech) return {};
-  return {
+  return pageMetadata({
     title: tech.name,
-    description: `${tech.tagline} What ${tech.name} is for, when to reach for it, and the same scene written in it.`,
-    alternates: { canonical: `/tech/${tech.slug}` },
-  };
+    description: `${tech.tagline} What ${tech.name} is for, when to reach for it, and the same two reference scenes written in it.`,
+    path: `/tech/${tech.slug}`,
+  });
 }
 
 export default function TechnologyPage({ params }: Params) {
@@ -169,12 +170,9 @@ export default function TechnologyPage({ params }: Params) {
                 </p>
               </>
             ) : tech.demo === 'webgpu' ? (
-              <>
-                <CubeWebGPU />
-                <p className="mt-2 font-mono text-2xs text-fg-faint">
-                  Live · running on WebGPU in your browser right now
-                </p>
-              </>
+              // CubeWebGPU captions itself, because only it knows whether the
+              // device actually started.
+              <CubeWebGPU />
             ) : (
               <div className="rounded-lg border border-dashed border-line-strong bg-ink-800 p-6">
                 <p className="max-w-prose text-sm leading-relaxed text-fg-muted">

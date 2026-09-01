@@ -90,8 +90,8 @@ export default function Home() {
                 Pick a technology
               </h2>
               <p className="mt-1.5 max-w-prose text-sm text-fg-muted">
-                {SHARED_SCENE.title} — WebGL, WebGPU, Three.js and vgpu rendering one
-                identical scene, so the only thing you are comparing is the code.
+                {SHARED_SCENE.title} — WebGL, WebGPU, Three.js and vgpu rendering
+                the same two scenes, so the only thing you are comparing is the code.
               </p>
             </div>
             <Link

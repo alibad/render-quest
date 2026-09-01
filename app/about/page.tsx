@@ -4,13 +4,14 @@ import Link from 'next/link';
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
 import { LABS } from '@/lib/labs';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'About',
   description:
-    'Why Render Quest exists, how the labs are built, and what is coming next.',
-  alternates: { canonical: '/about' },
-};
+    'Why Render Quest exists, how the labs are built, and how the claims it makes about itself are checked.',
+  path: '/about',
+});
 
 export default function About() {
   const building = LABS.filter((lab) => lab.status === 'building');
@@ -113,10 +114,19 @@ export default function About() {
             {building.length > 0 ? (
               <>
                 {' '}— including the labs still in progress:{' '}
-                {building.map((lab) => lab.title).join(', ')}
+                {building.map((lab) => lab.title).join(', ')}. They ship when they
+                teach something properly, not before.
               </>
-            ) : null}
-            . They ship when they teach something properly, not before.
+            ) : (
+              // With nothing in progress the old trailing sentence began "They
+              // ship when…" with no antecedent, because the list it referred to
+              // had been suppressed.
+              <>
+                , along with the reason for each. Everything planned there has
+                shipped; what gets added next depends on what turns out to be
+                missing.
+              </>
+            )}
           </p>
 
           <p className="pt-4">

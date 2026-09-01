@@ -6,13 +6,14 @@ import { TechnologyChooser } from '@/components/tech/TechnologyChooser';
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
 import { SHARED_SCENE, TECHNOLOGIES } from '@/lib/technologies';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Technologies',
   description:
-    'WebGL, WebGPU, Three.js and vgpu compared by rendering the identical scene in each — what every one is for, when to reach for it, and the actual code.',
-  alternates: { canonical: '/tech' },
-};
+    'WebGL, WebGPU, Three.js and vgpu compared by rendering the same two reference scenes in each — what every one is for, when to reach for it, and the actual code.',
+  path: '/tech',
+});
 
 const DEMO_LABEL: Record<string, string> = {
   webgl: 'Runs here',
@@ -173,7 +174,8 @@ export default function Tech() {
             <Link href="/labs" className="link-accent">
               labs
             </Link>{' '}
-            are all built on it, and the{' '}
+            are almost all built on it — the two that cannot be are marked, and
+            say why — and the{' '}
             <Link href="/learn" className="link-accent">
               reading path
             </Link>{' '}

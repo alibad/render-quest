@@ -6,13 +6,14 @@ import { Header } from '@/components/site/Header';
 import { LABS } from '@/lib/labs';
 import { NOT_DOING, ROADMAP, ROADMAP_COUNTS, ROADMAP_THESIS } from '@/lib/roadmap';
 import { REPO_URL } from '@/lib/site';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Roadmap',
   description:
-    'What is being built next on Render Quest, what has shipped, and what was proposed and declined.',
-  alternates: { canonical: '/roadmap' },
-};
+    'Everything that shipped on Render Quest and why, and the five proposals that were considered and turned down — with the reason for each.',
+  path: '/roadmap',
+});
 
 const STATE_LABEL = {
   done: 'Shipped',
@@ -47,6 +48,38 @@ export default function Roadmap() {
           <Stat value={ROADMAP_COUNTS.later} label="later" />
           <Stat value={NOT_DOING.length} label="declined" />
         </dl>
+
+        {/*
+          A page headed "what is being built" showing two zeroes and no
+          explanation reads as a page that failed to load its own contents.
+          Saying plainly that the plan is finished is both true and more useful
+          than an empty column.
+        */}
+        {ROADMAP_COUNTS.next + ROADMAP_COUNTS.later === 0 ? (
+          <section className="mt-8 rounded-xl border border-dashed border-line-strong p-5">
+            <p className="eyebrow">Nothing is in progress</p>
+            <p className="mt-3 max-w-prose text-sm leading-relaxed text-fg-muted">
+              Every item below has shipped, which is a strange thing for a roadmap
+              to say and the honest state of this one. The plan it was written
+              against is finished: the labs run, the claims are checked, and the
+              things that were declined are still declined.
+            </p>
+            <p className="mt-3 max-w-prose text-sm leading-relaxed text-fg-muted">
+              What gets added next depends on what turns out to be missing, and the
+              most useful thing anyone can do is say which part did not teach them
+              what it promised.{' '}
+              <a
+                href={`${REPO_URL}/issues/new`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="link-accent"
+              >
+                That is the whole intake process
+              </a>
+              .
+            </p>
+          </section>
+        ) : null}
 
         <ol className="mt-14 space-y-14">
           {ROADMAP.map((phase, index) => (
