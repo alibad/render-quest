@@ -300,4 +300,76 @@ check('nothing in the sitemap is unreachable from the site', () => {
   }
 });
 
+
+/* ------------------------------------------------------------ lab parity ---
+ * Ten labs should feel like one product. They drifted instead: three had no
+ * presets, three had a camera and no way to move it, and one showed none of its
+ * own source — each gap arriving quietly with a new lab rather than as a
+ * decision. Affordances a reader learns on one lab should be on all of them.
+ */
+const LAB_SOURCES = new Map(
+  LABS.map((lab) => {
+    // TextureLab and ColourLab are the two whose file is not <Title>Lab.tsx.
+    const guesses = [
+      `${lab.slug[0].toUpperCase()}${lab.slug.slice(1)}Lab.tsx`,
+      `${lab.slug[0].toUpperCase()}${lab.slug.slice(1).replace(/s$/, '')}Lab.tsx`,
+    ];
+    const file = guesses.find((name) =>
+      existsSync(join(ROOT, 'components/labs', name)),
+    );
+    assert.ok(file, `no component found for lab "${lab.slug}"`);
+    return [lab.slug, readFileSync(join(ROOT, 'components/labs', file!), 'utf8')];
+  }),
+);
+
+check('every lab opens with named presets', () => {
+  for (const [slug, source] of LAB_SOURCES) {
+    assert.ok(
+      source.includes('<Presets'),
+      `${slug} has no "Start here" presets — every other lab opens with somewhere to start`,
+    );
+  }
+});
+
+check('every lab shows the code it runs', () => {
+  for (const [slug, source] of LAB_SOURCES) {
+    assert.ok(
+      source.includes('<LabSource'),
+      `${slug} never shows its own source, on a site whose thesis is that the plumbing is the subject`,
+    );
+  }
+});
+
+check('every lab with a camera lets you move it', () => {
+  // Two labs legitimately have no camera: the particle field is drawn straight
+  // in clip space, and a full-screen fragment shader has no scene to orbit.
+  const CAMERALESS = new Set(['compute', 'shader']);
+  for (const [slug, source] of LAB_SOURCES) {
+    if (CAMERALESS.has(slug)) {
+      assert.ok(
+        !source.includes('lookAt('),
+        `${slug} is listed as having no camera but calls lookAt() — the list is now wrong`,
+      );
+      continue;
+    }
+    assert.ok(
+      /onDrag|onPointerDown/.test(source),
+      `${slug} builds a camera and gives no way to move it`,
+    );
+  }
+});
+
+
+check('every reading-path stage has somewhere to start', () => {
+  for (const track of TRACKS) {
+    for (const stage of track.stages) {
+      const starts = stage.resources.filter((r) => r.level === 'start here');
+      assert.ok(
+        starts.length > 0,
+        `"${stage.title}" has no "start here" resource, so a reader arriving at it has no way in`,
+      );
+    }
+  }
+});
+
 console.log(`\n${passed} content checks passed`);
