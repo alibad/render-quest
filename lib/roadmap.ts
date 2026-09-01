@@ -28,7 +28,7 @@ export interface RoadmapPhase {
 }
 
 export const ROADMAP_THESIS =
-  'Render Quest had six good explorables and no curriculum around them — a gallery rather than a course. The ordering below fixes the reader’s first thirty seconds before it adds anything new, closes the gap between what the site asserts and what it verifies, and only then builds the missing rungs. Polish and reach come last, because their value depends on everything above being true first.';
+  'Render Quest had a handful of good explorables and no curriculum around them — a gallery rather than a course. The ordering below fixes the reader’s first thirty seconds before it adds anything new, closes the gap between what the site asserts and what it verifies, and only then builds the missing rungs. Polish and reach come last, because their value depends on everything above being true first.';
 
 export const ROADMAP: RoadmapPhase[] = [
   {
@@ -160,7 +160,7 @@ export const NOT_DOING: { title: string; why: string }[] = [
   },
   {
     title: 'Rewriting each lab in every technology',
-    why: 'Four labs times four APIs is sixteen implementations of identical maths. The model matrix is the same matrix everywhere; duplicating it teaches nothing and quadruples the maintenance.',
+    why: 'Every lab times four APIs is a great many implementations of identical maths. The model matrix is the same matrix everywhere; duplicating it teaches nothing and quadruples the maintenance.',
   },
   {
     title: 'Converting the site to a pure static export',

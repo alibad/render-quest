@@ -89,6 +89,7 @@ export const GLOSSARY: Term[] = [
     term: 'GLSL',
     definition:
       'The OpenGL Shading Language, used by WebGL. C-like, with first-class vector and matrix types. Its WebGPU counterpart is WGSL.',
+    lab: 'shader',
     see: ['WGSL', 'Shader'],
   },
   {
@@ -213,6 +214,7 @@ export const GLOSSARY: Term[] = [
     term: 'Shader',
     definition:
       'A small program that runs on the GPU, once per vertex or once per fragment, in parallel across thousands of them. Vertex shaders decide where things are; fragment shaders decide what colour they are.',
+    lab: 'shader',
     see: ['GLSL', 'WGSL', 'Fragment'],
   },
   {
@@ -331,6 +333,7 @@ export const GLOSSARY: Term[] = [
     term: 'Uniform',
     definition:
       'A value that is the same for every vertex and fragment in a draw call — a matrix, a light direction, the current time. Set from JavaScript, read-only inside the shader.',
+    lab: 'shader',
     see: ['Attribute', 'Shader'],
   },
   {
@@ -370,6 +373,7 @@ export const GLOSSARY: Term[] = [
     term: 'WGSL',
     definition:
       'The WebGPU Shading Language. Rust-flavoured rather than C-flavoured, strongly typed, with explicit binding annotations. Same job as GLSL, different spelling.',
+    lab: 'compute',
     see: ['GLSL', 'Shader'],
   },
   {

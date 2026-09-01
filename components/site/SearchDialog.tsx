@@ -4,6 +4,10 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { KIND_LABEL, search, type SearchEntry } from '@/lib/search';
+import { LIVE_LABS } from '@/lib/labs';
+import { TECHNOLOGIES } from '@/lib/technologies';
+import { GLOSSARY } from '@/lib/glossary';
+import { ALL_RESOURCES } from '@/lib/resources';
 
 const KIND_CLASS: Record<string, string> = {
   lab: 'text-accent',
@@ -125,8 +129,11 @@ export function SearchDialog() {
 
             {query.trim() === '' ? (
               <p className="px-4 py-8 text-center text-xs text-fg-faint">
-                Search everything — five labs, four technologies, 33 terms and 37
-                resources.
+                {/* Counted, not typed. These read "five labs … 33 terms" for
+                    months after the site had ten and sixty-one. */}
+                Search everything — {LIVE_LABS.length} labs,{' '}
+                {TECHNOLOGIES.length} technologies, {GLOSSARY.length} terms and{' '}
+                {ALL_RESOURCES.length} resources.
               </p>
             ) : results.length === 0 ? (
               <p className="px-4 py-8 text-center text-xs text-fg-faint">

@@ -36,6 +36,17 @@ const PAGES: { title: string; description: string; href: string }[] = [
     href: '/tech',
   },
   {
+    title: 'Roadmap',
+    description:
+      'Everything that shipped and why, and the proposals that were turned down.',
+    href: '/roadmap',
+  },
+  {
+    title: 'Privacy',
+    description: 'No accounts, no analytics, no cookies. Nothing to collect.',
+    href: '/privacy',
+  },
+  {
     title: 'Which should you use?',
     description:
       'Three questions, a reasoned recommendation, and what the other three would have cost.',

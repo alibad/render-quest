@@ -473,7 +473,7 @@ export function ComputeLab() {
                       </p>
                       <p className="mt-3 text-xs leading-relaxed text-fg-muted">
                         There is no fallback here, and that is the point. The other
-                        four labs run on WebGL because their maths does not care which
+                        labs here run on WebGL because their maths does not care which
                         API draws it. This one is a compute shader — a stage WebGL does
                         not have — so it is the honest example of a target that decides
                         your technology for you.

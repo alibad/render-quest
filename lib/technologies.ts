@@ -540,8 +540,8 @@ export function getTechnology(slug: string): Technology | undefined {
 
 /** The shader maths every page shares, quoted once for the index page. */
 export const SHARED_SCENE = {
-  title: 'The same scene, four ways',
+  title: 'The same scenes, four ways',
   formula: 'colour = 0.5 + 0.5 · cos(time + uv.xyx + (0, 2, 4))',
   description:
-    'Every page below renders one identical thing: a cosine-palette plasma, three cosines a phase apart. The maths never changes, so what you are comparing is purely the code you have to write around it.',
+    'Every page below renders the same two reference scenes: a cosine-palette plasma, three cosines a phase apart, and a lit, depth-tested, spinning cube. The maths never changes, so what you are comparing is purely the code you have to write around it — and the cube is the more honest half, because a full-screen effect exercises almost no plumbing.',
 };

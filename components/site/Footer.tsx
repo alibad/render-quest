@@ -30,6 +30,9 @@ export function Footer() {
           <Link href="/roadmap" className="transition-colors hover:text-fg">
             Roadmap
           </Link>
+          <Link href="/privacy" className="transition-colors hover:text-fg">
+            Privacy
+          </Link>
           <Link href="/about" className="transition-colors hover:text-fg">
             About
           </Link>
