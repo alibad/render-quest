@@ -2,7 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ControlGroup, ResetButton, Slider, Toggle } from '@/components/lab/Controls';
+import {
+  ControlGroup,
+  Presets,
+  ResetButton,
+  Slider,
+  Toggle,
+  type Preset,
+} from '@/components/lab/Controls';
 import { CopyLink } from '@/components/lab/CopyLink';
 import { LabLayout } from '@/components/lab/LabLayout';
 import { useLabState } from '@/components/lab/useLabState';
@@ -161,6 +168,29 @@ const DEFAULTS: ComputeControls = {
   brightness: 0.28,
   running: true,
 };
+
+const PRESETS: Preset<ComputeControls>[] = [
+  {
+    label: 'A hundred thousand',
+    note: 'Every particle stepped by the GPU, every frame, with the CPU writing eight floats of uniforms and issuing two dispatches. Nothing here scales with the particle count on the CPU side — that is the whole point of the stage.',
+    values: { count: 100_000, pointSize: 0.004, brightness: 0.22, running: true },
+  },
+  {
+    label: 'Turn the swirl off',
+    note: 'Pure attraction with no tangential force. Every particle falls straight into the attractor and stays there — a single saturated dot within about a second. The orbit you normally see is angular momentum, not the pull.',
+    values: { swirl: 0, attraction: 0.6, damping: 0.99, running: true },
+  },
+  {
+    label: 'Loosen the damping',
+    note: 'Damping is what stops the field flying apart. Take it to 1.0 and nothing ever loses energy: the particles overshoot the attractor, sling past it and keep going, and the shape stops settling.',
+    values: { damping: 1, swirl: 1.2, attraction: 0.45, running: true },
+  },
+  {
+    label: 'Freeze it',
+    note: 'The simulation stops but the render does not — the same storage buffer is still being read back six vertices at a time. Useful for seeing the structure the swirl actually builds, without it moving.',
+    values: { running: false, pointSize: 0.007, brightness: 0.4 },
+  },
+];
 
 function seedParticles(): Float32Array {
   const data = new Float32Array(MAX_PARTICLES * 4);
@@ -498,6 +528,13 @@ export function ComputeLab() {
       }
       controls={
         <>
+          <ControlGroup title="Start here">
+            <Presets
+              presets={PRESETS}
+              onApply={(values) => setControls((prev) => ({ ...prev, ...values }))}
+            />
+          </ControlGroup>
+
           <ControlGroup
             title="Simulation"
             action={<ResetButton onClick={() => setControls(DEFAULTS)} />}

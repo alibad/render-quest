@@ -5,7 +5,13 @@ import { useCallback, useMemo } from 'react';
 import { GLCanvas, type SceneFactory } from '@/components/lab/GLCanvas';
 import { CopyLink } from '@/components/lab/CopyLink';
 import { useLabState } from '@/components/lab/useLabState';
-import { ControlGroup, ResetButton, Toggle } from '@/components/lab/Controls';
+import {
+  ControlGroup,
+  Presets,
+  ResetButton,
+  Toggle,
+  type Preset,
+} from '@/components/lab/Controls';
 import { AxisKey, LabLayout } from '@/components/lab/LabLayout';
 import { LabSource } from '@/components/lab/LabSource';
 import { useTheme } from '@/components/site/ThemeProvider';
@@ -105,6 +111,29 @@ const DEFAULTS: PipelineControls = {
   azimuth: 0.62,
   elevation: 0.34,
 };
+
+const PRESETS: Preset<PipelineControls>[] = [
+  {
+    label: 'Where it starts',
+    note: 'Model space: the vertex as the artist authored it, before any matrix has touched it. Every number in the readout below is the one in the buffer.',
+    values: { stage: 0, showGrid: true },
+  },
+  {
+    label: 'The moment of the divide',
+    note: 'Clip space, where w stops being 1. Watch the w column in the readout: everything the perspective divide is about to do is already sitting in that one number.',
+    values: { stage: 3, showGrid: true },
+  },
+  {
+    label: 'After the divide',
+    note: 'NDC — the divide has happened and everything visible now lies inside a cube from -1 to 1. Anything that fell outside it was clipped on the way, not shrunk.',
+    values: { stage: 4, showGrid: false },
+  },
+  {
+    label: 'The pixel it lands on',
+    note: 'Screen space. The last step is the least mysterious one: scale NDC by the viewport and flip y, because the window counts down from the top and the maths counts up from the bottom.',
+    values: { stage: 5, showGrid: false },
+  },
+];
 
 /** A small 3-axis cross marking the tracked vertex. */
 function marker(at: readonly [number, number, number], r: number): Float32Array {
@@ -288,6 +317,13 @@ export function PipelineLab() {
       }
       controls={
         <>
+          <ControlGroup title="Start here">
+            <Presets
+              presets={PRESETS}
+              onApply={(values) => setControls((prev) => ({ ...prev, ...values }))}
+            />
+          </ControlGroup>
+
           <ControlGroup
             title="Stage"
             action={<ResetButton onClick={() => setControls(DEFAULTS)} />}

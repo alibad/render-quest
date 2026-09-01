@@ -11,6 +11,8 @@ import {
   Segmented,
   Slider,
   Toggle,
+  Presets,
+  type Preset,
 } from '@/components/lab/Controls';
 import { MatrixView } from '@/components/lab/MatrixView';
 import { AxisKey, LabLayout } from '@/components/lab/LabLayout';
@@ -76,6 +78,29 @@ const DEFAULTS: ProjectionControls = {
   azimuth: 0.95,
   elevation: 0.38,
 };
+
+const PRESETS: Preset<ProjectionControls>[] = [
+  {
+    label: 'The divide, exaggerated',
+    note: 'A wide field of view makes the perspective divide impossible to miss: the near face of a box is enormous and the far face is small, and both are the same size in the model. Everything between them is w doing its work.',
+    values: { mode: 'perspective', fov: 90, near: 1.5, far: 11, showFrustum: true },
+  },
+  {
+    label: 'Flatten it',
+    note: 'Orthographic. Parallel edges stay parallel and distance stops mattering at all — every box is the size it is, wherever it stands. This is why CAD and isometric games use it, and why it looks wrong for a camera.',
+    values: { mode: 'orthographic', orthoHeight: 4, showFrustum: true },
+  },
+  {
+    label: 'Clip the near plane',
+    note: 'Push the near plane past the closest box and it does not fade or dim — it is simply gone, sliced flat where the plane crosses it. Clipping is a hard test, not a distance fade.',
+    values: { mode: 'perspective', fov: 50, near: 4.4, far: 11, showFrustum: true },
+  },
+  {
+    label: 'Squeeze the depth range',
+    note: 'Near and far pulled close together. The frustum becomes a thin slab, and anything outside it disappears at both ends — the same test, applied twice.',
+    values: { mode: 'perspective', fov: 50, near: 3, far: 6, showFrustum: true },
+  },
+];
 
 /** The camera being *studied*. Fixed, so only the projection is in play. */
 const CAMERA_EYE: [number, number, number] = [0, 1.9, 7];
@@ -288,6 +313,13 @@ export function ProjectionLab() {
       }
       controls={
         <>
+          <ControlGroup title="Start here">
+            <Presets
+              presets={PRESETS}
+              onApply={(values) => setParams((prev) => ({ ...prev, ...values }))}
+            />
+          </ControlGroup>
+
           <ControlGroup
             title="Projection"
             action={<ResetButton onClick={() => setParams(DEFAULTS)} />}
