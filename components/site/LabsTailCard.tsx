@@ -6,14 +6,24 @@ import { REPO_URL } from '@/lib/site';
 /**
  * The card that closes the lab grid.
  *
- * There are an odd number of labs and the grid is two columns, so the last row
- * is half empty — and an empty half-row on a contents page reads as something
- * that failed to load rather than as the end of a list. This is the honest
- * thing to put in it: where the sequence goes next, and how to push it there.
+ * An empty half-row on a contents page reads as something that failed to load
+ * rather than as the end of a list, so this fills it with the honest thing:
+ * where the sequence goes next, and how to push it there.
+ *
+ * It sizes itself against the lab count rather than assuming one. Written when
+ * there were seven labs, where a single-width card completed the row; at ten it
+ * would have re-opened the very hole it was added to close. Even count -> the
+ * card spans both columns and closes the grid; odd -> it takes the last slot.
  */
 export function LabsTailCard() {
+  const fillsARowOfItsOwn = LIVE_LABS.length % 2 === 0;
+
   return (
-    <section className="flex flex-col justify-center rounded-xl border border-dashed border-line-strong p-5">
+    <section
+      className={`flex flex-col justify-center rounded-xl border border-dashed border-line-strong p-5 ${
+        fillsARowOfItsOwn ? 'sm:col-span-2' : ''
+      }`}
+    >
       <p className="eyebrow">The end of the sequence, for now</p>
       <p className="mt-3 text-sm leading-relaxed text-fg-muted">
         {LIVE_LABS.length} labs, each one assuming the one before it. What comes

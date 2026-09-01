@@ -22,6 +22,27 @@ import assert from 'node:assert/strict';
 import { chromium, type Browser, type ConsoleMessage } from 'playwright';
 
 import { LIVE_LABS } from '../lib/labs.ts';
+import { TECHNOLOGIES } from '../lib/technologies.ts';
+
+/**
+ * Every route, built from the registries rather than listed by hand — the last
+ * time these were hand-picked, the one route that was broken was the one nobody
+ * had thought to add.
+ */
+const STATIC_ROUTES = [
+  '/',
+  '/labs',
+  '/tech',
+  '/tech/choose',
+  ...TECHNOLOGIES.map((tech) => `/tech/${tech.slug}`),
+  '/learn',
+  '/glossary',
+  '/roadmap',
+  '/about',
+  '/privacy',
+];
+
+const ALL_ROUTES = [...STATIC_ROUTES, ...LIVE_LABS.map((lab) => `/labs/${lab.slug}`)];
 
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://localhost:3111';
 const START_SERVER = !process.env.SMOKE_BASE_URL;
@@ -268,7 +289,7 @@ async function main() {
     }
 
     // The pages that are not labs still have to render.
-    for (const route of ['/', '/tech', '/tech/webgl', '/labs', '/learn', '/glossary', '/roadmap']) {
+    for (const route of STATIC_ROUTES) {
       const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
       const errors: string[] = [];
       page.on('console', (message) => {
@@ -290,15 +311,76 @@ async function main() {
       await page.close();
     }
 
-    // Horizontal overflow has regressed twice, both times on a phone.
-    for (const route of ['/', '/labs', '/labs/transform', '/tech']) {
+    // Horizontal overflow has now regressed three times, always on a phone. The
+    // third one hid on /labs/pipeline for weeks because this loop checked four
+    // hand-picked routes and that was not one of them. It checks every route
+    // now, and reports which element is sticking out rather than just that one is.
+    for (const route of ALL_ROUTES) {
       const page = await browser.newPage({ viewport: { width: 375, height: 812 } });
       await page.goto(`${BASE}${route}`, { waitUntil: 'networkidle' });
-      const overflows = await page.evaluate(
-        () => document.documentElement.scrollWidth > window.innerWidth,
-      );
+      await page.waitForTimeout(400);
+      const overflow = await page.evaluate(() => {
+        const viewport = document.documentElement.clientWidth;
+        if (document.documentElement.scrollWidth <= viewport) return null;
+        // Name the widest offender, so the failure says what to go and look at.
+        let worst = null;
+        for (const element of document.querySelectorAll('main *')) {
+          const box = element.getBoundingClientRect();
+          if (box.width === 0) continue;
+          if (box.right > viewport + 1 && (!worst || box.width > worst.width)) {
+            worst = {
+              width: Math.round(box.width),
+              tag: element.tagName.toLowerCase(),
+              cls: String(element.className ?? '').slice(0, 70),
+            };
+          }
+        }
+        return { scrollWidth: document.documentElement.scrollWidth, viewport, worst };
+      });
       check(`${route}: no horizontal scroll at 375px`, () => {
-        assert.equal(overflows, false, 'the page scrolls sideways on a phone');
+        assert.equal(
+          overflow,
+          null,
+          overflow
+            ? `${overflow.scrollWidth}px wide in a ${overflow.viewport}px viewport — widest offender: <${overflow.worst?.tag} class="${overflow.worst?.cls}"> at ${overflow.worst?.width}px`
+            : '',
+        );
+      });
+      await page.close();
+    }
+
+    // A two-column grid holding an odd number of cards ends on a half-empty row,
+    // which on an index page reads as a card that failed to load rather than as
+    // the end of a list. It has happened twice: once when a seventh lab was
+    // added, and again when the card added to fix that stopped being enough at
+    // ten. Counting it is cheaper than noticing it.
+    for (const route of ['/', '/labs', '/learn', '/tech', '/tech/choose']) {
+      const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+      await page.goto(`${BASE}${route}`, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(400);
+      const lopsided = await page.evaluate(() => {
+        const offenders: string[] = [];
+        for (const grid of document.querySelectorAll('main *')) {
+          const style = getComputedStyle(grid);
+          if (style.display !== 'grid') continue;
+          const columns = style.gridTemplateColumns.split(' ').filter(Boolean).length;
+          if (columns < 2) continue;
+          // Count the tracks each child occupies, so a col-span-2 card counts twice.
+          let slots = 0;
+          for (const child of grid.children) {
+            if (child.getBoundingClientRect().height === 0) continue;
+            const span = getComputedStyle(child).gridColumnEnd;
+            const spanned = span.startsWith('span ') ? Number(span.slice(5)) : 1;
+            slots += Number.isFinite(spanned) ? spanned : 1;
+          }
+          if (slots > columns && slots % columns !== 0) {
+            offenders.push(`${slots} slots across ${columns} columns`);
+          }
+        }
+        return offenders;
+      });
+      check(`${route}: no grid ends on a half-empty row`, () => {
+        assert.deepEqual(lopsided, [], lopsided.join('; '));
       });
       await page.close();
     }

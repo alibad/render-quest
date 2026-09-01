@@ -200,13 +200,23 @@ export function LearnExplorer() {
                 {stage.summary}
               </p>
 
+              {/*
+                A stage with an odd number of resources ends on a half-empty row,
+                which on a reading list looks like a card that failed to load. The
+                last one widens to close it — stages here run to three and five, so
+                this is the common case rather than an edge one.
+              */}
               <div className="mt-5 grid gap-3 pl-0 sm:pl-8 lg:grid-cols-2">
-                {stage.resources.map((resource) => (
+                {stage.resources.map((resource, index) => (
                   <ResourceCard
                     key={resource.url}
                     resource={resource}
                     done={done.has(resource.url)}
                     onToggle={() => toggleDone(resource.url)}
+                    wide={
+                      stage.resources.length % 2 === 1 &&
+                      index === stage.resources.length - 1
+                    }
                   />
                 ))}
               </div>
@@ -222,16 +232,19 @@ function ResourceCard({
   resource,
   done,
   onToggle,
+  wide = false,
 }: {
   resource: Resource;
   done: boolean;
   onToggle: () => void;
+  /** Set on the last card of an odd-length stage, to close the row. */
+  wide?: boolean;
 }) {
   return (
     <article
       className={`panel group relative flex flex-col p-4 transition-all ${
-        done ? 'opacity-55' : 'hover:border-line-strong hover:bg-ink-600/50'
-      }`}
+        wide ? 'lg:col-span-2' : ''
+      } ${done ? 'opacity-55' : 'hover:border-line-strong hover:bg-ink-600/50'}`}
     >
       <div className="flex flex-wrap items-center gap-1.5">
         <span

@@ -23,20 +23,27 @@ export function LabLayout({
   /** The shader source this lab runs, shown in a collapsible panel. */
   source?: ReactNode;
 }) {
+  // `min-w-0` on every child is load-bearing, not tidiness. A grid item defaults
+  // to `min-width: auto`, which means it refuses to shrink below its content's
+  // min-content width — so one wide readout table widened the whole column to
+  // 458px inside a 375px phone and the entire lab scrolled sideways, its own
+  // `overflow-x-auto` powerless to help. With min-w-0 the track can shrink and
+  // the scroll container finally does its job.
+  //
   // Explicit grid placement rather than DOM order, because the two orders differ:
   // on a wide screen the readout sits under the canvas with controls beside both;
   // on a phone the controls must come SECOND, directly under the canvas they
   // drive. A slider two screens below the render it changes teaches nothing.
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-      <div className="lg:col-start-1 lg:row-start-1">{canvas}</div>
+      <div className="min-w-0 lg:col-start-1 lg:row-start-1">{canvas}</div>
 
-      <aside className="panel h-fit space-y-6 p-5 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:sticky lg:top-6">
+      <aside className="panel h-fit min-w-0 space-y-6 p-5 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:sticky lg:top-6">
         {controls}
       </aside>
 
       {readout || source ? (
-        <div className="space-y-5 lg:col-start-1 lg:row-start-2">
+        <div className="min-w-0 space-y-5 lg:col-start-1 lg:row-start-2">
           {readout ? (
             <div className="panel p-5">
               <h2 className="eyebrow mb-4">{readoutTitle}</h2>
