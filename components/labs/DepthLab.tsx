@@ -77,6 +77,8 @@ function quadColors(r: number, g: number, b: number): Float32Array {
 type Scene = 'zfight' | 'blend';
 
 interface DepthControls {
+  azimuth: number;
+  elevation: number;
   scene: Scene;
   near: number;
   far: number;
@@ -88,6 +90,8 @@ interface DepthControls {
 }
 
 const DEFAULTS: DepthControls = {
+  azimuth: 0.12,
+  elevation: 0.16,
   scene: 'zfight',
   near: 0.1,
   far: 200,
@@ -265,6 +269,7 @@ export function DepthLab() {
     distance: (value) => value >= 5 && value <= 120,
     separation: (value) => value >= 0 && value <= 0.2,
     opacity: (value) => value >= 0.05 && value <= 1,
+    elevation: (value) => value >= -1.2 && value <= 1.2,
   });
   const { palette } = useTheme();
 
@@ -275,8 +280,19 @@ export function DepthLab() {
     [setControls],
   );
 
+  // Orbiting matters more here than in most labs: seeing the three panes from
+  // the side is what makes their separation, and the order they blend in,
+  // visible at all.
+  const onDrag = useCallback((dx: number, dy: number) => {
+    setControls((prev) => ({
+      ...prev,
+      azimuth: prev.azimuth - dx * 0.008,
+      elevation: Math.max(-1.2, Math.min(1.2, prev.elevation + dy * 0.008)),
+    }));
+  }, [setControls]);
+
   const params = useMemo<Params>(
-    () => ({ ...controls, palette, azimuth: 0.12, elevation: 0.16 }),
+    () => ({ ...controls, palette }),
     [controls, palette],
   );
 
@@ -306,6 +322,7 @@ export function DepthLab() {
             create={createScene}
             params={params}
             aspect={16 / 10}
+            onDrag={onDrag}
             label="Two nearly coplanar panels competing for the same depth, or three translucent panes blended in front of each other"
           />
           <p className="mt-2 font-mono text-2xs text-fg-faint">

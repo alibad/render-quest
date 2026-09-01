@@ -36,6 +36,7 @@ import {
   type Mat4,
 } from '@/lib/math/mat4';
 import type { CanvasPalette } from '@/lib/theme';
+import { orbitToCartesian } from '@/lib/math/vec3';
 
 /**
  * A ground plane running to the horizon is the classic minification test: the
@@ -72,6 +73,8 @@ void main() {
 `;
 
 interface TextureParams {
+  azimuth: number;
+  elevation: number;
   wrapS: WrapMode;
   wrapT: WrapMode;
   minFilter: MinFilter;
@@ -84,6 +87,10 @@ interface TextureParams {
 type TextureControls = Omit<TextureParams, 'palette'>;
 
 const DEFAULTS: TextureControls = {
+  // Reproduces the fixed viewpoint this lab used to have: looking down the
+  // plane from just above it, which is where minification bites hardest.
+  azimuth: 0,
+  elevation: 0.07,
   wrapS: 'repeat',
   wrapT: 'repeat',
   minFilter: 'linear-mip-linear',
@@ -112,7 +119,18 @@ const createScene: SceneFactory<TextureParams> = (gl) => {
       const { palette } = params;
       beginFrame(gl, width, height, palette);
 
-      const view = lookAt([0, 1.35, 5.5], [0, 0.55, -6], [0, 1, 0]);
+      // Orbit around the far end of the plane rather than a fixed eye. The
+      // viewing angle is not decoration here: flattening it lengthens the
+      // texture footprint of every pixel, which is exactly what minification
+      // has to cope with — the shallower you look, the more the filters matter.
+      const target: [number, number, number] = [0, 0.55, -6];
+      const offset = orbitToCartesian(params.azimuth, params.elevation, 11.53);
+      const eye: [number, number, number] = [
+        target[0] + offset[0],
+        target[1] + offset[1],
+        target[2] + offset[2],
+      ];
+      const view = lookAt(eye, target, [0, 1, 0]);
       const projection = perspective(degToRad(55), width / height, 0.1, 200);
       const viewProjection: Mat4 = multiply(projection, view);
 
@@ -180,6 +198,16 @@ export function TextureLab() {
     [controls, palette],
   );
 
+  // Elevation is clamped well above zero: below the plane there is nothing to
+  // see, and the lesson lives in the shallow angles just above it.
+  const onDrag = useCallback((dx: number, dy: number) => {
+    setControls((prev) => ({
+      ...prev,
+      azimuth: prev.azimuth - dx * 0.006,
+      elevation: Math.max(0.02, Math.min(0.75, prev.elevation + dy * 0.004)),
+    }));
+  }, [setControls]);
+
   const set = useCallback(<K extends keyof TextureControls>(
     key: K,
     value: TextureControls[K],
@@ -220,6 +248,7 @@ const PRESETS: Preset<TextureControls>[] = [
           create={createScene}
           params={params}
           aspect={16 / 9}
+          onDrag={onDrag}
           label="A textured ground plane running to the horizon, showing texture filtering and wrap modes"
           overlay={
             <AxisKey

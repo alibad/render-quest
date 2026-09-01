@@ -147,6 +147,8 @@ void main() {
 `;
 
 interface ColourControls {
+  azimuth: number;
+  elevation: number;
   intensity: number;
   ambient: number;
   split: number;
@@ -156,6 +158,8 @@ interface ColourControls {
 }
 
 const DEFAULTS: ColourControls = {
+  azimuth: 0.6,
+  elevation: 0.25,
   intensity: 1,
   ambient: 0.05,
   split: 0.5,
@@ -286,6 +290,7 @@ export function ColourLab() {
     gamma: (value) => value >= 1 && value <= 3,
     split: (value) => value >= 0 && value <= 1,
     intensity: (value) => value >= 0 && value <= 3,
+    elevation: (value) => value >= -1.2 && value <= 1.2,
     ambient: (value) => value >= 0 && value <= 0.5,
   });
   const { palette } = useTheme();
@@ -297,8 +302,18 @@ export function ColourLab() {
     [setControls],
   );
 
+  // The camera moves like every other lab's, and lives in the controls so a
+  // shared link carries the angle the divider was judged from.
+  const onDrag = useCallback((dx: number, dy: number) => {
+    setControls((prev) => ({
+      ...prev,
+      azimuth: prev.azimuth - dx * 0.008,
+      elevation: Math.max(-1.2, Math.min(1.2, prev.elevation + dy * 0.008)),
+    }));
+  }, [setControls]);
+
   const params = useMemo<Params>(
-    () => ({ ...controls, palette, azimuth: 0.6, elevation: 0.25 }),
+    () => ({ ...controls, palette }),
     [controls, palette],
   );
 
@@ -316,6 +331,7 @@ export function ColourLab() {
             create={createScene}
             params={params}
             aspect={16 / 10}
+            onDrag={onDrag}
             label="A lit sphere split down the middle, each half lit in a different colour space"
           />
           <p className="mt-2 font-mono text-2xs text-fg-faint">

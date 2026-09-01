@@ -30,8 +30,9 @@ export default function Labs() {
         </h1>
         <p className="mt-4 max-w-prose text-sm leading-relaxed text-fg-muted">
           One idea per lab, with the controls to it. Everything here runs live in your
-          browser — and where a lab has a camera to move, dragging inside its
-          canvas orbits it.
+          browser, and dragging inside a canvas orbits the camera. The two labs
+          with no camera to orbit — a particle field drawn straight in clip
+          space, and a full-screen shader — say so themselves.
         </p>
         <p className="mt-3 max-w-prose text-sm leading-relaxed text-fg-faint">
           They are numbered, and the numbering is not decoration: each one assumes the
