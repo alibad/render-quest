@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ControlGroup, Presets, Slider, type Preset } from '@/components/lab/Controls';
 import { CopyLink } from '@/components/lab/CopyLink';
 import { LabLayout } from '@/components/lab/LabLayout';
+import { LabSource } from '@/components/lab/LabSource';
 import { useLabState } from '@/components/lab/useLabState';
 import { useTheme } from '@/components/site/ThemeProvider';
 
@@ -105,6 +106,21 @@ const PRESETS: Preset<ShaderControls>[] = [
   },
 ];
 
+const SOURCE = [
+  {
+    label: 'The preamble, prepended to what you write',
+    language: 'glsl' as const,
+    source: PREAMBLE.trim(),
+    note: 'This is why vUv and uTime exist without you declaring them, and why the driver reports a line number a few higher than the one you are looking at — the panel above renumbers it back.',
+  },
+  {
+    label: 'The vertex shader, which never changes',
+    language: 'glsl' as const,
+    source: VERTEX.trim(),
+    note: 'One oversized triangle covering the viewport, handing the fragment stage a 0..1 coordinate. Full-screen shader work almost never needs more geometry than this.',
+  },
+];
+
 interface CompileState {
   error: string | null;
   line: number | null;
@@ -117,6 +133,7 @@ export function ShaderLab() {
   });
   const [source, setSource] = useState(PRESETS_SOURCE[DEFAULTS.preset]);
   const [compile, setCompile] = useState<CompileState>({ error: null, line: null });
+  const [contextFailed, setContextFailed] = useState(false);
   const { palette } = useTheme();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -138,7 +155,9 @@ export function ShaderLab() {
 
     const gl = canvas.getContext('webgl', { antialias: true });
     if (!gl) {
-      setCompile({ error: 'This browser could not create a WebGL context.', line: null });
+      // Not a compile error, and it should not appear in a panel headed "what
+      // the compiler said" — every other lab puts this over the canvas itself.
+      setContextFailed(true);
       return;
     }
 
@@ -268,6 +287,16 @@ export function ShaderLab() {
               role="img"
               className="block h-full w-full"
             />
+            {contextFailed ? (
+              <div className="absolute inset-0 grid place-items-center bg-ink-800 p-8 text-center">
+                <p className="max-w-sm text-sm leading-relaxed text-fg-muted">
+                  <span className="text-fg">
+                    This browser could not create a WebGL context.
+                  </span>{' '}
+                  The editor below still works, but nothing will run in it.
+                </p>
+              </div>
+            ) : null}
           </div>
 
           <div className="panel overflow-hidden">
@@ -367,6 +396,7 @@ export function ShaderLab() {
           few lines further down.
         </>
       }
+      source={<LabSource samples={SOURCE} />}
     />
   );
 }
