@@ -363,6 +363,40 @@ renderer.setAnimationLoop((now) => {
         language: 'bash',
         source: 'npm install three',
       },
+      {
+        label: 'Loading a real model',
+        language: 'javascript' as const,
+        source: `import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const gltf = await new GLTFLoader().loadAsync('/robot.glb');
+scene.add(gltf.scene);
+
+// Everything that arrives with it — materials, textures, skeletons,
+// animation clips — is already wired up and ready to play.
+const mixer = new THREE.AnimationMixer(gltf.scene);
+mixer.clipAction(gltf.animations[0]).play();`,
+        note: 'This is the single strongest argument for the library. glTF is a container format with its own material model, texture packing, skinning and animation semantics; parsing it correctly by hand is weeks of work you would be redoing rather than doing.',
+      },
+      {
+        label: 'The two things every real scene needs',
+        language: 'javascript' as const,
+        source: `import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+// Resizing correctly means three things, and forgetting the third is
+// why so many canvases look soft on a retina screen.
+function resize() {
+  const { clientWidth: w, clientHeight: h } = renderer.domElement;
+  renderer.setSize(w, h, false);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(renderer.domElement);`,
+        note: 'Orbit controls and a correct resize are the two pieces of plumbing every scene needs and nobody enjoys writing. Note updateProjectionMatrix: changing the aspect field alone does nothing, because the matrix was built once.',
+      },
     ],
     cubeSamples: [
       {

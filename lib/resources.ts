@@ -405,7 +405,7 @@ export const TRACKS: Track[] = [
             author: 'Glenn Fiedler',
             url: 'https://gafferongames.com/',
             kind: 'reference',
-            level: 'core',
+            level: 'start here',
             free: true,
             why: 'The reference on game networking and physics integration. If you are building anything multiplayer, read the networked physics series first.',
           },

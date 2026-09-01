@@ -22,6 +22,13 @@ const KIND_CLASS: Record<ResourceKind, string> = {
   tool: 'text-axis-z border-axis-z/35 bg-axis-z/10',
 };
 
+/** Start here reads as an invitation; go deep reads as a warning. */
+const LEVEL_CLASS: Record<Level, string> = {
+  'start here': 'border-accent/35 bg-accent/10 text-accent',
+  core: 'border-line-strong text-fg-muted',
+  deep: 'border-line text-fg-faint',
+};
+
 const LEVEL_LABEL: Record<Level, string> = {
   'start here': 'Start here',
   core: 'Core',
@@ -254,11 +261,17 @@ function ResourceCard({
         >
           {KIND_LABEL[resource.kind]}
         </span>
-        {resource.level === 'start here' ? (
-          <span className="rounded border border-line-strong px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wider text-fg-muted">
-            {LEVEL_LABEL[resource.level]}
-          </span>
-        ) : null}
+        {/*
+          All three levels, not just one. `level` was set on every one of the 37
+          resources and rendered on the ten marked "start here" — so two thirds
+          of the list carried a grading the reader was never shown, and a stage
+          with no starting point looked the same as one with three.
+        */}
+        <span
+          className={`rounded border px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wider ${LEVEL_CLASS[resource.level]}`}
+        >
+          {LEVEL_LABEL[resource.level]}
+        </span>
         {!resource.free ? (
           <span className="rounded border border-amber/35 bg-amber/10 px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wider text-amber">
             Paid

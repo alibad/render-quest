@@ -195,10 +195,11 @@ export default function Home() {
               plumbing a scene graph would hide is the actual subject, so none of it
               is hidden.
             </Principle>
-            <Principle title="The maths is on screen">
-              Every lab shows the live matrix next to the render. The coloured columns
-              in the readout are the coloured axes on the canvas — the same thing,
-              twice.
+            <Principle title="The numbers are on screen">
+              Every lab puts the numbers driving the render next to it, live: the
+              matrix where there is one, the depth budget, the measured cost of a
+              frame. The coloured columns in a matrix readout are the coloured axes
+              on the canvas — the same thing, twice.
             </Principle>
             <Principle title="Checked, not asserted">
               The matrix library ships with a numeric test suite. Claims about how a
