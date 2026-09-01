@@ -538,6 +538,8 @@ export function InstancingLab() {
     dragRef.current = null;
   }, []);
 
+  // A reading only exists once the loop has actually produced one.
+  const measured = status === 'running' && stats.fps > 0;
   const drawCalls = controls.mode === 'instanced' ? 1 : controls.count;
   const triangles = controls.count * TRIANGLES_PER_CUBE;
 
@@ -665,12 +667,30 @@ export function InstancingLab() {
             tone={controls.mode === 'instanced' ? 'good' : 'warn'}
           />
           <Stat label="Triangles" value={triangles.toLocaleString()} />
+          {/*
+            Only the measured stats are gated. Draw calls and triangles are
+            arithmetic on the controls and stay true whether or not the device
+            started; CPU and frame rate are readings, and reading 0.00 ms in the
+            "good" green on a browser that never ran the lab is the readout
+            lying about the one number the lab exists to show.
+          */}
           <Stat
             label="CPU per frame"
-            value={`${stats.cpu.toFixed(2)} ms`}
-            tone={stats.cpu > 8 ? 'warn' : stats.cpu > 3 ? 'neutral' : 'good'}
+            value={measured ? `${stats.cpu.toFixed(2)} ms` : '—'}
+            tone={
+              !measured
+                ? 'neutral'
+                : stats.cpu > 8
+                  ? 'warn'
+                  : stats.cpu > 3
+                    ? 'neutral'
+                    : 'good'
+            }
           />
-          <Stat label="Frame rate" value={`${Math.round(stats.fps)} fps`} />
+          <Stat
+            label="Frame rate"
+            value={measured ? `${Math.round(stats.fps)} fps` : '—'}
+          />
         </div>
       }
       readoutCaption={

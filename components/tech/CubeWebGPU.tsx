@@ -261,27 +261,40 @@ export function CubeWebGPU() {
   }, []);
 
   return (
-    <div
-      className="relative w-full overflow-hidden rounded-lg border border-line bg-ink-800"
-      style={{ aspectRatio: '16 / 9' }}
-    >
+    <div>
+      <div
+        className="relative w-full overflow-hidden rounded-lg border border-line bg-ink-800"
+        style={{ aspectRatio: '16 / 9' }}
+      >
       <canvas
         ref={canvasRef}
         aria-label="A lit, depth-tested cube spinning, rendered with WebGPU"
         role="img"
         className="block h-full w-full"
       />
-      {status !== 'running' ? (
-        <div className="absolute inset-0 grid place-items-center bg-ink-800 p-6 text-center">
-          <p className="max-w-sm text-xs leading-relaxed text-fg-muted">
-            {status === 'checking'
-              ? 'Checking for WebGPU…'
-              : status === 'unsupported'
-                ? 'This browser does not have WebGPU, so this one is not running. The WebGL page renders the identical scene.'
-                : detail}
-          </p>
-        </div>
-      ) : null}
+        {status !== 'running' ? (
+          <div className="absolute inset-0 grid place-items-center bg-ink-800 p-6 text-center">
+            <p className="max-w-sm text-xs leading-relaxed text-fg-muted">
+              {status === 'checking'
+                ? 'Checking for WebGPU…'
+                : status === 'unsupported'
+                  ? 'This browser does not have WebGPU, so this one is not running. The WebGL page renders the identical scene.'
+                  : detail}
+            </p>
+          </div>
+        ) : null}
+      </div>
+      {/*
+        The caption lives here rather than on the page, because the page cannot
+        know whether the device started. It used to print "Live · running on
+        WebGPU right now" unconditionally — directly beneath a panel saying this
+        browser has no WebGPU.
+      */}
+      <p className="mt-2 font-mono text-2xs text-fg-faint">
+        {status === 'running'
+          ? 'Live · running on WebGPU in your browser right now'
+          : 'Not running in this browser'}
+      </p>
     </div>
   );
 }

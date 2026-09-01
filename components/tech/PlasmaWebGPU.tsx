@@ -171,9 +171,12 @@ export function PlasmaWebGPU() {
                 'Checking for WebGPU…'
               ) : status === 'unsupported' ? (
                 <>
-                  <span className="text-fg">This browser has no WebGPU.</span> The
-                  WebGL demo above is running; this one cannot. That gap is the whole
-                  practical argument for keeping a fallback.
+                  <span className="text-fg">This browser has no WebGPU.</span> The{' '}
+                  <a href="/tech/webgl" className="link-accent">
+                    WebGL page
+                  </a>{' '}
+                  renders this same scene and will run here; this one cannot. That
+                  gap is the whole practical argument for keeping a fallback.
                 </>
               ) : (
                 <>

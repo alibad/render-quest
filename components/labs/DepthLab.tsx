@@ -302,7 +302,12 @@ export function DepthLab() {
       }
       canvas={
         <div>
-          <GLCanvas create={createScene} params={params} aspect={16 / 10} />
+          <GLCanvas
+            create={createScene}
+            params={params}
+            aspect={16 / 10}
+            label="Two nearly coplanar panels competing for the same depth, or three translucent panes blended in front of each other"
+          />
           <p className="mt-2 font-mono text-2xs text-fg-faint">
             {controls.scene === 'zfight'
               ? `Two panels ${controls.separation.toFixed(3)} apart, ${controls.distance.toFixed(0)} units away · near ${controls.near.toFixed(2)}`

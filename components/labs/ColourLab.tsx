@@ -312,7 +312,12 @@ export function ColourLab() {
       readoutTitle="The numbers underneath"
       canvas={
         <div>
-          <GLCanvas create={createScene} params={params} aspect={16 / 10} />
+          <GLCanvas
+            create={createScene}
+            params={params}
+            aspect={16 / 10}
+            label="A lit sphere split down the middle, each half lit in a different colour space"
+          />
           <p className="mt-2 font-mono text-2xs text-fg-faint">
             {controls.bothCorrect
               ? 'Both halves corrected — the divider should be invisible'
