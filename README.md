@@ -1,6 +1,6 @@
 # Render Quest
 
-Interactive graphics labs. You drag the numbers and the matrix, the geometry and the
+Interactive graphics labs. You drag the numbers, and the matrix, the geometry and the
 rendered pixels all change together.
 
 Live at **[render-quest.com](https://www.render-quest.com)**.
@@ -8,17 +8,35 @@ Live at **[render-quest.com](https://www.render-quest.com)**.
 ## Why
 
 A transform is not a table of sixteen numbers — it is a motion, and you cannot see a
-motion on a static page. So each lab is a live WebGL canvas with the maths exposed
-next to it, and the controls wired to the parts that matter.
+motion on a static page. So each lab is a live WebGL or WebGPU canvas with the numbers
+driving it exposed beside it, and the controls wired to the parts that matter.
 
 ## The labs
 
-| Lab | What it shows |
-| --- | --- |
-| [`/labs/transform`](https://www.render-quest.com/labs/transform) | Translate, rotate and scale a cube; switch `T·R·S` for `S·R·T` and watch the composition order bite. The object's basis vectors are drawn *through* the model matrix, so the coloured columns in the readout are the coloured arms on screen. |
-| [`/labs/projection`](https://www.render-quest.com/labs/projection) | A camera's frustum as an object in the world, above the picture that camera renders. Objects fade in the god view as they leave the frustum, using the same clip test the GPU runs. |
+Ten, in sequence. Each one assumes the ideas of the one before it, and says so.
 
-Two more are in progress: coordinate spaces, and light & normals.
+| # | Lab | API | What you come away with |
+| --- | --- | --- | --- |
+| 1 | [The Model Matrix](https://www.render-quest.com/labs/transform) | WebGL | Why a matrix chain reads right to left, and why the columns are the object's own axes. |
+| 2 | [Projection & the Frustum](https://www.render-quest.com/labs/projection) | WebGL | What the perspective divide actually does, and why near and far are a hard clip rather than a fade. |
+| 3 | [Coordinate Spaces](https://www.render-quest.com/labs/pipeline) | WebGL | Where each matrix in the chain hands over to the next, and what the GPU does between them. |
+| 4 | [Light & Normals](https://www.render-quest.com/labs/shading) | WebGL | Why normals need the inverse-transpose, and what separates flat, Gouraud and Phong. |
+| 5 | [Textures & Sampling](https://www.render-quest.com/labs/textures) | WebGL | Why a texture looks wrong at a distance, and what mipmapping is really trading away. |
+| 6 | [Compute & Particles](https://www.render-quest.com/labs/compute) | WebGPU | What a compute shader is for, and the kind of problem that leaves WebGL behind entirely. |
+| 7 | [Draw Calls & Instancing](https://www.render-quest.com/labs/instancing) | WebGPU | Why the number of draw calls matters more than the number of triangles. |
+| 8 | [Colour & Gamma](https://www.render-quest.com/labs/colour) | WebGL | Why lighting maths done on sRGB numbers is wrong, and why the mistake looks like a style rather than a bug. |
+| 9 | [Depth & Transparency](https://www.render-quest.com/labs/depth) | WebGL | That depth precision is set by the near plane rather than the model, and that the depth buffer cannot answer the question transparency asks. |
+| 10 | [Write a Shader](https://www.render-quest.com/labs/shader) | WebGL | That a shader is a function from a pixel coordinate to a colour, and that the errors are readable once something shows them to you. |
+
+Every lab has named presets, the real shader source it compiles, a live numeric
+readout, and URL-shareable state — so a configuration that makes a point can be
+handed to someone.
+
+Also on the site: four [technology guides](https://www.render-quest.com/tech)
+rendering two identical reference scenes in WebGL, WebGPU, Three.js and vgpu; a
+[chooser](https://www.render-quest.com/tech/choose) that answers "which should I
+use"; a 61-term glossary; and a curated
+[reading path](https://www.render-quest.com/learn) through other people's material.
 
 ## Running it
 
@@ -27,32 +45,43 @@ npm install
 npm run dev
 ```
 
-Requires Node ≥ 22.6 — the test runner uses native TypeScript type stripping, no
-build step.
+Node 24 (`.nvmrc`), matching what Vercel deploys with.
 
 ## Tests
 
 ```bash
-npm test
+npm test         # 69 checks, no browser — runs as part of npm run build
+npm run test:render   # 101 checks in a real browser, CI only
 ```
 
-32 numeric checks over the matrix core and frustum derivation: composition order,
-the perspective divide, near/far mapping into NDC, `lookAt` orthonormality, inverse
-round-trips, frustum corners, and the clipping test. `npm run build` runs them first,
-so a deploy cannot ship broken maths.
+`npm test` covers the matrix core and frustum derivation (composition order, the
+perspective divide, near/far into NDC, `lookAt` orthonormality, inverse round-trips,
+the clip test), the content registries, the URL codec, and the shaders as strings —
+every uniform the TypeScript asks for must exist in the shader it is compiled
+against, which nothing else here catches.
+
+`npm run test:render` loads every route in Chromium and checks that each canvas
+actually drew something, that no lab is showing its own failure card, that nothing
+logged an error, that no page scrolls sideways at 375px, and that no grid ends on a
+half-empty row. It reads the canvas in the page rather than screenshotting it —
+headless Chromium does not composite WebGL into a capture, and the first version of
+this test passed while every lab was blank.
 
 ## How it is built
 
-Raw WebGL — no scene graph, no rendering framework. The plumbing a framework hides
-(contexts, buffers, attribute pointers, the perspective divide) is the actual
-subject, so none of it is hidden.
+Raw WebGL and WebGPU — no scene graph, no rendering framework. The plumbing a
+framework hides (contexts, buffers, attribute pointers, the perspective divide, bind
+group layouts) is the actual subject, so none of it is hidden.
 
 ```
-lib/math/     mat4 (column-major, GPU-ready) and vec3
-lib/gl/       program compilation, geometry, shared scene kit, frustum derivation
-components/lab/    GLCanvas render loop, controls, matrix readout, layout
+lib/math/          mat4 (column-major, GPU-ready) and vec3
+lib/gl/            program compilation, geometry, shared scene kit, frustum derivation
+lib/labs.ts        the lab registry — order, prerequisites, which API and why
+components/lab/    GLCanvas render loop, controls, matrix readout, layout, URL state
 components/labs/   one component per lab
-test/         numeric checks, run by npm test and npm run build
+components/tech/   the reference scenes, in each technology
+test/              the suites above
+todo/              a dated changelog per working day
 ```
 
 Nothing on the site is a stock or pre-rendered image. The home page hero is the
