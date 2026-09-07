@@ -49,7 +49,7 @@ import type { CanvasPalette } from '@/lib/theme';
 
 type Order = 'trs' | 'srt';
 
-interface TransformParams {
+export interface TransformParams {
   tx: number; ty: number; tz: number;
   rx: number; ry: number; rz: number;
   sx: number; sy: number; sz: number;
@@ -81,7 +81,7 @@ const UNIT_CUBE_CORNERS = [
 ] as [number, number, number][];
 
 /** Builds T, R, S and their product in the requested order. */
-function composeModel(p: TransformParams) {
+export function composeModel(p: TransformParams) {
   const T = translation(p.tx, p.ty, p.tz);
   const R = multiplyAll(
     rotationZ(degToRad(p.rz)),
@@ -93,7 +93,7 @@ function composeModel(p: TransformParams) {
   return { T, R, S, M };
 }
 
-const createScene: SceneFactory<TransformParams> = (gl, initial) => {
+export const createScene: SceneFactory<TransformParams> = (gl, initial) => {
   const kit = createSceneKit(gl);
   const cubeMesh = uploadMesh(gl, cube());
   // Theme-neutral lines go up white and are tinted at draw time; the axes carry
