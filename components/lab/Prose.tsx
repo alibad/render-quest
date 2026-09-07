@@ -11,11 +11,14 @@ import type { ReactNode } from 'react';
  * canvas. This is where the sentences go.
  *
  * Measure is capped near 68 characters because these paragraphs are meant to be
- * read, not skimmed between drags.
+ * read, not skimmed between drags — and the column is left-aligned rather than
+ * centred, so it starts on the same line as the lab's own title. Centred, the
+ * essay began 234px to the right of the h1 above it and read as a different
+ * page that had been pasted in.
  */
 export function Prose({ children }: { children: ReactNode }) {
   return (
-    <div className="mx-auto max-w-prose space-y-5 text-[0.9375rem] leading-[1.75] text-fg-muted [&_li_a]:link-accent [&_p_a]:link-accent [&_code]:rounded [&_code]:bg-ink-700 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.85em] [&_code]:text-fg [&_em]:not-italic [&_em]:text-fg [&_strong]:font-semibold [&_strong]:text-fg">
+    <div className="max-w-prose space-y-5 text-[0.9375rem] leading-[1.75] text-fg-muted [&_li_a]:link-accent [&_p_a]:link-accent [&_code]:rounded [&_code]:bg-ink-700 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.85em] [&_code]:text-fg [&_em]:not-italic [&_em]:text-fg [&_strong]:font-semibold [&_strong]:text-fg">
       {children}
     </div>
   );
