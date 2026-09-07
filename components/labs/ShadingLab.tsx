@@ -49,7 +49,7 @@ import type { CanvasPalette } from '@/lib/theme';
 
 type Model = 'flat' | 'gouraud' | 'phong';
 
-interface ShadingParams {
+export interface ShadingParams {
   model: Model;
   lightAzimuth: number;
   lightElevation: number;
@@ -188,7 +188,7 @@ function lightDirection(azimuth: number, elevation: number): [number, number, nu
   return orbitToCartesian(azimuth, elevation, 1);
 }
 
-const createScene: SceneFactory<ShadingParams> = (gl) => {
+export const createScene: SceneFactory<ShadingParams> = (gl) => {
   const kit = createSceneKit(gl);
 
   const smooth = uvSphere(64, 40);
@@ -337,11 +337,11 @@ const PRESETS: Preset<ShadingControls>[] = [
   },
   {
     label: 'Gouraud loses the highlight',
-    note: 'Lighting computed per vertex, with a tight specular. The highlight is smaller than a triangle, so interpolation smears it into a blotch — or drops it entirely. Switch to Phong and it reappears.',
+    note: 'Lighting computed per vertex, with a tight specular. The highlight is about the size of a triangle, so blending three corner values flattens its sides and makes it pulse as it crosses the mesh. Switch to Phong and it comes back round.',
     values: { model: 'gouraud', specular: 1.2, shininess: 120, stretch: 1, correctNormals: true },
   },
   {
-    label: 'Just the diffuse term',
+    label: 'The diffuse term alone',
     note: 'Specular and ambient at zero. This is pure Lambert — brightness is nothing but the cosine of the angle between the normal and the light.',
     values: { ambient: 0, specular: 0, diffuse: 1.1, model: 'phong', stretch: 1 },
   },
@@ -495,7 +495,7 @@ function Term({
   );
 }
 
-function Matrix3({ values }: { values: Float32Array }) {
+export function Matrix3({ values }: { values: Float32Array }) {
   const rows = [0, 1, 2].map((row) => [0, 1, 2].map((col) => values[col * 3 + row]));
   return (
     <div className="inline-flex items-stretch gap-1.5">

@@ -54,7 +54,7 @@ const STUDY_VIEW = lookAt([0, 0.9, 3], [0, 0, -0.8], [0, 1, 0]);
 const STUDY_PROJECTION = perspective(degToRad(45), 16 / 10, 1, 4.5);
 const STUDY_MODEL = multiplyAll(translation(0.55, 0.3, -1), rotationY(degToRad(28)));
 
-const CTX: PipelineContext = {
+export const CTX: PipelineContext = {
   model: STUDY_MODEL,
   view: STUDY_VIEW,
   projection: STUDY_PROJECTION,
@@ -65,7 +65,7 @@ const CTX: PipelineContext = {
 const WORLD_CTX: PipelineContext = { ...CTX, model: identity() };
 
 /** The cube corner we follow all the way to a pixel. */
-const TRACKED: [number, number, number] = [0.5, 0.5, 0.5];
+export const TRACKED: [number, number, number] = [0.5, 0.5, 0.5];
 
 const UNIT_CUBE_CORNERS = [
   [-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, 0.5, -0.5], [-0.5, 0.5, -0.5],
@@ -95,7 +95,7 @@ const FRUSTUM_VISIBILITY: Record<Space, number> = {
   model: 0, world: 1, view: 1, clip: 1, ndc: 1, screen: 0.4,
 };
 
-interface PipelineParams {
+export interface PipelineParams {
   stage: number;
   showGrid: boolean;
   azimuth: number;
@@ -148,7 +148,7 @@ function marker(at: readonly [number, number, number], r: number): Float32Array 
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-const createScene: SceneFactory<PipelineParams> = (gl, initial) => {
+export const createScene: SceneFactory<PipelineParams> = (gl, initial) => {
   const kit = createSceneKit(gl);
   const ident = identity();
 

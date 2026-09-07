@@ -29,7 +29,7 @@ void main() {
 `;
 
 /** Prepended to whatever the reader writes, so the uniforms are always there. */
-const PREAMBLE = `precision highp float;
+export const PREAMBLE = `precision highp float;
 varying vec2 vUv;
 uniform float uTime;
 uniform vec2 uResolution;
@@ -50,7 +50,7 @@ const STARTER = `void main() {
   gl_FragColor = vec4(col, 1.0);
 }`;
 
-const PRESETS_SOURCE: Record<string, string> = {
+export const PRESETS_SOURCE: Record<string, string> = {
   circle: STARTER,
   plasma: `void main() {
   vec3 col = 0.5 + 0.5 * cos(

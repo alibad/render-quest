@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { LabPage } from '@/components/lab/LabPage';
 import { TextureLab } from '@/components/labs/TextureLab';
+import { TexturesEssay } from '@/components/labs/TexturesEssay';
 import { getLab } from '@/lib/labs';
 import { pageMetadata } from '@/lib/metadata';
 
@@ -18,7 +19,10 @@ export default function TextureLabPage() {
   if (!lab) notFound();
   return (
     <LabPage lab={lab}>
-      <TextureLab />
+      <TexturesEssay />
+      <div className="mt-10">
+        <TextureLab />
+      </div>
     </LabPage>
   );
 }

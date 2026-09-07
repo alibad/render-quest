@@ -76,7 +76,7 @@ function quadColors(r: number, g: number, b: number): Float32Array {
 
 type Scene = 'zfight' | 'blend';
 
-interface DepthControls {
+export interface DepthControls {
   azimuth: number;
   elevation: number;
   scene: Scene;
@@ -125,7 +125,7 @@ const PRESETS: Preset<DepthControls>[] = [
   },
   {
     label: 'Transparency, drawn right',
-    note: 'Depth writing off, so a translucent pane never occludes what is behind it, and sorted back to front so the blending happens in the right order. That is the entire recipe, and the reason transparency cannot simply be switched on.',
+    note: 'Depth writing off, so a translucent pane never occludes what is behind it, and sorted back to front so the blending happens in the right order. That is the entire recipe, and the reason transparency is not a switch.',
     values: { scene: 'blend', depthWrite: false, sorted: true, opacity: 0.55 },
   },
 ];
@@ -159,13 +159,25 @@ panes.sort((a, b) => depthFromCamera(b) - depthFromCamera(a));`,
   },
 ];
 
-interface Params extends DepthControls {
+export interface Params extends DepthControls {
   palette: CanvasPalette;
   azimuth: number;
   elevation: number;
 }
 
-const createScene: SceneFactory<Params> = (gl) => {
+/**
+ * The smallest gap a 24-bit depth buffer can still resolve at distance `z`.
+ *
+ * Exported because the essay's figures put the same number beside the same
+ * picture; two copies of this arithmetic would eventually disagree, and the
+ * one on the essay is the one a reader would believe.
+ */
+export function smallestResolvableGap(near: number, far: number, z: number): number {
+  const steps = 2 ** 24;
+  return (z * z * (far - near)) / (near * far * steps);
+}
+
+export const createScene: SceneFactory<Params> = (gl) => {
   const program = createProgram(gl, VERTEX, FRAGMENT);
 
   const positions = createBuffer(gl, quadPositions());
@@ -301,11 +313,10 @@ export function DepthLab() {
    * distance. This is the number the near-plane slider is really moving, and
    * watching it climb past the separation is the moment the picture breaks.
    */
-  const resolvableGap = useMemo(() => {
-    const { near, far, distance: z } = controls;
-    const steps = 2 ** 24;
-    return (z * z * (far - near)) / (near * far * steps);
-  }, [controls]);
+  const resolvableGap = useMemo(
+    () => smallestResolvableGap(controls.near, controls.far, controls.distance),
+    [controls],
+  );
 
   const willFight = controls.separation <= resolvableGap;
 

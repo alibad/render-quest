@@ -22,10 +22,10 @@ import type { CanvasPalette } from '@/lib/theme';
  *
  * Every particle's position and velocity lives in a GPU storage buffer and is
  * stepped by a compute shader. The CPU never touches a particle — it writes
- * eight floats of uniforms per frame and issues two dispatches. WebGL has no
- * compute stage and no storage buffers, so the usual workaround is to smuggle
- * state through textures and fake it in a fragment shader. This is what it
- * looks like when you simply do not have to.
+ * forty-eight bytes of uniforms per frame and issues one dispatch and one draw.
+ * WebGL has no compute stage and no storage buffers, so the usual workaround is
+ * to smuggle state through textures and fake it in a fragment shader. This is
+ * what it looks like when you simply do not have to.
  */
 
 const MAX_PARTICLES = 120_000;
@@ -172,7 +172,7 @@ const DEFAULTS: ComputeControls = {
 const PRESETS: Preset<ComputeControls>[] = [
   {
     label: 'A hundred thousand',
-    note: 'Every particle stepped by the GPU, every frame, with the CPU writing eight floats of uniforms and issuing two dispatches. Nothing here scales with the particle count on the CPU side — that is the whole point of the stage.',
+    note: 'Every particle stepped by the GPU, every frame, with the CPU writing forty-eight bytes of uniforms and issuing one dispatch and one draw. Nothing here scales with the particle count on the CPU side — that is the whole point of the stage.',
     values: { count: 100_000, pointSize: 0.004, brightness: 0.22, running: true },
   },
   {
@@ -287,7 +287,7 @@ export function ComputeLab() {
         const seed = seedParticles();
         device.queue.writeBuffer(particleBuffer, 0, seed);
 
-        // 10 floats padded to 48 — a uniform block must be a multiple of 16.
+        // 11 floats padded to 48 — a uniform block must be a multiple of 16.
         const paramsBuffer = device.createBuffer({
           size: 48,
           usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -574,7 +574,7 @@ export function ComputeLab() {
 
           <p className="border-t border-line pt-4 text-2xs leading-relaxed text-fg-faint">
             Every particle&rsquo;s position and velocity lives in GPU memory and is
-            stepped there. The CPU writes eight floats per frame and issues two
+            stepped there. The CPU writes forty-eight bytes per frame and issues two
             passes; it never sees a particle. That is the difference a compute stage
             makes.
           </p>
@@ -589,7 +589,7 @@ export function ComputeLab() {
           <Stat label="particles" value={controls.count.toLocaleString()} />
           <Stat label="workgroups" value={dispatches.toLocaleString()} />
           <Stat label="invocations" value={(dispatches * WORKGROUP_SIZE).toLocaleString()} />
-          <Stat label="floats from CPU" value="8" />
+          <Stat label="bytes from CPU" value="48" />
         </dl>
       }
       source={<LabSource samples={SOURCE} />}

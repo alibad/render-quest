@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { LabPage } from '@/components/lab/LabPage';
+import { DepthEssay } from '@/components/labs/DepthEssay';
 import { DepthLab } from '@/components/labs/DepthLab';
 import { getLab } from '@/lib/labs';
 import { pageMetadata } from '@/lib/metadata';
@@ -18,7 +19,10 @@ export default function DepthLabPage() {
   if (!lab) notFound();
   return (
     <LabPage lab={lab}>
-      <DepthLab />
+      <DepthEssay />
+      <div className="mt-10">
+        <DepthLab />
+      </div>
     </LabPage>
   );
 }

@@ -28,11 +28,16 @@ import { orbitToCartesian } from '@/lib/math/vec3';
  * frame time does — which is the whole lesson, and the reason a scene with
  * fewer triangles can be slower than one with more.
  *
- * The two modes differ by exactly one argument. `draw(36, n, 0, 0)` submits n
- * instances in one call; `draw(36, 1, 0, i)` submits the i-th on its own, using
- * `firstInstance` to offset what `@builtin(instance_index)` reports. Same
- * pipeline, same bind group, same shader — so nothing but the call count can
- * account for the difference.
+ * The two modes differ by one loop. `draw(36, n, 0, 0)` submits n instances in
+ * one call; the other mode rebinds group 1 at a per-object dynamic offset and
+ * calls `draw(36, 1, 0, 0)` n times, so `objectRef.index` does the counting
+ * that `@builtin(instance_index)` did before. Same pipeline, same shader, same
+ * instance buffer — and the rebinding, not the draw, is where the money goes.
+ *
+ * ⚠️ This block used to describe the per-object mode as `draw(36, 1, 0, i)`
+ * using `firstInstance`. It never did that, and the wrong account hides the
+ * actual lesson: a bare draw is cheap, and it is pointing the GPU at a
+ * different object beforehand that costs.
  */
 
 const MAX_INSTANCES = 10_000;

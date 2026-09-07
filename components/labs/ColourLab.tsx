@@ -206,13 +206,13 @@ const SOURCE = [
   },
 ];
 
-interface Params extends ColourControls {
+export interface Params extends ColourControls {
   palette: { clear: [number, number, number] };
   azimuth: number;
   elevation: number;
 }
 
-const createScene: SceneFactory<Params> = (gl) => {
+export const createScene: SceneFactory<Params> = (gl) => {
   const program = createProgram(gl, VERTEX, FRAGMENT);
   const strip = createProgram(gl, STRIP_VERTEX, STRIP_FRAGMENT);
 

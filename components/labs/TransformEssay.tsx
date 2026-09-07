@@ -301,7 +301,7 @@ export function TransformEssay() {
       </p>
       <p>
         The convention people are taught — <em>scale, then rotate, then
-        translate</em> — is just this observation with the usual answer already
+        translate</em> — is this observation with the usual answer already
         chosen. Written as a product it reads <code>T · R · S</code>, backwards
         from the order it happens in. That is not a quirk of notation to memorise
         around; it is what right-to-left evaluation means, and once the chain is

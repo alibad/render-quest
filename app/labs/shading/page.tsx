@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { LabPage } from '@/components/lab/LabPage';
+import { ShadingEssay } from '@/components/labs/ShadingEssay';
 import { ShadingLab } from '@/components/labs/ShadingLab';
 import { getLab } from '@/lib/labs';
 import { pageMetadata } from '@/lib/metadata';
@@ -18,7 +19,10 @@ export default function ShadingLabPage() {
   if (!lab) notFound();
   return (
     <LabPage lab={lab}>
-      <ShadingLab />
+      <ShadingEssay />
+      <div className="mt-10">
+        <ShadingLab />
+      </div>
     </LabPage>
   );
 }

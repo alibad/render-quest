@@ -72,7 +72,7 @@ void main() {
 }
 `;
 
-interface TextureParams {
+export interface TextureParams {
   azimuth: number;
   elevation: number;
   wrapS: WrapMode;
@@ -99,7 +99,7 @@ const DEFAULTS: TextureControls = {
   offset: 0,
 };
 
-const createScene: SceneFactory<TextureParams> = (gl) => {
+export const createScene: SceneFactory<TextureParams> = (gl) => {
   const program = createProgram(gl, VERTEX, FRAGMENT);
   const texture = createTestTexture(gl);
 
@@ -312,7 +312,7 @@ const PRESETS: Preset<TextureControls>[] = [
 
           <ControlGroup title="Wrap">
             <Segmented
-              label="horizontal (S)"
+              label="across the plane (S)"
               value={controls.wrapS}
               options={[
                 { value: 'repeat', label: 'Repeat' },
@@ -322,7 +322,7 @@ const PRESETS: Preset<TextureControls>[] = [
               onChange={(v) => set('wrapS', v as WrapMode)}
             />
             <Segmented
-              label="vertical (T)"
+              label="into the distance (T)"
               value={controls.wrapT}
               options={[
                 { value: 'repeat', label: 'Repeat' },
@@ -375,8 +375,8 @@ const PRESETS: Preset<TextureControls>[] = [
         <>
           The far end of this plane compresses hundreds of texels into one pixel. A
           sampler with no mip chain has to pick one of them and the choice changes
-          every frame you move — which is the shimmer. A mipmap is simply the same
-          image pre-shrunk nine times, so there is always a level where one texel is
+          every frame you move — which is the shimmer. A mipmap is the same image
+          pre-shrunk nine times, so there is always a level where one texel is
           about one pixel. It costs a third more memory and removes an entire class of
           artefact, which is why it is almost always the right default.
         </>

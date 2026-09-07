@@ -54,7 +54,7 @@ import type { CanvasPalette } from '@/lib/theme';
 
 type Mode = 'perspective' | 'orthographic';
 
-interface ProjectionParams {
+export interface ProjectionParams {
   mode: Mode;
   fov: number;
   near: number;
@@ -92,7 +92,7 @@ const PRESETS: Preset<ProjectionControls>[] = [
   },
   {
     label: 'Clip the near plane',
-    note: 'Push the near plane past the closest box and it does not fade or dim — it is simply gone, sliced flat where the plane crosses it. Clipping is a hard test, not a distance fade.',
+    note: 'Push the near plane past the closest box and it does not fade or dim — it is gone. The next box back is caught mid-way, sliced flat where the plane crosses it. Clipping is a hard test, not a distance fade.',
     values: { mode: 'perspective', fov: 50, near: 4.4, far: 11, showFrustum: true },
   },
   {
@@ -105,7 +105,7 @@ const PRESETS: Preset<ProjectionControls>[] = [
 /** The camera being *studied*. Fixed, so only the projection is in play. */
 const CAMERA_EYE: [number, number, number] = [0, 1.9, 7];
 const CAMERA_TARGET: [number, number, number] = [0, 0.4, -2];
-const CAMERA_ASPECT = 16 / 10;
+export const CAMERA_ASPECT = 16 / 10;
 
 /** Boxes spread through depth, so near/far clipping has something to bite on. */
 /**
@@ -122,7 +122,7 @@ const SUBJECTS: { position: [number, number, number]; scale: number }[] = [
 ];
 
 /** Only needs the lens controls, so it accepts them with or without a palette. */
-function buildProjection(p: ProjectionControls): Mat4 {
+export function buildProjection(p: ProjectionControls): Mat4 {
   if (p.mode === 'perspective') {
     return perspective(degToRad(p.fov), CAMERA_ASPECT, p.near, p.far);
   }
@@ -164,7 +164,7 @@ function makeSubjectDrawer(gl: WebGLRenderingContext) {
 }
 
 /** The god view: the frustum drawn as an object in the world it clips. */
-const createWorldScene: SceneFactory<ProjectionParams> = (gl) => {
+export const createWorldScene: SceneFactory<ProjectionParams> = (gl) => {
   const { kit, drawSubjects } = makeSubjectDrawer(gl);
   const gridLines = uploadLines(gl, grid(12, 1), [1, 1, 1]);
   const frustumLines = createDynamicLines(gl, 24);
@@ -210,7 +210,7 @@ const createWorldScene: SceneFactory<ProjectionParams> = (gl) => {
 };
 
 /** What that camera actually renders. */
-const createCameraScene: SceneFactory<ProjectionParams> = (gl) => {
+export const createCameraScene: SceneFactory<ProjectionParams> = (gl) => {
   const { kit, drawSubjects } = makeSubjectDrawer(gl);
   const gridLines = uploadLines(gl, grid(12, 1), [1, 1, 1]);
   const ident = identity();
