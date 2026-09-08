@@ -186,4 +186,63 @@ check('WGSL entry points referenced from TypeScript exist in the shader', () => 
   }
 });
 
+
+/* ------------------------------------------------------- the GL call sites ---
+ * Lab 1's essay tells the reader that a Mat4 goes to the GPU untouched, that the
+ * `false` in `uniformMatrix4fv(location, false, m)` is a transpose flag, and
+ * that in WebGL 1 — "which every canvas on this page runs on" — passing `true`
+ * is an error rather than an option.
+ *
+ * The spec half of that is not this repo's to prove. The two premises underneath
+ * it are, and were the only sentence on the site that nothing checked: that the
+ * canvases really are WebGL 1, and that nothing anywhere passes anything but
+ * `false`. Switch GLCanvas to a webgl2 context, or transpose a matrix on upload,
+ * and the essay silently becomes wrong. Now the build says so instead.
+ */
+
+const GL_SOURCES = [
+  ...collectSources('lib/gl'),
+  ...collectSources('lib/math'),
+  ...collectSources('components/lab'),
+  ...collectSources('components/labs'),
+  ...collectSources('components/tech'),
+];
+
+check('every matrix upload passes the transpose flag as false', () => {
+  let found = 0;
+  for (const file of GL_SOURCES) {
+    const text = readFileSync(join(ROOT, file), 'utf8');
+    for (const match of text.matchAll(/\w+\.uniformMatrix[234]fv\(/g)) {
+      // Walk forward from the open paren, balancing, to get the whole arg list.
+      let level = 1;
+      let i = match.index! + match[0].length;
+      while (i < text.length && level > 0) {
+        if (text[i] === '(') level++;
+        else if (text[i] === ')') level--;
+        i++;
+      }
+      const args = text.slice(match.index! + match[0].length, i - 1).replace(/\s+/g, ' ');
+      found++;
+      assert.ok(
+        /, ?false ?,/.test(args),
+        `${file} uploads a matrix without transpose=false — lab 1 tells the reader this is always false, and in WebGL 1 anything else is an error:\n    ${args.slice(0, 90)}`,
+      );
+    }
+  }
+  assert.ok(found >= 10, `expected to find the matrix uploads, found ${found}`);
+});
+
+check('the shared canvas really is WebGL 1', () => {
+  const source = readFileSync(join(ROOT, 'components/lab/GLCanvas.tsx'), 'utf8');
+  assert.match(
+    source,
+    /getContext\(\s*'webgl'/,
+    "GLCanvas no longer requests a WebGL 1 context — lab 1 says every canvas on that page runs on WebGL 1, and scopes its claim about the transpose flag to it",
+  );
+  assert.ok(
+    !/getContext\(\s*'webgl2'/.test(source),
+    'GLCanvas requests webgl2, which relaxes the transpose rule lab 1 describes',
+  );
+});
+
 console.log(`\n${passed} shader checks passed`);
