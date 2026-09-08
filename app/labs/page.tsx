@@ -29,10 +29,12 @@ export default function Labs() {
           Printed matrices hold still. These do not.
         </h1>
         <p className="mt-4 max-w-prose text-sm leading-relaxed text-fg-muted">
-          One idea per lab, with the controls to it. Everything here runs live in your
-          browser, and dragging inside a canvas orbits the camera. The two labs
-          with no camera to orbit — a particle field drawn straight in clip
-          space, and a full-screen shader — say so themselves.
+          One idea per lab, written out and then handed to you: each is an essay
+          with the argument in the prose and figures that isolate one control at a
+          time, and the full instrument at the foot of the page. Everything runs
+          live in your browser, and dragging inside a canvas orbits the camera.
+          The two labs with no camera to orbit — a particle field drawn straight
+          in clip space, and a full-screen shader — say so themselves.
         </p>
         <p className="mt-3 max-w-prose text-sm leading-relaxed text-fg-faint">
           They are numbered, and the numbering is not decoration: each one assumes the

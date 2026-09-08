@@ -371,14 +371,12 @@ export function DepthEssay() {
         in.
       </p>
       <p>
-        Two things the presets will not do for you. Take the separation to exactly
-        zero and the panels stop fighting rather than start &mdash; identical
+        One case the arithmetic above does not cover. Take the separation to
+        exactly zero and the panels stop fighting rather than start: identical
         geometry produces identical depth, the test is <code>LEQUAL</code>, and
-        the panel drawn second wins every pixel cleanly, even though the
-        prediction still says they cannot be told apart. And the transparency
-        presets need a drag before they have anything to show, for the reason
-        above: from the opening viewpoint the panes are already in the order they
-        should be drawn in.
+        the panel drawn second passes and wins every pixel cleanly. It is the one
+        setting where a smaller gap is more stable than a larger one, and the
+        readout calls it out rather than predicting a fight.
       </p>
     </Prose>
   );

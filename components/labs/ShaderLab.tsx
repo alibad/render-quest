@@ -145,9 +145,16 @@ export function ShaderLab() {
   paletteRef.current = palette;
 
   // Switching preset replaces the buffer; typing after that is the reader's.
+  //
+  // Keyed on a counter rather than on the preset name, so clicking the preset
+  // you are already on reloads it. Without that there was no way back: edit
+  // "A circle" into something broken and the only button that could restore it
+  // was the one click the effect ignored.
+  const [presetLoads, setPresetLoads] = useState(0);
   useEffect(() => {
     setSource(PRESETS_SOURCE[controls.preset] ?? STARTER);
-  }, [controls.preset]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [controls.preset, presetLoads]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -330,7 +337,10 @@ export function ShaderLab() {
           <ControlGroup title="Start here">
             <Presets
               presets={PRESETS}
-              onApply={(values) => setControls((prev) => ({ ...prev, ...values }))}
+              onApply={(values) => {
+                setControls((prev) => ({ ...prev, ...values }));
+                setPresetLoads((n) => n + 1);
+              }}
             />
           </ControlGroup>
 

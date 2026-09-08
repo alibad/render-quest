@@ -120,13 +120,13 @@ const PRESETS: Preset<DepthControls>[] = [
   },
   {
     label: 'Transparency, drawn wrong',
-    note: 'Three translucent panes with depth writing on and no sorting. Whichever pane is drawn first stamps the depth buffer, and the ones behind it are discarded — so panes vanish according to array order rather than where they are in space.',
-    values: { scene: 'blend', depthWrite: true, sorted: false, opacity: 0.55 },
+    note: 'Three translucent panes with depth writing on and no sorting, seen from behind — from the opening angle the array happens to already be back to front, and nothing looks wrong. Whichever pane is drawn first stamps the depth buffer, and the ones behind it are discarded — so panes vanish according to array order rather than where they are in space.',
+    values: { scene: 'blend', depthWrite: true, sorted: false, opacity: 0.55, azimuth: 2.5 },
   },
   {
     label: 'Transparency, drawn right',
     note: 'Depth writing off, so a translucent pane never occludes what is behind it, and sorted back to front so the blending happens in the right order. That is the entire recipe, and the reason transparency is not a switch.',
-    values: { scene: 'blend', depthWrite: false, sorted: true, opacity: 0.55 },
+    values: { scene: 'blend', depthWrite: false, sorted: true, opacity: 0.55, azimuth: 2.5 },
   },
 ];
 
@@ -318,7 +318,12 @@ export function DepthLab() {
     [controls],
   );
 
-  const willFight = controls.separation <= resolvableGap;
+  // Exactly coplanar is a third case, not the worst case of the second. With
+  // identical depth and a LEQUAL test the panel drawn second passes and wins
+  // every pixel cleanly — stable, not shimmering — so predicting a fight there
+  // was the one setting where the arithmetic and the picture disagreed.
+  const coplanar = controls.separation === 0;
+  const willFight = !coplanar && controls.separation <= resolvableGap;
 
   return (
     <LabLayout
@@ -414,8 +419,12 @@ export function DepthLab() {
             </div>
             <div>
               <div className="eyebrow mb-1.5">Prediction</div>
-              <div className={`font-mono text-lg ${willFight ? 'text-amber' : 'text-axis-y'}`}>
-                {willFight ? 'will fight' : 'resolvable'}
+              <div
+                className={`font-mono text-lg ${
+                  coplanar ? 'text-fg-muted' : willFight ? 'text-amber' : 'text-axis-y'
+                }`}
+              >
+                {coplanar ? 'coplanar — later wins' : willFight ? 'will fight' : 'resolvable'}
               </div>
             </div>
           </div>

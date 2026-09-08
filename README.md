@@ -8,8 +8,14 @@ Live at **[render-quest.com](https://www.render-quest.com)**.
 ## Why
 
 A transform is not a table of sixteen numbers — it is a motion, and you cannot see a
-motion on a static page. So each lab is a live WebGL or WebGPU canvas with the numbers
-driving it exposed beside it, and the controls wired to the parts that matter.
+motion on a static page. So each lab is an essay of 1,400–2,400 words with figures
+embedded in it — a figure being one canvas, one control and a caption — and the full
+instrument, every control at once, at the foot of the page.
+
+The instruments came first and the writing came second, which was the wrong order: for
+a while the arguments existed as preset labels with the sentences between them
+unwritten. Nobody links to a button, a search engine cannot index a slider, and a
+lecturer cannot assign a canvas.
 
 ## The labs
 
@@ -30,7 +36,7 @@ Ten, in sequence. Each one assumes the ideas of the one before it, and says so.
 
 Every lab has named presets, the real shader source it compiles, a live numeric
 readout, and URL-shareable state — so a configuration that makes a point can be
-handed to someone.
+handed to someone. Around 20,000 words across the ten.
 
 Also on the site: four [technology guides](https://www.render-quest.com/tech)
 rendering two identical reference scenes in WebGL, WebGPU, Three.js and vgpu; a
