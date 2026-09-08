@@ -19,10 +19,23 @@ export function GlossaryExplorer() {
     });
   }, [query, labsOnly]);
 
-  // Only offer a letter in the jump nav if something is under it right now.
+  /**
+   * Only offer a letter in the jump nav if something is under it right now.
+   *
+   * Each letter points at the id of its first term rather than at a marker of
+   * its own. A separate marker is the tempting thing to add and it lands the
+   * term you asked for underneath the sticky header: the scroll margin that
+   * makes the term anchors clear the header sits on the entry, and a nested
+   * marker does not inherit it. Reusing the entry's own anchor gets the offset
+   * for free, and lights the same :target highlight.
+   */
   const letters = useMemo(() => {
-    const present = new Set(matches.map((entry) => entry.term[0].toUpperCase()));
-    return [...present].sort();
+    const seen = new Map<string, string>();
+    for (const entry of matches) {
+      const letter = entry.term[0].toUpperCase();
+      if (!seen.has(letter)) seen.set(letter, termId(entry.term));
+    }
+    return [...seen.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [matches]);
 
   const filtering = query.trim() !== '' || labsOnly;
@@ -73,10 +86,10 @@ export function GlossaryExplorer() {
 
       {letters.length > 1 ? (
         <nav aria-label="Jump to letter" className="mt-5 flex flex-wrap gap-1">
-          {letters.map((letter) => (
+          {letters.map(([letter, id]) => (
             <a
               key={letter}
-              href={`#letter-${letter}`}
+              href={`#${id}`}
               className="grid h-7 w-7 place-items-center rounded border border-line font-mono text-2xs text-fg-muted transition-colors hover:border-accent/50 hover:text-accent"
             >
               {letter}
@@ -101,11 +114,7 @@ export function GlossaryExplorer() {
                 id={termId(entry.term)}
                 className="scroll-mt-20 border-l-2 border-line pl-5 transition-colors target:border-accent"
               >
-                {startsLetter ? (
-                  <span id={`letter-${letter}`} className="sr-only">
-                    {letter}
-                  </span>
-                ) : null}
+                {startsLetter ? <span className="sr-only">{letter}</span> : null}
                 <Entry entry={entry} />
               </div>
             );

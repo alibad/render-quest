@@ -216,6 +216,15 @@ export function TextureLab() {
   }, [setControls]);
 
   const usesMips = USES_MIPMAPS[controls.minFilter];
+  /**
+   * Whether anything on screen is actually being magnified.
+   *
+   * A texel covers more than a pixel only when few tiles are stretched across
+   * the plane and the plane is not edge-on. Below about two tiles, looking
+   * reasonably down at it, the magnification filter starts to matter; above it,
+   * the control is inert and flipping it changes nothing at all.
+   */
+  const magnifying = controls.repeat <= 2 && controls.elevation > 0.4;
 
 const PRESETS: Preset<TextureControls>[] = [
   {
@@ -232,6 +241,11 @@ const PRESETS: Preset<TextureControls>[] = [
     label: 'Clamp smears',
     note: 'One tile, clamped, pushed off-centre. Outside 0…1 the edge texel repeats forever — that stripe is CLAMP_TO_EDGE doing exactly what it says.',
     values: { wrapS: 'clamp', wrapT: 'clamp', repeat: 1, offset: 0.45 },
+  },
+  {
+    label: 'Close enough to magnify',
+    note: 'One tile, seen from above, so a texel is now several pixels across. This is the only state in the lab where the magnification filter has anything to do — flip it between Nearest and Linear here and the texel edges go hard, then soft.',
+    values: { minFilter: 'linear', magFilter: 'nearest', repeat: 1, elevation: 0.9, offset: 0 },
   },
   {
     label: 'Mirror hides the seam',
@@ -308,6 +322,20 @@ const PRESETS: Preset<TextureControls>[] = [
             <p className="text-2xs leading-relaxed text-fg-faint">
               {MAG_FILTER_NOTE[controls.magFilter]}
             </p>
+            {/*
+             * This control does nothing at the default view, and that is not a
+             * bug — the plane opens minified, where the *min* filter is the one
+             * doing the work. Saying so beats letting the reader flip a switch
+             * with no effect and conclude the lab is broken.
+             */}
+            {magnifying ? null : (
+              <p className="text-2xs leading-relaxed text-fg-faint">
+                <span className="text-amber">Nothing to see from here.</span> Every
+                texel is currently smaller than a pixel, so the sampler is
+                minifying, not magnifying. Try{' '}
+                <span className="text-fg-muted">Close enough to magnify</span> above.
+              </p>
+            )}
           </ControlGroup>
 
           <ControlGroup title="Wrap">

@@ -158,6 +158,8 @@ interface InstancingControls {
   scale: number;
   spin: number;
   spinning: boolean;
+  azimuth: number;
+  elevation: number;
 }
 
 const DEFAULTS: InstancingControls = {
@@ -166,6 +168,8 @@ const DEFAULTS: InstancingControls = {
   scale: 1,
   spin: 0.5,
   spinning: true,
+  azimuth: 0.7,
+  elevation: 0.42,
 };
 
 const PRESETS: Preset<InstancingControls>[] = [
@@ -250,6 +254,7 @@ export function InstancingLab() {
     mode: (value) => value === 'instanced' || value === 'per-object',
     scale: (value) => value >= 0.3 && value <= 2.5,
     spin: (value) => value >= 0 && value <= 2,
+    elevation: (value) => value >= -1.4 && value <= 1.4,
   });
   const [status, setStatus] = useState<Status>('checking');
   const [detail, setDetail] = useState('');
@@ -263,8 +268,11 @@ export function InstancingLab() {
   const isDarkRef = useRef(theme === 'dark');
   isDarkRef.current = theme === 'dark';
 
-  // Camera, driven by dragging on the canvas like every other lab.
-  const orbitRef = useRef({ azimuth: 0.7, elevation: 0.42 });
+  // The camera lives in the shared control state, not in a ref. Keeping it in
+  // a ref is the obvious thing to do — the render loop is the only reader —
+  // and it silently costs the reader their camera: the copy-link button is
+  // gated on a non-empty query, so an orbit that writes nothing to the URL
+  // cannot be shared, and reopening the page loses the framing.
   const dragRef = useRef<{ x: number; y: number } | null>(null);
 
   const set = useCallback(
@@ -428,11 +436,7 @@ export function InstancingLab() {
           if (current.spinning) elapsed += dt;
 
           const aspect = canvas.width / canvas.height;
-          const eye = orbitToCartesian(
-            orbitRef.current.azimuth,
-            orbitRef.current.elevation,
-            24,
-          );
+          const eye = orbitToCartesian(current.azimuth, current.elevation, 24);
           const viewProjection = multiply(
             perspective(Math.PI / 4, aspect, 0.1, 200),
             lookAt(eye, [0, 0, 0], [0, 1, 0]),
@@ -527,21 +531,47 @@ export function InstancingLab() {
     dragRef.current = { x: event.clientX, y: event.clientY };
   }, []);
 
-  const onPointerMove = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
-    const drag = dragRef.current;
-    if (!drag) return;
-    const orbit = orbitRef.current;
-    orbit.azimuth += (event.clientX - drag.x) * 0.007;
-    orbit.elevation = Math.max(
-      -1.4,
-      Math.min(1.4, orbit.elevation + (event.clientY - drag.y) * 0.007),
-    );
-    dragRef.current = { x: event.clientX, y: event.clientY };
-  }, []);
+  const onPointerMove = useCallback(
+    (event: React.PointerEvent<HTMLCanvasElement>) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      const dx = event.clientX - drag.x;
+      const dy = event.clientY - drag.y;
+      dragRef.current = { x: event.clientX, y: event.clientY };
+      setControls((prev) => ({
+        ...prev,
+        azimuth: prev.azimuth + dx * 0.007,
+        elevation: Math.max(-1.4, Math.min(1.4, prev.elevation + dy * 0.007)),
+      }));
+    },
+    [setControls],
+  );
 
   const endDrag = useCallback(() => {
     dragRef.current = null;
   }, []);
+
+  // The camera moves for the keyboard too, through the same clamp as the drag.
+  const onKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLCanvasElement>) => {
+      const step = (event.shiftKey ? 48 : 12) * 0.007;
+      const delta: Record<string, [number, number]> = {
+        ArrowLeft: [-step, 0],
+        ArrowRight: [step, 0],
+        ArrowUp: [0, -step],
+        ArrowDown: [0, step],
+      };
+      const move = delta[event.key];
+      if (!move) return;
+      event.preventDefault();
+      setControls((prev) => ({
+        ...prev,
+        azimuth: prev.azimuth + move[0],
+        elevation: Math.max(-1.4, Math.min(1.4, prev.elevation + move[1])),
+      }));
+    },
+    [setControls],
+  );
 
   // A reading only exists once the loop has actually produced one.
   const measured = status === 'running' && stats.fps > 0;
@@ -563,7 +593,9 @@ export function InstancingLab() {
               onPointerMove={onPointerMove}
               onPointerUp={endDrag}
               onPointerCancel={endDrag}
-              aria-label="A field of cubes drawn either in one instanced call or one call each"
+              tabIndex={0}
+              onKeyDown={onKeyDown}
+              aria-label="A field of cubes drawn either in one instanced call or one call each. Arrow keys orbit the camera."
               role="img"
               className="block h-full w-full cursor-grab active:cursor-grabbing"
               style={{ touchAction: 'pan-y' }}
@@ -600,7 +632,7 @@ export function InstancingLab() {
             ) : null}
           </div>
           <p className="mt-2 font-mono text-2xs text-fg-faint">
-            Drag to orbit · {drawCalls.toLocaleString()} draw{' '}
+            Drag or arrow keys to orbit · {drawCalls.toLocaleString()} draw{' '}
             {drawCalls === 1 ? 'call' : 'calls'} per frame
           </p>
         </div>

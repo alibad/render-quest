@@ -38,7 +38,9 @@ export function ProseHeading({ id, children }: { id: string; children: ReactNode
     >
       <a href={`#${id}`} className="group no-underline">
         {children}
-        <span className="ml-2 font-mono text-sm text-fg-faint opacity-0 transition-opacity group-hover:opacity-100">
+        {/* Focus as well as hover: the glyph a mouse gets is the only hint
+            that the heading is a link, and a keyboard never saw it. */}
+        <span className="ml-2 font-mono text-sm text-fg-faint opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
           #
         </span>
       </a>

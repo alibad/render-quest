@@ -293,7 +293,7 @@ export function ProjectionLab() {
                     { color: 'bg-fg', label: 'kept' },
                     { color: 'bg-fg-faint/30', label: 'clipped' },
                   ]}
-                  hint="drag to orbit"
+                  hint="drag or arrow keys to orbit"
                 />
               </>
             }

@@ -360,6 +360,44 @@ check('every lab with a camera lets you move it', () => {
 });
 
 
+check('every lab with a camera puts it in the shareable state', () => {
+  // The instancing lab kept its camera in a ref — the obvious place, since the
+  // render loop is the only reader — and the reader silently lost it: the
+  // copy-link button is gated on a non-empty query, so orbiting wrote nothing
+  // to the address bar, offered no link, and reopening the page threw the
+  // framing away. Seven labs did it right and one did not, which is exactly the
+  // kind of divergence nothing notices.
+  for (const [slug, source] of LAB_SOURCES) {
+    if (!source.includes('azimuth')) continue;
+    assert.ok(
+      !/useRef\(\{\s*azimuth/.test(source),
+      `${slug} holds its camera in a ref, so orbiting never reaches the URL`,
+    );
+    assert.match(
+      source,
+      /azimuth: [-\d.]+,/,
+      `${slug} has a camera that is not part of the control state the URL encodes`,
+    );
+  }
+});
+
+check('every camera can be moved from the keyboard', () => {
+  // "Drag to orbit" is the whole invitation, and a pointer was the only way to
+  // accept it. The shared canvas answers for the seven WebGL labs; the
+  // instancing lab draws its own, so it has to answer for itself.
+  const shared = readFileSync(join(ROOT, 'components/lab/GLCanvas.tsx'), 'utf8');
+  assert.match(shared, /tabIndex=\{onDrag \? 0 : undefined\}/);
+  assert.match(shared, /ArrowLeft:/);
+  for (const [slug, source] of LAB_SOURCES) {
+    if (!source.includes('<canvas') || !source.includes('azimuth')) continue;
+    assert.match(
+      source,
+      /onKeyDown=/,
+      `${slug} draws its own orbiting canvas and answers no key`,
+    );
+  }
+});
+
 check('every reading-path stage has somewhere to start', () => {
   for (const track of TRACKS) {
     for (const stage of track.stages) {

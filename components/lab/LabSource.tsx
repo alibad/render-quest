@@ -24,7 +24,13 @@ export function LabSource({ samples }: { samples: CodeSample[] }) {
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
-        className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-ink-600/40"
+        /*
+         * An inset ring, uniquely on this control. The site's focus ring is
+         * drawn outside the element, and this button sits flush inside a panel
+         * with `overflow-hidden`, so the ring was clipped away entirely: the
+         * one keyboard stop on the whole site where the caret vanished.
+         */
+        className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors focus-visible:ring-inset focus-visible:ring-offset-0 hover:bg-ink-600/40"
       >
         <svg
           viewBox="0 0 16 16"

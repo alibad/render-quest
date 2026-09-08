@@ -309,7 +309,7 @@ export function PipelineLab() {
                   { color: 'bg-accent', label: 'frustum' },
                   { color: 'bg-axis-x', label: 'tracked vertex' },
                 ]}
-                hint="drag to orbit"
+                hint="drag or arrow keys to orbit"
               />
             </>
           }

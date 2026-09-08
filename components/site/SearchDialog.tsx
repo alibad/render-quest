@@ -23,6 +23,11 @@ export function SearchDialog() {
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+  // Navigating away is not the same as dismissing: only a dismiss should send
+  // focus back where it came from.
+  const restoreFocus = useRef(true);
 
   const results = useMemo(() => search(query), [query]);
 
@@ -39,14 +44,51 @@ export function SearchDialog() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  /**
+   * Open, and put focus back afterwards.
+   *
+   * Dismissing this used to drop focus on <body>: opened from the Glossary link
+   * with Ctrl+K, the next Tab after Escape landed on "Source on GitHub" — past
+   * two controls the reader had never been to. A screen reader loses its place
+   * entirely.
+   */
   useEffect(() => {
-    if (open) {
-      setQuery('');
-      setActive(0);
-      // Focus after the dialog has actually mounted.
-      requestAnimationFrame(() => inputRef.current?.focus());
-    }
+    if (!open) return;
+    openerRef.current = document.activeElement as HTMLElement | null;
+    restoreFocus.current = true;
+    setQuery('');
+    setActive(0);
+    // Focus after the dialog has actually mounted.
+    const frame = requestAnimationFrame(() => inputRef.current?.focus());
+    return () => {
+      cancelAnimationFrame(frame);
+      if (restoreFocus.current) openerRef.current?.focus?.();
+    };
   }, [open]);
+
+  /**
+   * Keep Tab inside the dialog while it is open.
+   *
+   * `aria-modal` tells a screen reader the rest of the page is gone; it does
+   * nothing about keyboard focus, which walked straight out of the overlay and
+   * onto header controls painted underneath it.
+   */
+  const onDialogKey = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Tab') return;
+    const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])',
+    );
+    if (!focusable || focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }, []);
 
   useEffect(() => {
     setActive(0);
@@ -54,6 +96,7 @@ export function SearchDialog() {
 
   const go = useCallback(
     (entry: SearchEntry) => {
+      restoreFocus.current = false;
       setOpen(false);
       if (entry.external) {
         window.open(entry.href, '_blank', 'noreferrer,noopener');
@@ -95,6 +138,8 @@ export function SearchDialog() {
 
       {open ? (
         <div
+          ref={dialogRef}
+          onKeyDown={onDialogKey}
           className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[12vh]"
           role="dialog"
           aria-modal="true"

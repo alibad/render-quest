@@ -86,6 +86,12 @@ export function TechnologyChooser() {
                   {best.because.join(', and ')}.
                 </p>
               ) : null}
+              {best.despite.length > 0 ? (
+                <p className="mt-1.5 text-sm leading-relaxed text-fg-faint">
+                  <span className="text-fg-muted">Despite</span>{' '}
+                  {best.despite.join(', and ')}.
+                </p>
+              ) : null}
             </Link>
           ) : null}
 
@@ -113,9 +119,10 @@ export function TechnologyChooser() {
                       </span>
                     ) : null}
                     <span className="text-xs leading-relaxed text-fg-faint">
-                      {verdict.because.length > 0
-                        ? verdict.because[0]
-                        : 'no strong reason either way here'}
+                      {(verdict.impossible
+                        ? verdict.despite[0]
+                        : verdict.because[0] ?? verdict.despite[0]) ??
+                        'no strong reason either way here'}
                     </span>
                   </Link>
                 </li>
@@ -129,8 +136,8 @@ export function TechnologyChooser() {
         This is a rule of thumb, not a verdict — the scoring is a few dozen lines you
         can read in{' '}
         <code className="text-fg-muted">lib/chooser.ts</code>. The one hard rule is
-        compute: WebGL has no compute stage, so no amount of preference makes it an
-        option there.
+        compute: WebGL has no compute stage, so no amount of preference makes it —
+        or anything drawing through it — the answer there.
       </p>
     </div>
   );

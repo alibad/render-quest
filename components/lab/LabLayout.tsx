@@ -69,7 +69,7 @@ export function AxisKey({
     { color: 'bg-axis-y', label: 'Y' },
     { color: 'bg-axis-z', label: 'Z' },
   ],
-  hint = 'drag to orbit',
+  hint = 'drag or arrow keys to orbit',
 }: {
   items?: { color: string; label: string }[];
   hint?: string | null;

@@ -225,8 +225,34 @@ export function GLCanvas<P>({
       >
         <canvas
           ref={canvasRef}
-          aria-label={label}
+          aria-label={
+            onDrag && label ? `${label}. Arrow keys orbit the camera.` : label
+          }
           role="img"
+          /*
+           * A camera reachable only by dragging is a camera half the readers
+           * cannot move. The canvas takes focus when it orbits, and the arrow
+           * keys feed the same handler the pointer does — so every lab keeps
+           * its own clamping, and the URL records the framing either way.
+           */
+          tabIndex={onDrag ? 0 : undefined}
+          onKeyDown={
+            onDrag
+              ? (event) => {
+                  const step = event.shiftKey ? 48 : 12;
+                  const delta: Record<string, [number, number]> = {
+                    ArrowLeft: [-step, 0],
+                    ArrowRight: [step, 0],
+                    ArrowUp: [0, -step],
+                    ArrowDown: [0, step],
+                  };
+                  const move = delta[event.key];
+                  if (!move) return;
+                  event.preventDefault();
+                  onDrag(move[0], move[1]);
+                }
+              : undefined
+          }
           // touch-action: only claim the gesture on canvases that actually
           // orbit, and only horizontally. `none` everywhere meant a visitor who
           // began a scroll on the canvas got a page that refused to move, which

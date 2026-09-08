@@ -368,7 +368,7 @@ const PRESETS: Preset<ShadingControls>[] = [
                 { color: 'bg-amber', label: 'light' },
                 { color: 'bg-axis-y', label: 'normals' },
               ]}
-              hint="drag to orbit"
+              hint="drag or arrow keys to orbit"
             />
           }
         />
