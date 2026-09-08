@@ -103,6 +103,88 @@ function RotateFigure() {
   );
 }
 
+/**
+ * The four blocks the sixteen floats fall into, tinted to match MatrixView's
+ * columns — in a column-major array a column *is* a contiguous block.
+ */
+const MEMORY_BLOCKS = [
+  { label: 'x axis', range: 'm[0]–m[3]', tint: 'text-axis-x' },
+  { label: 'y axis', range: 'm[4]–m[7]', tint: 'text-axis-y' },
+  { label: 'z axis', range: 'm[8]–m[11]', tint: 'text-axis-z' },
+  { label: 'position', range: 'm[12]–m[15]', tint: 'text-amber' },
+] as const;
+
+/** The identity, flat, so a cell can dim while it still matches it. */
+const IDENTITY_FLAT = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+
+function MemoryFigure() {
+  const palette = usePalette();
+  const [t, setT] = useState(0);
+  // One slider drives both halves of a model matrix: at 1 the cube has turned
+  // 55° about y and moved 2.2 along x. Exactly five of the sixteen floats move
+  // — m[0], m[2], m[8], m[10] from the turn and m[12] from the move.
+  const params = figureParams({ ry: 55 * t, tx: 2.2 * t }, palette);
+  const { M } = composeModel(params);
+
+  return (
+    <Figure
+      control={
+        <Slider label="apply the transform" value={t} min={0} max={1} onChange={setT} />
+      }
+      caption={
+        <>
+          Five of the sixteen floats move and eleven never do. The turn rewrites{' '}
+          <code>m[0]</code>, <code>m[2]</code>, <code>m[8]</code> and{' '}
+          <code>m[10]</code> — the x and z blocks, because a turn about y happens
+          in the xz plane — and leaves the y block sitting at{' '}
+          <code>0, 1, 0, 0</code>. The move lands entirely in <code>m[12]</code>.
+          Underneath is the same array printed as a matrix, where the numbers
+          read across instead of down.
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <p className="eyebrow mb-2.5">M, as sixteen floats in order</p>
+          <div className="flex flex-wrap gap-x-5 gap-y-4">
+            {MEMORY_BLOCKS.map((block, blockIndex) => (
+              <div key={block.label}>
+                <p
+                  className={`mb-1.5 font-mono text-2xs uppercase tracking-wider ${block.tint}`}
+                >
+                  {block.label}
+                </p>
+                <div className="flex gap-1">
+                  {[0, 1, 2, 3].map((offset) => {
+                    const index = blockIndex * 4 + offset;
+                    // Collapse -0 so a cell never flickers to "-0.00".
+                    const value = Object.is(M[index], -0) ? 0 : M[index];
+                    const dim = value === IDENTITY_FLAT[index];
+                    return (
+                      <span
+                        key={index}
+                        className={`tabular w-12 rounded bg-ink-800 px-1 py-1 text-right font-mono text-2xs transition-colors ${
+                          dim ? 'text-fg-faint/60' : block.tint
+                        }`}
+                      >
+                        {value.toFixed(2)}
+                      </span>
+                    );
+                  })}
+                </div>
+                <p className="mt-1.5 font-mono text-2xs text-fg-faint">{block.range}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="border-t border-line pt-4">
+          <MatrixView matrix={M} label="printed in rows" />
+        </div>
+      </div>
+    </Figure>
+  );
+}
+
 function ScaleFigure() {
   const palette = usePalette();
   const [sy, setSy] = useState(1);
@@ -251,6 +333,60 @@ export function TransformEssay() {
         <strong>here is where your x points, here is your y, here is your z, and
         here is where you are.</strong> Everything else in this lab follows from
         that reading.
+      </p>
+
+      <ProseHeading id="memory">
+        In memory the matrix is those four columns, end to end
+      </ProseHeading>
+      <p>
+        A <code>Mat4</code> here is a <code>Float32Array</code> of sixteen,
+        stored column-major: an entry&rsquo;s index is{' '}
+        <code>column * 4 + row</code>. Four columns of four, so they land as
+        blocks: <code>m[0]&ndash;m[3]</code> is the first column,{' '}
+        <code>m[4]&ndash;m[7]</code> the second, <code>m[8]&ndash;m[11]</code>{' '}
+        the third, <code>m[12]&ndash;m[15]</code> the last. Set that beside the
+        reading the arrows gave you and the layout is no longer an arbitrary
+        convention — the array is the object&rsquo;s x axis, then its y axis,
+        then its z axis, then where it stands.
+      </p>
+
+      <MemoryFigure />
+
+      <p>
+        The builders in <code>lib/math/mat4.ts</code> are typed out in that order
+        too. <code>translation(x, y, z)</code> is the identity with{' '}
+        <code>x, y, z, 1</code> on its last line, which is why the arguments land
+        at indices 12, 13 and 14. <code>rotationY</code> puts its cosine at{' '}
+        <code>m[0]</code> and <code>m[10]</code>, the sine at <code>m[8]</code>{' '}
+        and the negated sine at <code>m[2]</code>, and never touches{' '}
+        <code>m[4]&ndash;m[7]</code>: the y
+        column is the axis it turns about, so the y column is the one thing it
+        leaves alone.
+      </p>
+      <p>
+        Nothing rearranges those floats on the way to the GPU. The upload is{' '}
+        <code>gl.uniformMatrix4fv(location, false, m)</code>, and that{' '}
+        <code>false</code> is a transpose flag: the array already sits in the
+        order OpenGL wants, so it goes across as it is. In WebGL 1, which every
+        canvas on this page runs on, the flag is not even a choice: passing{' '}
+        <code>true</code> is an error.
+      </p>
+      <p>
+        The one place the order does get rearranged is the readout you have been
+        watching all along. <code>toRows()</code> walks the array with a stride of
+        four, so the top row it prints is <code>m[0]</code>, <code>m[4]</code>,{' '}
+        <code>m[8]</code>, <code>m[12]</code> — one entry taken from each column.
+        That is whiteboard notation, and it is the transpose of the buffer. Read
+        the sixteen floats four at a time as though they were rows instead, and
+        the 2.20 you drove into <code>m[12]</code> comes out at the start of the
+        bottom row rather than the top of the last column. Both pictures describe
+        the same buffer. Only one of them is the buffer.
+      </p>
+      <p>
+        The blocking buys something practical as well: a column is contiguous, so
+        asking where an object is means reading three adjacent floats —{' '}
+        <code>m[12]</code>, <code>m[13]</code>, <code>m[14]</code> — not
+        gathering three that sit four apart.
       </p>
 
       <ProseHeading id="scale">Scale stretches the axes, and can invert them</ProseHeading>

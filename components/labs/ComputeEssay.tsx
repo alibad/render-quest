@@ -15,7 +15,14 @@ import { Prose, ProseHeading } from '@/components/lab/Prose';
  *
  * Every number below is read out of ComputeLab.tsx. WORKGROUP_SIZE is 64,
  * MAX_PARTICLES is 120,000, a Particle is four floats, the uniform block is 48
- * bytes, and the counts in figure 3 are ceil(100000 / 64) worked through.
+ * bytes, and the counts in the dispatch figure are ceil(100000 / 64) worked
+ * through.
+ *
+ * CallerFigure is here for pacing rather than for a number. The first picture
+ * in this essay used to arrive after 376 words — the longest wait on the site,
+ * against a median of about 230 — and a reader who has been shown nothing yet
+ * has no reason to keep going. It draws the claim the opening paragraph makes
+ * and nothing else, which puts a figure at word 90.
  */
 
 /** A labelled node in a dataflow diagram. */
@@ -66,6 +73,98 @@ function Node({
         </text>
       ) : null}
     </g>
+  );
+}
+
+/** Who calls each stage, and what is waiting on the other side of the answer. */
+function CallerFigure() {
+  const head = 'url(#cq-call-head)';
+  return (
+    <Figure
+      caption={
+        <>
+          The top two rows have the same shape: something downstream wanted an
+          answer, so the shader ran. The bottom row has nothing downstream. The
+          dispatch is the only reason it ran, and the buffer at the end of it
+          sits there until code you wrote goes and reads it. In this lab that
+          code is the vertex stage.
+        </>
+      }
+    >
+      <svg
+        viewBox="0 0 640 240"
+        className="block h-auto w-full overflow-hidden"
+        role="img"
+        aria-label="A diagram of three shader stages and their callers: a draw call invokes the vertex shader because the rasteriser wants a clip position, the rasteriser invokes the fragment shader because the framebuffer wants a colour, and dispatchWorkgroups invokes the compute shader, whose storage buffer has nothing waiting on it"
+      >
+        <defs>
+          <marker
+            id="cq-call-head"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="6"
+            markerHeight="6"
+            orient="auto-start-reverse"
+          >
+            <path d="M0 0 L10 5 L0 10 z" className="fill-fg-faint" />
+          </marker>
+        </defs>
+
+        <text x="12" y="20" fontSize="10.5" className="fill-fg-faint font-mono">
+          CALLED BECAUSE A STAGE NEEDS THE ANSWER
+        </text>
+
+        <Node x={12} y={32} w={170} h={50} title="draw()" sub="vertices to rasterise" />
+        <Node x={224} y={32} w={184} h={50} title="@vertex" sub="one call per vertex" />
+        <Node x={450} y={32} w={178} h={50} title="the rasteriser" sub="wants a clip position" />
+
+        <Node x={12} y={94} w={170} h={50} title="the rasteriser" sub="fragments to blend" />
+        <Node x={224} y={94} w={184} h={50} title="@fragment" sub="one call per fragment" />
+        <Node x={450} y={94} w={178} h={50} title="the framebuffer" sub="wants a colour" />
+
+        <text x="12" y="168" fontSize="10.5" className="fill-fg-faint font-mono">
+          CALLED BECAUSE YOU ASKED
+        </text>
+
+        <Node
+          x={12}
+          y={180}
+          w={170}
+          h={50}
+          title="dispatchWorkgroups()"
+          sub="a count you chose"
+          tone="amber"
+        />
+        <Node
+          x={224}
+          y={180}
+          w={184}
+          h={50}
+          title="@compute"
+          sub="one call per index"
+          tone="accent"
+        />
+        <Node
+          x={450}
+          y={180}
+          w={178}
+          h={50}
+          title="a storage buffer"
+          sub="wants nothing"
+          tone="accent"
+        />
+
+        <g className="stroke-fg-faint" strokeWidth="1.2" fill="none">
+          <path d="M186 57 L220 57" markerEnd={head} />
+          <path d="M412 57 L446 57" markerEnd={head} />
+          <path d="M186 119 L220 119" markerEnd={head} />
+          <path d="M412 119 L446 119" markerEnd={head} />
+          <path d="M186 205 L220 205" markerEnd={head} />
+          <path d="M412 205 L446 205" markerEnd={head} />
+        </g>
+      </svg>
+    </Figure>
   );
 }
 
@@ -456,13 +555,16 @@ export function ComputeEssay() {
         hardware with all of that taken away. It runs as many times as you ask it
         to, and its output is whatever it left behind in memory.
       </p>
+
+      <CallerFigure />
+
       <p>
-        This lab runs one over a field of particles. Every position and velocity
-        lives in a buffer the GPU owns; a compute pass steps all of them; the
-        vertex stage then reads the same buffer back, six vertices at a time, and
-        draws them. The CPU writes forty-eight bytes a frame and issues one dispatch
-        and one draw, whether there are five thousand particles or a hundred
-        thousand.
+        This lab runs a compute shader over a field of particles. Every position
+        and velocity lives in a buffer the GPU owns; a compute pass steps all of
+        them; the vertex stage then reads the same buffer back, six vertices at a
+        time, and draws them. The CPU writes forty-eight bytes a frame and issues
+        one dispatch and one draw, whether there are five thousand particles or a
+        hundred thousand.
       </p>
 
       <ProseHeading id="stage">The GPU has a stage that draws nothing</ProseHeading>
