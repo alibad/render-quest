@@ -10,6 +10,9 @@ import {
   useRef,
   useState,
 } from 'react';
+// React 19 removed the global `JSX` namespace: it lives on the `react` package
+// now, and a bare `JSX.Element` no longer resolves.
+import type { JSX } from 'react';
 
 import { Slider } from '@/components/lab/Controls';
 import { useLabState } from '@/components/lab/useLabState';

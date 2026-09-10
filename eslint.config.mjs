@@ -17,7 +17,13 @@ import nextCoreWebVitals from 'eslint-config-next/core-web-vitals';
  * `npm run lint` fail outright inside a git worktree nested under the repo.
  */
 const config = [
-  { ignores: ['.next/**', 'out/**', 'next-env.d.ts'] },
+  {
+    // `.claude/worktrees` holds real git worktrees during a multi-agent run —
+    // each one a full checkout with its own `.next`. Left out, `eslint .` walked
+    // into a sibling's build output and reported 276 errors in minified vendor
+    // chunks, none of them in this repository's own source.
+    ignores: ['.next/**', 'out/**', 'next-env.d.ts', '**/.next/**', '.claude/worktrees/**'],
+  },
   ...nextCoreWebVitals,
   {
     rules: {
