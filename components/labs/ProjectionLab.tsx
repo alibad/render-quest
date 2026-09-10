@@ -68,7 +68,7 @@ export interface ProjectionParams {
 
 type ProjectionControls = Omit<ProjectionParams, 'palette'>;
 
-const DEFAULTS: ProjectionControls = {
+export const DEFAULTS: ProjectionControls = {
   mode: 'perspective',
   fov: 50,
   near: 1.5,
@@ -322,6 +322,7 @@ export function ProjectionLab() {
 
           <ControlGroup
             title="Projection"
+            explains="orthographic"
             action={<ResetButton onClick={() => setParams(DEFAULTS)} />}
           >
             <Segmented
@@ -334,7 +335,7 @@ export function ProjectionLab() {
             />
           </ControlGroup>
 
-          <ControlGroup title="Shape">
+          <ControlGroup title="Shape" explains="frustum">
             {isPerspective ? (
               <Slider
                 label="field of view"

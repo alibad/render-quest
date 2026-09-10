@@ -1208,6 +1208,230 @@ async function main() {
       });
     }
 
+    /* ------------------------------------------- the checks in the essays ---
+     * Issue #49 put one question at the paragraph making the claim. The thing
+     * that has to be true about it is not on the page at all: NOTHING IS
+     * RECORDED. /privacy says "There is nothing to collect", and that sentence
+     * is load-bearing — one remembered answer falsifies it, in a change that
+     * would arrive looking like a kindness ("it forgets what I picked when I
+     * scroll away"). Nothing about that change is visible in a screenshot, in a
+     * diff review of an essay, or in any content check, which is why it is
+     * asserted here, in a real browser, by answering a question and looking at
+     * the storage afterwards.
+     *
+     * Snapshot and compare rather than assert emptiness: this suite's own
+     * themedPage writes `rq-theme` before the page loads, and the theme toggle
+     * is entitled to that key. What is being asserted is that answering added
+     * nothing, which is the claim.
+     *
+     * The other two are the accessibility half. The options are buttons in a
+     * list rather than a radiogroup, so each is its own tab stop and each has
+     * to answer Enter and Space; and the response is announced through an
+     * aria-live region that — per Check.tsx — must already exist and be empty
+     * before the answer, because assistive technology announces mutations to a
+     * region it has already registered and stays silent about one that arrives
+     * with its content already in it.
+     */
+    console.log('\nchecks in the essays');
+
+    /** The first `<Check>` on the page, found by the eyebrow it prints. */
+    const CHECK_GROUP = `Array.from(document.querySelectorAll('section[role="group"]'))
+      .find((g) => { const e = g.querySelector('.eyebrow'); return e && e.textContent.trim() === 'check'; })`;
+
+    const CHECK_SHAPE = `(() => {
+      const group = ${CHECK_GROUP};
+      if (!group) return null;
+      const options = Array.from(group.querySelectorAll('li button'));
+      const live = group.querySelector('[aria-live]');
+      return {
+        options: options.length,
+        tabbable: options.filter((b) => b.tabIndex === 0).length,
+        hasLive: !!live,
+        liveAtRest: live ? live.textContent.replace(/\\s+/g, ' ').trim() : null,
+        // The word "correct", printed beside the right option as a direct
+        // child of its button. It must not be in the DOM before anything has
+        // been chosen — a reader who wanted to think first should not have the
+        // answer sitting in the markup.
+        marked: options.filter((b) => Array.from(b.children)
+          .some((c) => c.textContent.trim() === 'correct')).length,
+      };
+    })()`;
+
+    const LIVE_TEXT = `(() => {
+      const group = ${CHECK_GROUP};
+      const live = group ? group.querySelector('[aria-live]') : null;
+      return live ? live.textContent.replace(/\\s+/g, ' ').trim() : null;
+    })()`;
+
+    /**
+     * Put focus on one option without clicking it, so the key press that
+     * follows is the only thing that could have answered the question.
+     */
+    const focusOption = (index: number) => `(() => {
+      const group = ${CHECK_GROUP};
+      if (!group) return null;
+      const button = group.querySelectorAll('li button')[${index}];
+      if (!button) return null;
+      button.scrollIntoView({ block: 'center' });
+      button.focus();
+      return {
+        focused: document.activeElement === button,
+        tabIndex: button.tabIndex,
+        text: button.textContent.replace(/\\s+/g, ' ').trim().slice(0, 48),
+      };
+    })()`;
+
+    const STORAGE = `(() => {
+      const read = (store) => { try { return Object.keys(store).sort(); } catch (e) { return ['<unreadable>']; } };
+      return {
+        local: read(localStorage),
+        session: read(sessionStorage),
+        cookie: document.cookie,
+      };
+    })()`;
+
+    // The three labs that carry a check today. Read from the page rather than
+    // assumed: a lab with none renders nothing and is skipped by name, which is
+    // the shape issue #49 asked for — checks spread as prose gets written, and
+    // no page anywhere counts how many labs have one.
+    for (const lab of LIVE_LABS) {
+      const name = `${lab.slug}: answering a check stores nothing`;
+      const page = await themedPage(browser, 'dark');
+      const errors: string[] = [];
+      watchErrors(page, errors);
+      await page.goto(`${BASE}/labs/${lab.slug}`, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(1200);
+
+      const shape = (await page.evaluate(CHECK_SHAPE)) as {
+        options: number;
+        tabbable: number;
+        hasLive: boolean;
+        liveAtRest: string | null;
+        marked: number;
+      } | null;
+
+      if (!shape) {
+        await page.close();
+        skip(name, 'this lab has no check');
+        skip(`${lab.slug}: a check is operable from the keyboard`, 'this lab has no check');
+        skip(`${lab.slug}: a check announces its response`, 'this lab has no check');
+        continue;
+      }
+
+      const before = (await page.evaluate(STORAGE)) as {
+        local: string[];
+        session: string[];
+        cookie: string;
+      };
+
+      const first = (await page.evaluate(focusOption(0))) as {
+        focused: boolean;
+        tabIndex: number;
+        text: string;
+      } | null;
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(300);
+      const afterEnter = (await page.evaluate(LIVE_TEXT)) as string | null;
+
+      // A second option, chosen with Space. Two presses because a <button>
+      // owes an answer to both keys, and a second answer because nothing locks.
+      const second = (await page.evaluate(focusOption(1))) as {
+        focused: boolean;
+        tabIndex: number;
+        text: string;
+      } | null;
+      await page.keyboard.press('Space');
+      await page.waitForTimeout(300);
+      const afterSpace = (await page.evaluate(LIVE_TEXT)) as string | null;
+
+      const after = (await page.evaluate(STORAGE)) as {
+        local: string[];
+        session: string[];
+        cookie: string;
+      };
+      await page.close();
+
+      const added = after.local.filter((key) => !before.local.includes(key));
+      console.log(
+        `      ${lab.slug}: ${shape.options} options, ` +
+          `localStorage ${before.local.length} keys before and ${after.local.length} after`,
+      );
+
+      check(name, () => {
+        assert.deepEqual(
+          added,
+          [],
+          `answering a check added ${added.join(', ')} to localStorage — /privacy says ` +
+            '"There is nothing to collect", and that sentence stops being true here',
+        );
+        assert.deepEqual(
+          after.session.filter((key) => !before.session.includes(key)),
+          [],
+          'answering a check wrote to sessionStorage',
+        );
+        assert.equal(
+          after.cookie,
+          before.cookie,
+          `answering a check set a cookie: "${after.cookie}"`,
+        );
+      });
+
+      check(`${lab.slug}: a check is operable from the keyboard`, () => {
+        assert.ok(first, 'the check has no option buttons');
+        assert.ok(first!.focused, `the first option would not take focus ("${first!.text}")`);
+        assert.equal(
+          first!.tabIndex,
+          0,
+          `the first option is not in the tab order (tabIndex ${first!.tabIndex}) — the ` +
+            'options are separate things to read, so each one is its own tab stop',
+        );
+        assert.equal(
+          shape.tabbable,
+          shape.options,
+          `${shape.tabbable} of ${shape.options} options are tabbable — every option has to ` +
+            'be reachable, or the ones that are not are hidden from anyone moving by keyboard',
+        );
+        assert.ok(
+          afterEnter && afterEnter.length > 0,
+          'Enter on a focused option produced no response',
+        );
+        assert.ok(second!.focused, 'the second option would not take focus');
+        assert.ok(
+          afterSpace && afterSpace.length > 0 && afterSpace !== afterEnter,
+          `Space on a second option left the response reading "${afterSpace}" — either the ` +
+            'key does nothing, or the check locked after the first answer',
+        );
+        assert.equal(errors.length, 0, errors.join(' | '));
+      });
+
+      check(`${lab.slug}: a check announces its response`, () => {
+        assert.ok(
+          shape.hasLive,
+          'the check has no aria-live region, so a screen reader is told nothing when the ' +
+            'response appears',
+        );
+        // Not "the region is empty at rest": a region holding a prompt and then
+        // mutated to the response does announce, so that would fail a change
+        // that is not a defect. What has to be true is that the region existed
+        // BEFORE the answer — assistive technology announces mutations to a
+        // region it has already registered and stays silent about one that
+        // enters the tree with its content already in it — and that the
+        // response arrived by mutating it rather than beside it.
+        assert.notEqual(
+          afterEnter,
+          shape.liveAtRest,
+          `the live region read "${shape.liveAtRest}" before the answer and reads the same ` +
+            'after it, so the response is being rendered somewhere else and nothing is announced',
+        );
+        assert.equal(
+          shape.marked,
+          0,
+          `${shape.marked} options are marked before anything was chosen — the answer is on ` +
+            'the page for anyone reading the DOM',
+        );
+      });
+    }
+
     check('every lab that invites arrow keys was found', () => {
       const cameras = labsOfferingACamera();
       const reachable = cameras.filter(
@@ -1439,6 +1663,64 @@ async function main() {
         );
       });
       await page.close();
+    }
+
+    // The print stylesheet hides every `button`, deliberately, so that a widget
+    // nobody enumerated cannot print as a stranded box. The inline glossary term
+    // is a button too — and it is not a control beside the prose, it is a word
+    // inside it. So the blanket rule deleted 114 words from the middle of
+    // printed sentences across the ten labs: "It builds a UV from the vertex
+    // position" printed as "It builds a from the vertex position", and nothing
+    // caught it, because on screen every one of those sentences is perfect.
+    //
+    // This drives the real print stylesheet in a real browser and reads the text
+    // a sheet of paper would carry. Deleting the `button[data-term='inline']`
+    // exemption from globals.css fails it on all ten labs at once.
+    for (const lab of LIVE_LABS) {
+      const page = await themedPage(browser, 'light');
+      await page.goto(`${BASE}/labs/${lab.slug}`, { waitUntil: 'networkidle' });
+      await page.emulateMedia({ media: 'print' });
+      await page.waitForTimeout(300);
+      const terms = await page.evaluate(() => {
+        const gone: { word: string; sentence: string }[] = [];
+        for (const element of document.querySelectorAll('button[data-term="inline"]')) {
+          if (getComputedStyle(element).display !== 'none') continue;
+          const word = (element.textContent ?? '').trim();
+          const holder = element.closest('p, li');
+          gone.push({
+            word,
+            sentence: (holder?.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 90),
+          });
+        }
+        // The footer's vocabulary chips are the same component in its `chip`
+        // variant, and they SHOULD stay hidden — their definitions are not in
+        // the document until pressed, so they would print as bare headwords.
+        const chips = Array.from(document.querySelectorAll('button[data-term="chip"]')).filter(
+          (element) => getComputedStyle(element).display !== 'none',
+        ).length;
+        const total = document.querySelectorAll('button[data-term="inline"]').length;
+        return { gone, chips, total };
+      });
+      await page.close();
+
+      check(`${lab.slug}: every term still reads as a word on paper`, () => {
+        assert.equal(
+          terms.gone.length,
+          0,
+          terms.gone.length
+            ? `print drops ${terms.gone.length} of ${terms.total} inline terms out of the middle of their own sentences — ` +
+              terms.gone
+                .slice(0, 3)
+                .map((t) => `"${t.word}" from "${t.sentence}"`)
+                .join('; ')
+            : '',
+        );
+        assert.equal(
+          terms.chips,
+          0,
+          `${terms.chips} footer vocabulary chips print as bare headwords with no definition under them`,
+        );
+      });
     }
 
     // A two-column grid holding an odd number of cards ends on a half-empty row,

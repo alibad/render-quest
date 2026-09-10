@@ -9,6 +9,7 @@
 
 import assert from 'node:assert/strict';
 
+import { shareableControls } from '../components/lab/Figure.tsx';
 import { decodeState, encodeState, stateHref } from '../lib/url-state.ts';
 
 let passed = 0;
@@ -102,6 +103,71 @@ check('a value differing from the default only past the rounding is not written'
 check('stateHref leaves a clean path when nothing was changed', () => {
   assert.equal(stateHref('/labs/transform', ''), '/labs/transform');
   assert.equal(stateHref('/labs/transform', 'ty=1.5'), '/labs/transform?ty=1.5');
+});
+
+/* ------------------------------------- a figure, handed to the instrument ---
+ * A figure isolates one control; the instrument at the foot of the essay has
+ * all of them. `<Figure state=…>` bridges the two by encoding the figure's
+ * configuration against the lab's own DEFAULTS, so the interesting cases are
+ * the ones where the record the essay has to hand is wider than the lab's
+ * controls — which it always is, because the scene params carry the palette.
+ */
+
+/** A lab's exported DEFAULTS, in miniature. */
+const LAB = {
+  order: 'trs',
+  rx: 0,
+  showGhost: true,
+  tx: 0,
+};
+
+/** The same record as one figure sets it: one slider moved, one flag off. */
+const FIGURE = { ...LAB, showGhost: false, tx: 1.2 };
+
+check('a figure-shaped record round-trips into the instrument', () => {
+  const query = encodeState(LAB, FIGURE);
+  assert.equal(query, 'showGhost=0&tx=1.2');
+  assert.equal(
+    `${stateHref('/labs/transform', query)}#instrument`,
+    '/labs/transform?showGhost=0&tx=1.2#instrument',
+  );
+  // What the instrument opens with has to be the figure, not a near miss.
+  assert.deepEqual({ ...LAB, ...decodeState(LAB, query) }, FIGURE);
+});
+
+check('a key the lab has no default for is dropped on the way out', () => {
+  // The essays hold the camera in the figure's params; a lab whose DEFAULTS do
+  // not carry it must not have it appear in the address bar, or the link
+  // promises a camera the instrument will not restore.
+  const query = encodeState(
+    shareableControls(LAB),
+    shareableControls({ ...FIGURE, azimuth: 0.72 }),
+  );
+  assert.equal(query.includes('azimuth'), false);
+  assert.equal(query, 'showGhost=0&tx=1.2');
+});
+
+check('a palette cannot survive into a query string', () => {
+  // The failure this guard exists for: an essay passes the scene params it
+  // already built, and those always have the palette from the theme provider
+  // spread into them. `String({})` is `[object Object]`, so a palette that
+  // reached the codec would be in the reader's address bar and in every link
+  // they shared.
+  const palette = { grid: '#333', ambient: [0.1, 0.1, 0.12] };
+  const defaults = shareableControls({ ...LAB, palette });
+  const current = shareableControls({ ...FIGURE, palette: { ...palette, grid: '#eee' } });
+
+  assert.equal(Object.hasOwn(defaults, 'palette'), false);
+  assert.equal(Object.hasOwn(current, 'palette'), false);
+  assert.equal(encodeState(defaults, current), 'showGhost=0&tx=1.2');
+
+  // Named as well as type-filtered, so a palette that ever becomes a theme name
+  // rather than an object — a string, which the codec is happy to write — is
+  // still not shareable state.
+  assert.deepEqual(shareableControls({ palette: 'midnight' }), {});
+
+  // Everything else the codec cannot round-trip goes the same way.
+  assert.deepEqual(shareableControls({ colors: [1, 2, 3], onChange: () => {}, tx: 2 }), { tx: 2 });
 });
 
 console.log(`\n${passed} url-state checks passed`);

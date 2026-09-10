@@ -162,7 +162,7 @@ interface InstancingControls {
   elevation: number;
 }
 
-const DEFAULTS: InstancingControls = {
+export const DEFAULTS: InstancingControls = {
   count: 4000,
   mode: 'instanced',
   scale: 1,
@@ -656,7 +656,7 @@ export function InstancingLab() {
             onChange={(value) => set('mode', value)}
           />
 
-          <ControlGroup title="The scene">
+          <ControlGroup title="The scene" explains="counting">
             <Slider
               label="Cubes"
               value={controls.count}

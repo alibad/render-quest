@@ -157,7 +157,7 @@ interface ColourControls {
   bothCorrect: boolean;
 }
 
-const DEFAULTS: ColourControls = {
+export const DEFAULTS: ColourControls = {
   azimuth: 0.6,
   elevation: 0.25,
   intensity: 1,
@@ -173,6 +173,7 @@ const PRESETS: Preset<ColourControls>[] = [
     label: 'The bug, side by side',
     note: 'One sphere, one light, one Lambert term. Left multiplies the encoded numbers; right decodes to light, multiplies, and encodes back. The left is darker through the midtones and its terminator is a hard edge — that is the whole of the bug, and it looks like a lighting choice rather than an error.',
     values: { split: 0.5, intensity: 1, ambient: 0.05, bothCorrect: false, showStrip: false },
+    shows: 'the failure',
   },
   {
     label: 'Which grey is half?',
@@ -183,6 +184,7 @@ const PRESETS: Preset<ColourControls>[] = [
     label: 'Turn the light up',
     note: 'At high intensity the uncorrected side blows out to flat white while the corrected side still has shape in the highlight. Doubling a number is not doubling light unless you are in the space where light adds.',
     values: { intensity: 2.6, ambient: 0.02, split: 0.5, showStrip: false, bothCorrect: false },
+    shows: 'the failure',
   },
   {
     label: 'Gamma 1.0 — no encoding at all',
@@ -352,6 +354,7 @@ export function ColourLab() {
 
           <ControlGroup
             title="The comparison"
+            explains="multiply"
             action={<ResetButton onClick={() => setControls(DEFAULTS)} />}
           >
             <Slider
@@ -380,7 +383,7 @@ export function ColourLab() {
             />
           </ControlGroup>
 
-          <ControlGroup title="The light">
+          <ControlGroup title="The light" explains="intensity">
             <Slider
               label="intensity"
               value={controls.intensity}

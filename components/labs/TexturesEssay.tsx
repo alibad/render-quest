@@ -4,11 +4,13 @@ import { Segmented, Slider } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
 import { GLCanvas } from '@/components/lab/GLCanvas';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { Term } from '@/components/lab/Term';
 import { useFigureState } from '@/components/lab/useFigureState';
 import { usePalette } from '@/components/site/ThemeProvider';
-import { createScene, type TextureParams } from '@/components/labs/TextureLab';
+import { createScene, DEFAULTS, type TextureParams } from '@/components/labs/TextureLab';
 import type { MagFilter, MinFilter } from '@/lib/gl/texture';
 import { degToRad } from '@/lib/math/mat4';
+import { REPO_URL } from '@/lib/site';
 
 /**
  * The written half of lab 5.
@@ -70,6 +72,7 @@ function FootprintFigure() {
   return (
     <Figure
       id="tile-count"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="tiles across"
@@ -133,6 +136,7 @@ function MagnificationFigure() {
   return (
     <Figure
       id="magnification-filter"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Segmented
           label="magnification filter"
@@ -191,6 +195,7 @@ function MipmapFigure() {
   return (
     <Figure
       id="minification-filter"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Segmented
           label="minification filter"
@@ -242,6 +247,7 @@ function MipLevelFigure() {
   return (
     <Figure
       id="mip-handover"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Segmented
           label="within a level · between levels"
@@ -301,6 +307,7 @@ function AngleFigure() {
   return (
     <Figure
       id="grazing-angle"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="camera above the plane"
@@ -355,6 +362,7 @@ function WrapFigure() {
   return (
     <Figure
       id="clamp-smear"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="shift the coordinates"
@@ -396,7 +404,8 @@ export function TexturesEssay() {
         lines disappear and reappear somewhere they are not; move the camera and
         the whole distance crawls. Nothing is wrong with the image and nothing is
         wrong with the plane. What is wrong is the fit between them — a pixel on
-        screen and a texel in the image are not the same size, are almost never
+        screen and a <Term name="Texel">texel</Term> in the image are not the
+        same size, are almost never
         the same shape, and change their ratio from one end of a triangle to the
         other.
       </p>
@@ -413,7 +422,8 @@ export function TexturesEssay() {
         A pixel covers a different number of texels everywhere you look
       </ProseHeading>
       <p>
-        The shader knows none of this. It builds a UV from the vertex position —{' '}
+        The shader knows none of this. It builds a{' '}
+        <Term name="UV coordinates">UV</Term> from the vertex position —{' '}
         <code>vUv = aPosition * uRepeat + uOffset</code> — and reads the texture
         at it, and that is the whole of the texturing code. What varies across
         the image is not the coordinate but its rate of change: how far the UV
@@ -429,8 +439,8 @@ export function TexturesEssay() {
         eight; they are there to fail first. A pattern with a period of eight
         texels needs a sample at least every four to survive, so the moment a
         pixel covers more than that the lines cannot be represented at all — and
-        a sampler with no mip chain answers anyway, with whichever single texel
-        it happened to land on. The rings and bands in the distance are that: the
+        a sampler with no <Term name="Mipmap">mip chain</Term> answers anyway,
+        with whichever single texel it happened to land on. The rings and bands in the distance are that: the
         texel grid beating against the pixel grid. Move the camera and the answer
         changes every frame; that is the shimmer, and the rest of this page is
         about removing it.
@@ -440,7 +450,8 @@ export function TexturesEssay() {
         Magnification and minification are two different failures
       </ProseHeading>
       <p>
-        You set two filters, and at any given pixel exactly one of them runs. The
+        You set two <Term name="Filtering">filters</Term>, and at any given pixel
+        exactly one of them runs. The
         hardware compares the footprint against a single texel: smaller, and the
         texture is being magnified; larger, and it is being minified. You do not
         get to make that call per pixel, and you would not want to — as the
@@ -534,7 +545,8 @@ export function TexturesEssay() {
 
       <p>
         The level has to be chosen from one number. Choose it for the short axis
-        of the footprint and the long axis aliases; choose it for the long axis,
+        of the footprint and the long axis{' '}
+        <Term name="Aliasing">aliases</Term>; choose it for the long axis,
         which is what the hardware does, and the short axis is blurred by exactly
         the footprint&rsquo;s aspect ratio. A road surface at a grazing angle is
         the standard case, and it looks like mud.
@@ -552,7 +564,8 @@ export function TexturesEssay() {
         The UVs here are not confined to 0 to 1 and were never going to be. They
         come straight from the vertex position, so at six tiles across, u runs
         from −3 to 3 and v from −12.9 to 0.2. The sampler needs an answer for all
-        of it. Wrap is that answer, set separately per axis: S across the width
+        of it. <Term name="Wrap mode">Wrap</Term> is that answer, set separately
+        per axis: S across the width
         of the plane, T along its length, running away from you.
       </p>
 
@@ -579,6 +592,62 @@ export function TexturesEssay() {
         Repeat, mirrored repeat and the mip chain all need a power-of-two texture
         in WebGL 1. This one is 256 square for that reason. A 257-pixel image
         gets clamping, no mipmaps, and no explanation.
+      </p>
+
+      <ProseHeading id="mistake">
+        What I got wrong here: a control that did nothing
+      </ProseHeading>
+      <p>
+        This lab shipped with a magnification filter that was wired correctly and
+        never once mattered. The belief behind it was that a control which reads
+        the right value and calls the right{' '}
+        <code>texParameteri</code> is a working control — that the wiring is the
+        feature. The note beside it described what happens up close, from a lab
+        that opens looking down a heavily tiled plane and offers no view that is
+        up close: every state it offered by name tiled the plane further, so
+        every texel on screen was smaller than a pixel and the sampler was
+        minifying everywhere.
+      </p>
+      <p>
+        The symptom was that flipping between Nearest and Linear changed nothing
+        at all, and nothing is the one result a reader will not report. The
+        difference this control makes is small where it makes one — a hard texel
+        edge against a ramp a texel wide — so a reader who saw no change had an
+        explanation ready: they were not looking closely enough, or this is a
+        setting you take on faith. The page offered nothing to correct that with.
+        A control with no work to do looked like a fine distinction.
+      </p>
+      <p>
+        What caught it was measurement rather than reading. A sweep on 8
+        September 2026 drove every control on every lab in a real browser and
+        compared the canvas before and after: the magnification filter moved
+        0.000 per cent of the picture, the only control on the site that moved
+        none.
+      </p>
+      <p>
+        The fix, in{' '}
+        {/*
+         * The sha is written out; the host is not. test/content.test.ts fails
+         * any file under app, components, lib or scripts that restates a
+         * lib/site.ts constant as a literal, and this link was caught by it.
+         */}
+        <a
+          href={`${REPO_URL}/commit/e49a799`}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          commit e49a799
+        </a>
+        , was not to the filter. It was a preset,{' '}
+        <em>Close enough to magnify</em>, that puts one tile under a camera
+        looking down at it, and a line in the panel that says{' '}
+        <em>Nothing to see from here</em> whenever the view is not one where the
+        control has anything to do. It is guarded by the check{' '}
+        <code>moving a control changes the picture</code> in{' '}
+        <code>test/render.smoke.ts</code>, which applies that preset, flips the
+        filter and measures the canvas: 26.4 per cent of the picture moves,
+        against a noise floor of zero. Remove the preset and the number goes back
+        to nothing and the check fails.
       </p>
 
       <ProseHeading id="instrument">Now move all of it at once</ProseHeading>

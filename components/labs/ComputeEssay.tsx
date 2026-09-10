@@ -1,5 +1,6 @@
 import { Figure } from '@/components/lab/Figure';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { Term } from '@/components/lab/Term';
 
 /**
  * The written half of lab 6.
@@ -32,6 +33,14 @@ import { Prose, ProseHeading } from '@/components/lab/Prose';
  * is used exactly once — the forwarding rule in Figure.tsx exists for a wrapper
  * used several times, where a hard-coded id would give several figures one
  * address.
+ *
+ * For the same reason none of them passes Figure's `state` prop either. That
+ * link opens the instrument at the configuration the figure is showing, and an
+ * SVG is not showing a configuration: this file never imports ComputeLab, so
+ * there is no control record here to hand over. A link built from DEFAULTS
+ * would promise "this exact thing, with every control" and deliver the
+ * instrument's opening state, which is a worse offer than the paragraph that
+ * already tells the reader to go and drag the particle slider.
  */
 
 /** A labelled node in a dataflow diagram. */
@@ -565,9 +574,10 @@ export function ComputeEssay() {
         answers a question about a pixel. Neither chooses when it runs: one is
         called because something is about to be rasterised, the other because
         something is about to be blended into a framebuffer, and the answer is
-        consumed by the stage that comes next. A compute shader is the same
-        hardware with all of that taken away. It runs as many times as you ask it
-        to, and its output is whatever it left behind in memory.
+        consumed by the stage that comes next. A{' '}
+        <Term name="Compute shader">compute shader</Term> is the same hardware
+        with all of that taken away. It runs as many times as you ask it to, and
+        its output is whatever it left behind in memory.
       </p>
 
       <CallerFigure />
@@ -601,11 +611,11 @@ export function ComputeEssay() {
         concept is absent from the API. The way this was done for a decade is to
         put the state where a fragment shader can write: encode positions
         into a floating-point texture, draw a full-screen quad so that one
-        fragment lands on each texel, step the simulation there, and write into a
-        second texture bound to a framebuffer. The two textures swap roles every
-        frame, because a shader cannot read the texture it is writing to. The
-        result is then sampled again by a vertex shader to get the positions back
-        as geometry.
+        fragment lands on each <Term name="Texel">texel</Term>, step the
+        simulation there, and write into a second texture bound to a
+        framebuffer. The two textures swap roles every frame, because a shader
+        cannot read the texture it is writing to. The result is then sampled
+        again by a vertex shader to get the positions back as geometry.
       </p>
 
       <PingPongFigure />
@@ -634,12 +644,13 @@ export function ComputeEssay() {
         <code>var&lt;storage, read_write&gt; particles</code> is what the compute
         stage sees; <code>var&lt;storage, read&gt; readParticles</code> is what
         the vertex stage sees. Same memory, two access modes, and the read-only
-        one is not a courtesy: WebGPU does not permit a writable storage buffer
-        in the vertex stage at all, so that binding has to be declared{' '}
-        <code>read-only-storage</code>. A uniform buffer cannot stand in for
-        either of them — uniforms are
-        read-only to the shader and sized for a handful of values, which is
-        exactly the job the lab&rsquo;s other binding does.
+        one is not a courtesy: WebGPU does not permit a writable{' '}
+        <Term name="Storage buffer">storage buffer</Term> in the vertex stage at
+        all, so that binding has to be declared{' '}
+        <code>read-only-storage</code>. A{' '}
+        <Term name="Uniform">uniform</Term> buffer cannot stand in for either of
+        them — uniforms are read-only to the shader and sized for a handful of
+        values, which is exactly the job the lab&rsquo;s other binding does.
       </p>
 
       <StorageFigure />
@@ -664,9 +675,10 @@ export function ComputeEssay() {
       <p>
         The call that starts the compute pass is{' '}
         <code>dispatchWorkgroups(Math.ceil(count / 64))</code>. It does not take a
-        number of particles. It takes a number of workgroups, and the workgroup
-        size — 64 here — is fixed in the shader at compile time, so the two have
-        to be reconciled by rounding up. A hundred thousand particles divided by
+        number of particles. It takes a number of{' '}
+        <Term name="Workgroup">workgroups</Term>, and the workgroup size — 64
+        here — is fixed in the shader at compile time, so the two have to be
+        reconciled by rounding up. A hundred thousand particles divided by
         sixty-four is 1,562.5, which becomes 1,563 workgroups and 100,032
         invocations: thirty-two more than there are particles.
       </p>

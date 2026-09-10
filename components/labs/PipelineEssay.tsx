@@ -7,9 +7,11 @@ import { Figure } from '@/components/lab/Figure';
 import { useFigureState } from '@/components/lab/useFigureState';
 import { GLCanvas } from '@/components/lab/GLCanvas';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { Term } from '@/components/lab/Term';
 import { usePalette } from '@/components/site/ThemeProvider';
 import {
   CTX,
+  DEFAULTS,
   TRACKED,
   createScene,
   type PipelineParams,
@@ -162,10 +164,29 @@ function StageFigure({
   );
   const spaces: readonly [Space, Space] = [SPACES[from], SPACES[to]];
   const params = figureParams({ stage: from + (to - from) * s.t }, palette);
+  /*
+   * The whole stage the figure is nearer — which is the row its readout lights
+   * and the space its caption argues about — and the only thing that may be
+   * handed to the instrument.
+   *
+   * The instrument indexes the space list with `stage` directly
+   * (`SPACES[controls.stage]`, PipelineLab.tsx), so the blend a figure's slider
+   * actually sits on would arrive as `SPACES[3.4]`, which is `undefined`, and
+   * `SPACE_LABELS[undefined].title` throws before the lab renders anything.
+   * Checked against the real modules rather than assumed.
+   */
+  const landing = s.t < 0.5 ? from : to;
 
   return (
     <Figure
       id={id}
+      /*
+       * `params` still carries the palette from the theme provider; `Figure`
+       * runs both records through `shareableControls`, which drops it by name,
+       * so the guard is what keeps a theme out of the address bar rather than
+       * this call site remembering to.
+       */
+      state={{ defaults: DEFAULTS, current: { ...params, stage: landing } }}
       control={
         <Slider
           label={`${SPACE_LABELS[spaces[0]].title} to ${SPACE_LABELS[spaces[1]].title}`}
@@ -175,7 +196,7 @@ function StageFigure({
           onChange={(t) => setS({ t })}
         />
       }
-      readout={<TraceRows spaces={spaces} active={s.t < 0.5 ? spaces[0] : spaces[1]} />}
+      readout={<TraceRows spaces={spaces} active={SPACES[landing]} />}
       caption={caption}
     >
       <GLCanvas
@@ -199,10 +220,11 @@ export function PipelineEssay() {
       </p>
       <p>
         This lab follows a single vertex the whole way &mdash; the corner of a
-        cube at <code>(0.5, 0.5, 0.5)</code> &mdash; through model, world, view,
-        clip, NDC and screen space. The cube never moves and the camera being
-        studied never moves. What changes is which of the six spaces you are
-        standing in while you look at them.
+        cube at <code>(0.5, 0.5, 0.5)</code> &mdash; through{' '}
+        <Term name="Model space">model</Term>, world, view, clip,{' '}
+        <Term name="NDC">NDC</Term> and screen space. The cube never moves and
+        the camera being studied never moves. What changes is which of the six
+        spaces you are standing in while you look at them.
       </p>
 
       <ProseHeading id="handover">Each matrix hands the vertex to the next</ProseHeading>
@@ -262,9 +284,10 @@ export function PipelineEssay() {
         the eye at <code>(0, 0.9, 3)</code> looking at{' '}
         <code>(0, 0, &minus;0.8)</code>&rdquo; is implemented by moving
         everything else the other way. Watch the x column across those two rows:
-        1.23 in world space, 1.23 in view space. This camera stands on the plane{' '}
-        <code>x = 0</code> and its right-hand axis is the world&rsquo;s x axis,
-        so that coordinate passes through untouched.
+        1.23 in world space, 1.23 in <Term name="View space">view space</Term>.
+        This camera stands on the plane <code>x = 0</code> and its right-hand
+        axis is the world&rsquo;s x axis, so that coordinate passes through
+        untouched.
       </p>
       <p>
         Through all three rows so far, <code>w</code> is still 1. Both matrices
@@ -300,7 +323,8 @@ export function PipelineEssay() {
 
       <p>
         The vertex leaves view space at{' '}
-        <code>(1.23, 0.78, &minus;3.71, 1.00)</code> and arrives in clip space at{' '}
+        <code>(1.23, 0.78, &minus;3.71, 1.00)</code> and arrives in{' '}
+        <Term name="Clip space">clip space</Term> at{' '}
         <code>(1.85, 1.88, 3.27, 3.71)</code>. Read the last number of that row
         against the third number of the row above it. <code>w</code> is 3.71;
         view z was &minus;3.71. Nothing has divided anything. The projection has
@@ -391,8 +415,9 @@ export function PipelineEssay() {
 
       <p>
         The <code>+ 1</code> and the halving map &minus;1&hellip;1 onto
-        0&hellip;1; the multiplication scales that to the viewport. The only part
-        worth committing to memory is the subtraction in the second line. NDC
+        0&hellip;1; the multiplication scales that to the{' '}
+        <Term name="Viewport">viewport</Term>. The only part worth committing
+        to memory is the subtraction in the second line. NDC
         counts upwards from the bottom and a window counts downwards from the
         top, so y is flipped, and when a coordinate you computed lands mirrored
         vertically on screen, this is the line that did it.

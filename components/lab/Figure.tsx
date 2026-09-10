@@ -1,9 +1,66 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { ManualLink, useCopyLink } from '@/components/lab/CopyLink';
 import { useFigureQuery } from '@/components/lab/useFigureState';
+import { encodeState, stateHref, type LabState, type StateValue } from '@/lib/url-state';
+
+/**
+ * What a figure hands to the instrument at the foot of the page: the lab's own
+ * control record, and the same record as this figure has it set.
+ *
+ * Both halves travel as one prop because neither is any use alone. The current
+ * values say what to restore; the defaults say which of them are worth writing
+ * down, since a link that repeated the whole record would say nothing about
+ * what this figure was demonstrating. There is no call site that would want one
+ * without the other, so there is no way to give one without the other.
+ */
+export type FigureState = {
+  /** The lab's `DEFAULTS`, exported from `components/labs/<Name>Lab.tsx`. */
+  defaults: object;
+  /** The same record with this figure's controls applied. */
+  current: object;
+};
+
+/**
+ * The part of a lab's params that may be written into an address.
+ *
+ * `palette` is the reason this exists. It comes from the theme provider, and
+ * every essay builds a figure's scene by spreading it in beside the controls —
+ * so the record nearest to hand at the call site is the one that already has it.
+ * `encodeState` walks the defaults, so a palette present only in `current` is
+ * dropped for free; a palette that ever reached a lab's `DEFAULTS` would be
+ * `String(value)`, and every reader would carry `?palette=[object+Object]` in
+ * their address bar and in every link they shared. Seven essays pass these
+ * records by hand across thirty-three figures, so this is filtered here rather
+ * than trusted to each of them.
+ *
+ * The key is named as well as type-filtered. Today a palette is an object and
+ * the type filter alone would catch it; the day one becomes a theme name it
+ * would be a string, and a string is exactly what the codec is happy to write.
+ *
+ * Everything else that is not a string, number or boolean goes the same way:
+ * those three are what `encodeState` and `decodeState` can round-trip, so
+ * anything else in the record is a leak rather than a control.
+ *
+ * The parameter is `object`, not `Record<string, unknown>`, which would read
+ * better. The params type of all seven labs whose essays have state to pass,
+ * and five of the ten `DEFAULTS` types, are declared as interfaces — and an
+ * interface has no implicit index signature, so the tighter type would refuse
+ * exactly the records the essays have to hand.
+ */
+export function shareableControls(record: object): LabState {
+  const out: LabState = {};
+  for (const [key, value] of Object.entries(record as Record<string, unknown>)) {
+    if (key === 'palette') continue;
+    const kind = typeof value;
+    if (kind !== 'string' && kind !== 'number' && kind !== 'boolean') continue;
+    out[key] = value as StateValue;
+  }
+  return out;
+}
 
 /**
  * One canvas, one idea, one control at most.
@@ -89,6 +146,26 @@ import { useFigureQuery } from '@/components/lab/useFigureState';
  *    captions sit outside it. Captions carry 182–423 words per lab as it is.
  *    An argument that belongs to the essay belongs in a paragraph, where it is
  *    counted, indexed and linkable on its own heading.
+ *
+ * 5. IF THE FIGURE DRIVES THE LAB'S OWN SCENE, HAND OVER ITS STATE.
+ *
+ *      <Figure id="translate" state={{ defaults: DEFAULTS, current: params }} …>
+ *
+ *    A figure isolates one control; the instrument at the foot has every one.
+ *    A reader who has just watched one slider make a point and now wants to know
+ *    what the rest do to that exact configuration had, until this prop, to
+ *    scroll past the remaining essay and rebuild the state from memory. With it,
+ *    the caption carries a link that opens the instrument already set that way.
+ *
+ *    `defaults` is the lab module's exported `DEFAULTS`; `current` is the params
+ *    that figure is rendering. Pass the params object as it is — `palette` and
+ *    anything else the codec cannot carry is stripped here, not at the call
+ *    site; see `shareableControls`.
+ *
+ *    Optional, and that is what keeps it honest. The three WebGPU essays
+ *    illustrate with inline SVG and have no lab state to hand over, so they pass
+ *    nothing and render no link, rather than offering a button that lands on the
+ *    defaults the reader could have reached by scrolling.
  */
 export function Figure({
   id,
@@ -96,6 +173,7 @@ export function Figure({
   control,
   caption,
   readout,
+  state,
 }: {
   /**
    * The figure's address. Required — see the API notes above. Unique within the
@@ -110,6 +188,12 @@ export function Figure({
   caption: ReactNode;
   /** Numbers beside the picture — a matrix, a measurement. */
   readout?: ReactNode;
+  /**
+   * This figure's configuration in the lab's own terms — see point 5 above.
+   * Given, the caption grows a link that opens the instrument set that way;
+   * omitted, it does not.
+   */
+  state?: FigureState;
 }) {
   // Empty until this figure's own controls have been moved, and permanently
   // empty for a figure that has none.
@@ -117,6 +201,28 @@ export function Figure({
   // The one caller that asks for a fragment. A link to a figure that did not
   // land on the figure would be a link to the top of a long essay.
   const { copy, copied, manual } = useCopyLink(`#${id}`);
+  const pathname = usePathname();
+  // Computed at render from the props alone. No window, no router, no new
+  // route: these pages are prerendered, and the link has to be in the HTML
+  // that ships rather than appear once a client has hydrated.
+  //
+  // It is rendered as a plain `<a>`, and not only for that reason. The link
+  // usually points at the page it is already on, so `next/link` would treat it
+  // as a same-route navigation and re-render without remounting — and
+  // `useLabState` reads the address bar once, in a mount effect guarded by a
+  // ref. The URL would change and the instrument's sliders would not move.
+  //
+  // Deliberately not the address bar's own query. That carries every other
+  // figure on the page under its own namespace, and none of those keys mean
+  // anything to the instrument — this link says "this figure, in the
+  // instrument", and only the keys this figure differs from the lab's defaults
+  // by can say it.
+  const instrument = state
+    ? `${stateHref(
+        pathname,
+        encodeState(shareableControls(state.defaults), shareableControls(state.current)),
+      )}#instrument`
+    : '';
 
   return (
     <figure id={id} className="group !mt-8 !mb-8 w-full scroll-mt-24">
@@ -180,6 +286,26 @@ export function Figure({
               the link to copy by hand.
             </span>
           </span>
+        ) : null}
+        {/* Its own line, always, rather than trailing the caption sentence.
+            The `#` and "copy link" beside it are glyph-scale marks about this
+            figure; this is a sentence pointing away from it, and three of them
+            on one row is a toolbar under a caption. Blocking it is also what
+            satisfies the 375px rule everywhere at once — it wraps inside the
+            figcaption, so it can never widen the figure.
+
+            Labelled with the id for the reason the two above it are: five
+            figures on a page all answering to "Open this in the full
+            instrument" are five links a screen reader cannot tell apart. The
+            arrow is hidden from that name; it is punctuation, not a word. */}
+        {instrument ? (
+          <a
+            href={instrument}
+            aria-label={`Open figure ${id} in the full instrument`}
+            className="link-accent mt-2 block text-xs"
+          >
+            Open this in the full instrument <span aria-hidden="true">→</span>
+          </a>
         ) : null}
       </figcaption>
     </figure>

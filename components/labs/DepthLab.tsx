@@ -89,7 +89,7 @@ export interface DepthControls {
   opacity: number;
 }
 
-const DEFAULTS: DepthControls = {
+export const DEFAULTS: DepthControls = {
   azimuth: 0.12,
   elevation: 0.16,
   scene: 'zfight',
@@ -107,6 +107,7 @@ const PRESETS: Preset<DepthControls>[] = [
     label: 'Make it fight',
     note: 'A near plane of 0.02 spends nearly the whole depth buffer on the first few centimetres, leaving almost nothing for the distance. The two panels tear into each other in bands. Nothing about the geometry changed — only the range you asked the buffer to cover.',
     values: { scene: 'zfight', near: 0.02, far: 200, separation: 0.002, distance: 80 },
+    shows: 'the failure',
   },
   {
     label: 'Fix it from the frustum',
@@ -117,11 +118,13 @@ const PRESETS: Preset<DepthControls>[] = [
     label: 'The far plane barely matters',
     note: 'Now drag the far plane between 10 and 1000 and watch how little the prediction moves. It is the control everybody reaches for first, and close to the least effective one here.',
     values: { scene: 'zfight', near: 0.05, far: 1000, separation: 0.002, distance: 80 },
+    shows: 'the failure',
   },
   {
     label: 'Transparency, drawn wrong',
     note: 'Three translucent panes with depth writing on and no sorting, seen from behind — from the opening angle the array happens to already be back to front, and nothing looks wrong. Whichever pane is drawn first stamps the depth buffer, and the ones behind it are discarded — so panes vanish according to array order rather than where they are in space.',
     values: { scene: 'blend', depthWrite: true, sorted: false, opacity: 0.55, azimuth: 2.5 },
+    shows: 'the failure',
   },
   {
     label: 'Transparency, drawn right',
@@ -370,6 +373,7 @@ export function DepthLab() {
           {controls.scene === 'zfight' ? (
             <ControlGroup
               title="The frustum"
+              explains="near"
               action={<ResetButton onClick={() => setControls(DEFAULTS)} />}
             >
               <Slider label="near" value={controls.near} min={0.01} max={5} step={0.01}
@@ -384,6 +388,7 @@ export function DepthLab() {
           ) : (
             <ControlGroup
               title="Blending"
+              explains="sorting"
               action={<ResetButton onClick={() => setControls(DEFAULTS)} />}
             >
               <Toggle label="Write depth" checked={controls.depthWrite}

@@ -8,7 +8,7 @@
  */
 import assert from 'node:assert/strict';
 
-import { GLOSSARY, GLOSSARY_SORTED, termId } from '../lib/glossary.ts';
+import { GLOSSARY, GLOSSARY_SORTED, getTerm, termId } from '../lib/glossary.ts';
 import { LABS, LIVE_LABS, ORDERED_LABS, labNeighbours } from '../lib/labs.ts';
 import type { Lab } from '../lib/labs.ts';
 import { GLYPH_SLUGS } from '../components/site/LabGlyph.tsx';
@@ -21,6 +21,7 @@ import {
   SITE_TAGLINE,
   SITE_URL,
 } from '../lib/site.ts';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, relative } from 'node:path';
@@ -39,6 +40,23 @@ const check = (name: string, fn: () => void) => {
   fn();
   passed++;
   console.log(`  ok  ${name}`);
+};
+
+let skipped = 0;
+/**
+ * A check that cannot run here, counted and named.
+ *
+ * One check in this file needs the repository's history — the essays link
+ * commits, and a link to a commit that does not exist is a 404 on somebody
+ * else's site. `.github/workflows/ci.yml` checks out with `actions/checkout@v4`
+ * and no `fetch-depth`, which fetches exactly one commit, so asking git about a
+ * commit from August fails there and passes on every developer's machine. A
+ * silent pass would be worse than either, so the skip prints and is counted,
+ * following test/render.smoke.ts.
+ */
+const skip = (name: string, why: string) => {
+  skipped++;
+  console.log(`  --  ${name} (skipped: ${why})`);
 };
 
 console.log('content');
@@ -724,6 +742,732 @@ check('nothing restates a lib/site.ts constant as a literal', () => {
 });
 
 
+/* ------------------------------------------------- reading a data literal ---
+ * Four of the checks below have to read structures the runtime never exports:
+ * the options inside a `<Check>` written in an essay, and the `PRESETS` array
+ * declared `const` in each lab. Both are JSX-adjacent object literals, so the
+ * scanners already in this file — which stop at a `>` — cannot see them, and a
+ * regex over `note:` cannot tell a field of a preset from the same word inside
+ * a caption three lines down.
+ *
+ * So these three walk brackets instead of matching text, in the same spirit as
+ * `openingTag` above: skip quoted spans whole, track depth, and only believe a
+ * key that sits at the depth it would sit at if it really were a field.
+ */
+
+const OPENERS: Record<string, string> = { '{': '}', '[': ']', '(': ')' };
+const CLOSERS = new Set([')', ']', '}']);
+
+/** The bracket-balanced span starting at `open`, quoted spans skipped whole. */
+function bracketed(source: string, open: number): string {
+  let depth = 0;
+  for (let i = open; i < source.length; i++) {
+    const c = source[i];
+    if (c === '"' || c === "'" || c === '`') {
+      const close = source.indexOf(c, i + 1);
+      if (close === -1) break;
+      i = close;
+      continue;
+    }
+    if (OPENERS[c]) depth++;
+    else if (CLOSERS.has(c)) {
+      depth--;
+      if (depth === 0) return source.slice(open, i + 1);
+    }
+  }
+  return source.slice(open);
+}
+
+/**
+ * The bracket depth at every offset in `text`, so a key can be believed or not.
+ *
+ * A brace or bracket counts at its own offset; the character after a closer is
+ * back at the outer depth. Everything inside a quoted span is pinned to the
+ * depth the quote opened at, which is what stops an apostrophe in a note from
+ * unbalancing the rest of the file.
+ */
+function depths(text: string): Int32Array {
+  const out = new Int32Array(text.length);
+  let depth = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"' || c === "'" || c === '`') {
+      const close = text.indexOf(c, i + 1);
+      if (close !== -1) {
+        out.fill(depth, i, close + 1);
+        i = close;
+        continue;
+      }
+    }
+    if (OPENERS[c]) out[i] = ++depth;
+    else if (CLOSERS.has(c)) out[i] = depth--;
+    else out[i] = depth;
+  }
+  return out;
+}
+
+/** Every top-level `{ … }` in an array literal, in source order. */
+function objectsIn(arrayText: string): string[] {
+  const depth = depths(arrayText);
+  const out: string[] = [];
+  for (let i = 1; i < arrayText.length; i++) {
+    if (arrayText[i] !== '{' || depth[i] !== 2) continue;
+    const object = bracketed(arrayText, i);
+    out.push(object);
+    i += object.length - 1;
+  }
+  return out;
+}
+
+/**
+ * The named fields of one object literal, each as raw source.
+ *
+ * `keys` is a closed list rather than "anything before a colon" on purpose. A
+ * `<Check>` option is a JSX fragment of ordinary prose, and ColourEssay's first
+ * distractor opens "Nothing is: a mixture of two colours…" — a greedy key
+ * pattern reads that as a field called `is` and truncates the option there. A
+ * field ends where the NEXT known key begins, so an unlisted key would be read
+ * as part of the value before it, which is why adding a field to `Preset` or to
+ * `CheckOption` means adding it here too.
+ */
+function fieldsOf(objectText: string, keys: string[]): Record<string, string> {
+  const depth = depths(objectText);
+  const pattern = new RegExp(`(?:^|[\\s,{])(${keys.join('|')})\\s*:`, 'g');
+  const found: { key: string; from: number; valueAt: number }[] = [];
+  for (const match of objectText.matchAll(pattern)) {
+    const at = match.index! + match[0].indexOf(match[1]);
+    if (depth[at] !== 1) continue;
+    found.push({ key: match[1], from: at, valueAt: match.index! + match[0].length });
+  }
+  const out: Record<string, string> = {};
+  found.forEach((field, index) => {
+    const end = index + 1 < found.length ? found[index + 1].from : objectText.length - 1;
+    out[field.key] = objectText
+      .slice(field.valueAt, end)
+      .trim()
+      .replace(/,$/, '')
+      .trim();
+  });
+  return out;
+}
+
+/**
+ * What a reader sees, from a value that may be a string literal or JSX.
+ *
+ * Only ever used to compare two pieces of prose against each other or against
+ * zero, so it does not have to be a renderer — it has to stop markup counting
+ * as words. `{' '}` becomes the space it stands for rather than three
+ * characters, tags go, and `&rsquo;` counts as the one apostrophe it draws.
+ */
+function visibleText(value: string): string {
+  let text = value.trim();
+  // A wrapper the author added for the line break, not something on the page.
+  while (/^[('"`]/.test(text) && bracketed(text, 0).length === text.length) {
+    text = text.slice(1, -1).trim();
+  }
+  if (/^['"`]/.test(text) && text.endsWith(text[0])) text = text.slice(1, -1);
+  return text
+    .replace(/\{'\s*'\}|\{"\s*"\}/g, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&rsquo;|&lsquo;/g, '’')
+    .replace(/&mdash;/g, '—')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** A literal string attribute on an opening tag; null when it is not literal. */
+function attributeOn(tag: string, key: string): string | null {
+  const match = new RegExp(`(?:^|\\s)${key}="([^"]*)"`).exec(tag);
+  return match ? match[1] : null;
+}
+
+/** The `components/labs` file for a lab, by the two spellings that exist. */
+function labComponent(slug: string, suffix: 'Lab' | 'Essay'): string {
+  const guesses = [
+    `${slug[0].toUpperCase()}${slug.slice(1)}${suffix}.tsx`,
+    `${slug[0].toUpperCase()}${slug.slice(1).replace(/s$/, '')}${suffix}.tsx`,
+  ];
+  const file = guesses.find((name) => existsSync(join(ESSAY_DIR, name)));
+  assert.ok(file, `no ${suffix} component found for lab "${slug}"`);
+  return file!;
+}
+
+/** slug -> its essay: the file name, the source, and the headings in it. */
+const ESSAY_BY_SLUG = new Map(
+  LIVE_LABS.map((lab) => {
+    const file = labComponent(lab.slug, 'Essay');
+    const source = readFileSync(join(ESSAY_DIR, file), 'utf8');
+    const headings = new Set(
+      tagsNamed(source, 'ProseHeading')
+        .map((tag) => attributeOn(tag.text, 'id'))
+        .filter((id): id is string => id !== null),
+    );
+    return [lab.slug, { file, source, headings }];
+  }),
+);
+
+
+/* --------------------------------------------- definitions in the prose ---
+ * Issue #43 put the glossary inside the sentence: `<Term name="NDC">NDC</Term>`
+ * resolves its entry out of GLOSSARY at render time and opens it under the
+ * paragraph, so a reader who does not know the word does not have to leave the
+ * argument to find out.
+ *
+ * Term.tsx throws on a name that is not there, which is the stronger guard and
+ * not the reason this exists. That throw only fires in a build that actually
+ * renders the essay, and nothing in `npm test` does: the render harness further
+ * down this file mounts /labs, /about and /roadmap, none of which is a lab
+ * page. So a misspelled name today survives every suite and takes down
+ * `next build` — on Vercel, on a push, which for this repository is a
+ * deployment. This is the check that catches it a minute earlier and names the
+ * file and the line.
+ *
+ * The second check is one the runtime cannot make at all, because it is about
+ * a page rather than an element. A term defines itself at its FIRST use; a
+ * second disclosure on the same word three paragraphs down is a button with
+ * nothing behind it the reader has not already read, and the paragraph it sits
+ * in is the one that gets worse.
+ */
+
+const TERM_USES = ESSAY_FILES.flatMap((file) => {
+  const source = readFileSync(join(ESSAY_DIR, file), 'utf8');
+  return tagsNamed(source, 'Term').map((tag) => ({
+    file,
+    line: lineOf(source, tag.at),
+    name: attributeOn(tag.text, 'name'),
+  }));
+});
+
+console.log(
+  `  ${TERM_USES.length} inline definitions across ${ESSAY_FILES.length} essays\n`,
+);
+
+check('the essays define terms in place', () => {
+  assert.ok(
+    TERM_USES.length > 0,
+    'no <Term> in any essay — either the inline definitions are gone, or this scan ' +
+      'has stopped seeing them and the two checks below prove nothing',
+  );
+});
+
+check('every term an essay defines in place is in the glossary', () => {
+  const offences: string[] = [];
+  for (const use of TERM_USES) {
+    if (use.name === null) {
+      offences.push(
+        `${use.file}:${use.line} <Term> has no literal name="…" — the entry it asks ` +
+          'for cannot be read from here, so nothing checks it until the build runs',
+      );
+      continue;
+    }
+    if (getTerm(use.name)) continue;
+    offences.push(
+      `${use.file}:${use.line} names "${use.name}", which is not in GLOSSARY — add it ` +
+        'to lib/glossary.ts or fix the spelling; the lookup folds case and nothing else',
+    );
+  }
+  assert.deepEqual(offences, [], `\n  ${offences.join('\n  ')}\n`);
+});
+
+check('no essay wraps the same term twice', () => {
+  const offences: string[] = [];
+  for (const file of ESSAY_FILES) {
+    const lines = new Map<string, number[]>();
+    for (const use of TERM_USES) {
+      if (use.file !== file || use.name === null) continue;
+      // Folded, because getTerm folds: "NDC" and "ndc" open the same panel.
+      const key = use.name.trim().toLowerCase();
+      lines.set(key, [...(lines.get(key) ?? []), use.line]);
+    }
+    for (const [name, at] of lines) {
+      if (at.length < 2) continue;
+      offences.push(
+        `${file}: "${name}" is wrapped ${at.length} times, at lines ${at.join(' and ')}` +
+          ' — wrap the first use and leave the rest as ordinary words',
+      );
+    }
+  }
+  assert.deepEqual(offences, [], `\n  ${offences.join('\n  ')}\n`);
+});
+
+
+/* -------------------------------------------- presets that show a failure ---
+ * Issue #44 gave `Preset` an optional `shows: 'the failure'`, which puts an
+ * amber marker on the button and a sentence above the note saying the render is
+ * meant to look wrong. It is the note that carries the actual teaching, and
+ * `note` is a required field, so the type appears to have this covered — until
+ * somebody writes `note: ''` to get a preset onto the page, which compiles.
+ *
+ * That is the whole failure mode and it is not hypothetical in kind: a marked
+ * preset with no note is a button that says "this is broken on purpose" and
+ * then does not say what to look at, which leaves the reader exactly where
+ * todo/2026-09-08.md found them — looking at a wrong picture with nothing on
+ * the page distinguishing the lesson from a bug.
+ *
+ * No registry was introduced by that issue: each lab still declares its own
+ * `const PRESETS`, which is the thing scanned here.
+ */
+
+const MARKED_PRESETS = [...LAB_SOURCES].flatMap(([slug, source]) => {
+  // The `=` matters. `const PRESETS: Preset<ColourControls>[] = [` puts an
+  // empty `[]` in the type annotation before the array literal, and taking the
+  // first bracket after the name reads that instead — which parses cleanly,
+  // finds no presets at all, and would have made this whole section vacuous.
+  const declared = /const\s+PRESETS\b[^=]*=\s*/.exec(source);
+  if (!declared) return [];
+  const array = bracketed(source, declared.index + declared[0].length);
+  return objectsIn(array)
+    .map((object) => fieldsOf(object, ['label', 'note', 'values', 'shows']))
+    .filter((preset) => preset.shows !== undefined)
+    .map((preset) => ({
+      slug,
+      label: visibleText(preset.label ?? ''),
+      note: visibleText(preset.note ?? ''),
+      hasNote: preset.note !== undefined,
+    }));
+});
+
+console.log(
+  `  ${MARKED_PRESETS.length} presets marked "wrong on purpose": ` +
+    `${[...new Set(MARKED_PRESETS.map((preset) => preset.slug))].join(', ')}\n`,
+);
+
+check('the presets marked wrong on purpose were found', () => {
+  assert.ok(
+    MARKED_PRESETS.length > 0,
+    'no preset anywhere carries `shows`, so the check below reads an empty list — ' +
+      'either the markers have gone, or `const PRESETS` is no longer how a lab declares them',
+  );
+});
+
+check('every preset marked wrong on purpose still says what to look at', () => {
+  const offences: string[] = [];
+  for (const preset of MARKED_PRESETS) {
+    if (preset.hasNote && preset.note.length > 0) continue;
+    offences.push(
+      `${preset.slug}: "${preset.label}" is marked wrong on purpose and ` +
+        (preset.hasNote ? 'its note is empty' : 'carries no note') +
+        ' — the marker says the picture is meant to look wrong, and the note is the ' +
+        'only thing that says what the failure is',
+    );
+  }
+  assert.deepEqual(offences, [], `\n  ${offences.join('\n  ')}\n`);
+});
+
+
+/* ------------------------------------- controls pointing back at the essay ---
+ * Issue #46 gave `ControlGroup` an optional `explains`, the id of a heading in
+ * that lab's essay: a returning reader who scrolls straight to the instrument
+ * gets sixteen controls and none of the argument, and this is the way back.
+ *
+ * The link is an `<a href="#…">` on a statically generated page, so a heading
+ * that has been renamed produces no error anywhere — the anchor resolves to
+ * nothing, the browser stays where it is, and the control quietly links to the
+ * top of the page. This is the same shape as test/shader.test.ts's check that
+ * every uniform the TypeScript asks for exists in the shader it compiles
+ * against, and it catches the same class of rot: two files that have to agree
+ * about a name, with nothing at runtime comparing them.
+ */
+
+const EXPLAINS = [...LAB_SOURCES].flatMap(([slug, source]) =>
+  tagsNamed(source, 'ControlGroup')
+    .map((tag) => ({
+      slug,
+      file: labComponent(slug, 'Lab'),
+      line: lineOf(source, tag.at),
+      title: attributeOn(tag.text, 'title'),
+      explains: attributeOn(tag.text, 'explains'),
+    }))
+    .filter((group) => group.explains !== null),
+);
+
+console.log(
+  `  ${EXPLAINS.length} control groups link back to a section of their essay\n`,
+);
+
+check('the control groups that link back to the essay were found', () => {
+  assert.ok(
+    EXPLAINS.length > 0,
+    'no ControlGroup anywhere sets `explains`, so the check below reads an empty list',
+  );
+});
+
+check('every control group links to a heading its essay actually has', () => {
+  const offences: string[] = [];
+  for (const group of EXPLAINS) {
+    const essay = ESSAY_BY_SLUG.get(group.slug);
+    assert.ok(essay, `${group.slug} has a control group and no essay`);
+    if (essay!.headings.has(group.explains!)) continue;
+    offences.push(
+      `${group.file}:${group.line} points the "${group.title}" controls at ` +
+        `#${group.explains}, and ${essay!.file} has no <ProseHeading id="${group.explains}"> — ` +
+        `the link lands on nothing and the reader stays where they are. Its headings are: ` +
+        `${[...essay!.headings].join(', ')}`,
+    );
+  }
+  assert.deepEqual(offences, [], `\n  ${offences.join('\n  ')}\n`);
+});
+
+
+/* ----------------------------------------------------- the essays' checks ---
+ * Issue #49 put one question at the paragraph making the claim, with a reason
+ * written for every wrong answer. The wrong answers are the content, so the
+ * three things asserted here are the three ways a check silently stops being
+ * one:
+ *
+ *  - Two options marked correct, or none. `Check` marks the correct option
+ *    only after something has been chosen, so a second `correct: true` renders
+ *    as two options both marked right and no error anywhere; none renders as a
+ *    check that never tells the reader the answer.
+ *  - An empty response. The response is what the aria-live region announces —
+ *    an empty one is silence to a screen reader and a blank box to everyone
+ *    else, and the reader is left with less than they had before they clicked.
+ *  - A response shorter than the option it answers. This is the filler
+ *    detector. A distractor is only worth writing if somebody would choose it,
+ *    and the response has to say what they were thinking and where it breaks;
+ *    "Not quite" cannot do that in fewer characters than the option took. The
+ *    real twelve run from 3.3x to 8.2x the length of their option, so parity is
+ *    a floor nothing honest comes near.
+ *
+ * Length is measured on what a reader sees rather than on source: options carry
+ * <code> and responses carry <a href>, and counting the markup would let a
+ * filler response pass on the strength of a link.
+ */
+
+interface ParsedCheck {
+  file: string;
+  line: number;
+  options: { option: string; response: string; correct: boolean; hasResponse: boolean }[];
+}
+
+const CHECKS: ParsedCheck[] = ESSAY_FILES.flatMap((file) => {
+  const source = readFileSync(join(ESSAY_DIR, file), 'utf8');
+  return tagsNamed(source, 'Check').map((tag) => {
+    const at = source.indexOf('options={', tag.at);
+    assert.ok(
+      at !== -1 && at < tag.at + tag.text.length,
+      `${file}:${lineOf(source, tag.at)} <Check> has no options={[…]}`,
+    );
+    const array = bracketed(source, source.indexOf('[', at));
+    return {
+      file,
+      line: lineOf(source, tag.at),
+      options: objectsIn(array).map((object) => {
+        const fields = fieldsOf(object, ['option', 'correct', 'response']);
+        return {
+          option: visibleText(fields.option ?? ''),
+          response: visibleText(fields.response ?? ''),
+          correct: fields.correct === 'true',
+          hasResponse: fields.response !== undefined,
+        };
+      }),
+    };
+  });
+});
+
+console.log(
+  `  ${CHECKS.length} checks in the essays, ` +
+    `${CHECKS.reduce((n, c) => n + c.options.length, 0)} options between them\n`,
+);
+
+check('the checks in the essays were parsed', () => {
+  assert.ok(CHECKS.length > 0, 'no <Check> in any essay — this scan read nothing');
+  for (const parsed of CHECKS) {
+    assert.ok(
+      parsed.options.length > 0,
+      `${parsed.file}:${parsed.line} parsed as a check with no options`,
+    );
+  }
+});
+
+check('every check has exactly one correct option', () => {
+  const offences: string[] = [];
+  for (const parsed of CHECKS) {
+    const correct = parsed.options.filter((entry) => entry.correct);
+    if (correct.length === 1) continue;
+    offences.push(
+      `${parsed.file}:${parsed.line} has ${correct.length} options marked correct out of ` +
+        `${parsed.options.length}` +
+        (correct.length === 0
+          ? ' — nothing on the page ever tells the reader which one it is'
+          : ` (${correct.map((entry) => `"${entry.option.slice(0, 40)}…"`).join(', ')}) — ` +
+            'both render marked, and a reader who picked one of them is told they are right twice'),
+    );
+  }
+  assert.deepEqual(offences, [], `\n  ${offences.join('\n  ')}\n`);
+});
+
+check('every option in a check has a response', () => {
+  const offences: string[] = [];
+  for (const parsed of CHECKS) {
+    for (const [index, entry] of parsed.options.entries()) {
+      if (entry.hasResponse && entry.response.length > 0) continue;
+      offences.push(
+        `${parsed.file}:${parsed.line} option ${index + 1} ("${entry.option.slice(0, 50)}") ` +
+          (entry.hasResponse ? 'has an empty response' : 'has no response') +
+          ' — choosing it announces nothing through the live region and shows a blank box',
+      );
+    }
+  }
+  assert.deepEqual(offences, [], `\n  ${offences.join('\n  ')}\n`);
+});
+
+check('no response is shorter than the option it answers', () => {
+  const offences: string[] = [];
+  for (const parsed of CHECKS) {
+    for (const entry of parsed.options) {
+      if (entry.response.length >= entry.option.length) continue;
+      offences.push(
+        `${parsed.file}:${parsed.line} answers "${entry.option.slice(0, 50)}" ` +
+          `(${entry.option.length} characters) with ${entry.response.length} — a response has ` +
+          'to say what the reader was thinking and where it breaks, which is not something ' +
+          'that fits in less room than the option took',
+      );
+    }
+  }
+  assert.deepEqual(offences, [], `\n  ${offences.join('\n  ')}\n`);
+});
+
+
+/* ----------------------------------------------- the receipt and the boundary ---
+ * Issue #51 closed every lab with two sentences: the takeaway restated as
+ * something now true, and one naming what the page did NOT teach and why.
+ *
+ * The boundary is the one worth guarding. It is the harder sentence to write,
+ * and the cheap way to write it is to negate the takeaway — "This did not teach
+ * you why a matrix chain reads right to left" — which reads like a boundary,
+ * renders like a boundary and tells the reader nothing they did not just spend
+ * 1,400 words on. Nothing about that is visible on the page.
+ *
+ * So the boundary is measured against the takeaway: what share of the
+ * takeaway's own content words come back in it. Measured on the ten that
+ * shipped, that share runs 0.000 to 0.333, and 0.333 is two labs where the
+ * boundary names an adjacent subject in the same vocabulary — the transform
+ * lab's boundary is about scene graphs and says "matrix" and "chain" because
+ * that is what a scene graph is made of. The negated takeaway scores 1.000 on
+ * all ten. The bar below sits between the two, nearly twice the worst honest
+ * reading and well under a restatement.
+ *
+ * What this cannot see is a restatement in different words, and no token metric
+ * can. It catches the cheap version, which is the one that gets written.
+ */
+
+/**
+ * Words that carry no subject. Deliberately short: every word dropped here is
+ * one a lazy boundary could reuse for free, so the list holds function words
+ * and the site's own filler verbs and nothing that names a thing.
+ */
+const FUNCTION_WORDS = new Set([
+  'the', 'and', 'but', 'for', 'from', 'into', 'onto', 'out', 'with', 'without',
+  'that', 'this', 'these', 'those', 'which', 'what', 'when', 'where', 'why',
+  'how', 'you', 'your', 'its', 'their', 'them', 'they', 'not', 'nothing',
+  'are', 'was', 'were', 'been', 'being', 'has', 'have', 'had', 'can', 'could',
+  'will', 'would', 'does', 'did', 'done', 'here', 'there', 'than', 'then',
+  'because', 'rather', 'still', 'just', 'only', 'each', 'every', 'all', 'any',
+  'some', 'more', 'most', 'less', 'least', 'same', 'other', 'another', 'while',
+  'before', 'after', 'once', 'never', 'always', 'also', 'about', 'over',
+  'under', 'one', 'two', 'say', 'says', 'said', 'see', 'seen', 'look', 'looks',
+  'make', 'makes', 'made', 'get', 'gets', 'got', 'now', 'teach', 'taught',
+  'thing', 'things', 'something', 'anything', 'everything', 'lab', 'page',
+]);
+
+/** The content words of a sentence, folded and stripped of punctuation. */
+const contentWords = (sentence: string) =>
+  new Set(
+    sentence
+      .toLowerCase()
+      .replace(/[^a-z0-9\s’'-]/g, ' ')
+      .split(/\s+/)
+      .filter((word) => word.length > 2 && !FUNCTION_WORDS.has(word)),
+  );
+
+/**
+ * The share of the takeaway's content words that come back in the boundary.
+ *
+ * Not Jaccard: the boundaries are two to four times longer than the takeaways,
+ * so a boundary that quoted the takeaway whole and then said more would still
+ * score low on symmetric overlap. What matters is how much of the takeaway is
+ * being said again, which is a one-directional question.
+ */
+function restatement(takeaway: string, boundary: string): number {
+  const wanted = contentWords(takeaway);
+  if (wanted.size === 0) return 0;
+  const said = contentWords(boundary);
+  return [...wanted].filter((word) => said.has(word)).length / wanted.size;
+}
+
+/**
+ * Measured: the ten real boundaries score 0.000 to 0.333, and the takeaway
+ * negated scores 1.000 on every one of them. Anything at or above this is a
+ * boundary that has given the takeaway back rather than drawn a line around it.
+ */
+const RESTATES_THE_TAKEAWAY = 0.6;
+
+console.log('\n  boundary against takeaway, share of the takeaway restated');
+for (const lab of LIVE_LABS) {
+  console.log(
+    `    ${lab.slug.padEnd(12)} ${restatement(lab.takeaway, lab.boundary).toFixed(3)}`,
+  );
+}
+console.log(`    ${'fails at'.padEnd(12)} ${RESTATES_THE_TAKEAWAY.toFixed(3)}\n`);
+
+check('every lab closes with a receipt and a boundary', () => {
+  for (const lab of LABS) {
+    assert.ok(
+      lab.receipt.trim().length > 20,
+      `${lab.title} has no real receipt, so its page ends with the instrument and no ` +
+        'evidence that anything happened',
+    );
+    assert.ok(
+      lab.boundary.trim().length > 20,
+      `${lab.title} has no real boundary, so nothing tells the reader where the ` +
+        'evidence they have just seen stops',
+    );
+  }
+});
+
+check('no boundary merely restates the takeaway', () => {
+  const offences: string[] = [];
+  for (const lab of LABS) {
+    const share = restatement(lab.takeaway, lab.boundary);
+    if (share < RESTATES_THE_TAKEAWAY) continue;
+    const shared = [...contentWords(lab.takeaway)].filter((word) =>
+      contentWords(lab.boundary).has(word),
+    );
+    offences.push(
+      `${lab.slug}: the boundary gives back ${(100 * share).toFixed(0)}% of the takeaway’s ` +
+        `own words (${shared.join(', ')}) — it is the takeaway negated, not a line around ` +
+        'it. Name a real neighbouring subject and say why it is absent',
+    );
+  }
+  assert.deepEqual(offences, [], `\n  ${offences.join('\n  ')}\n`);
+});
+
+
+/* ---------------------------------------- the commits the essays point at ---
+ * Issue #52 gave four labs a "what I got wrong here" section, and each one ends
+ * by naming the commit that fixed it and the check that holds it now. Both of
+ * those are claims about things outside the essay, and both rot in silence: a
+ * rebase or a squash turns the commit link into somebody else's 404, and
+ * renaming a check leaves a paragraph citing a guard that no longer exists —
+ * which on a page whose whole argument is "this is guarded now" is the worst
+ * sentence on the site to have wrong.
+ *
+ * The shallow-clone problem is real and is handled by skipping rather than by
+ * deepening: `.github/workflows/ci.yml` checks out with `actions/checkout@v4`
+ * and no `fetch-depth`, so CI has exactly one commit and cannot resolve
+ * anything else. That file is not this agent's to edit — adding
+ * `fetch-depth: 0` to both jobs would let the check run there, and is worth
+ * doing — so until it is, CI reports the skip by name and every developer
+ * machine, which has the full history, runs it for real. The test names that
+ * are checked alongside need no history and run everywhere.
+ */
+
+/** `href={`${REPO_URL}/commit/<sha>`}` — the link a reader can click. */
+const COMMIT_LINKS = ESSAY_FILES.flatMap((file) => {
+  const source = readFileSync(join(ESSAY_DIR, file), 'utf8');
+  return [...source.matchAll(/\/commit\/([0-9a-f]{4,40})/g)].map((match) => ({
+    file,
+    line: lineOf(source, match.index!),
+    sha: match[1],
+  }));
+});
+
+/**
+ * `the check <code>NAME</code> in <code>test/FILE</code>`, which is the shape
+ * all four sections write. The pair is matched together rather than separately
+ * so that the name is checked against the file the essay itself names.
+ */
+const TEST_CITATIONS = ESSAY_FILES.flatMap((file) => {
+  const source = readFileSync(join(ESSAY_DIR, file), 'utf8');
+  return [
+    ...source.matchAll(
+      /<code>([^<]+)<\/code>\s*,?\s*in\{' '\}\s*<code>(test\/[^<]+)<\/code>/g,
+    ),
+  ].map((match) => ({
+    file,
+    line: lineOf(source, match.index!),
+    name: match[1].replace(/\s+/g, ' ').trim(),
+    suite: match[2].trim(),
+  }));
+});
+
+console.log(
+  `  ${COMMIT_LINKS.length} commits and ${TEST_CITATIONS.length} named checks cited by the essays\n`,
+);
+
+check('the essays cite commits and checks by name', () => {
+  assert.ok(
+    COMMIT_LINKS.length > 0,
+    'no essay links a commit — the "what I got wrong here" sections have gone, or this ' +
+      'scan no longer sees the links and the check below proves nothing',
+  );
+  assert.ok(
+    TEST_CITATIONS.length > 0,
+    'no essay names the check that guards its mistake — the sections say a test holds it ' +
+      'now, and the sentence that says which one is what this reads',
+  );
+});
+
+const gitSays = (...args: string[]) =>
+  execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
+
+let history: 'full' | 'shallow' | 'absent';
+try {
+  history = gitSays('rev-parse', '--is-shallow-repository') === 'true' ? 'shallow' : 'full';
+} catch {
+  history = 'absent';
+}
+
+if (history !== 'full') {
+  skip(
+    'every commit an essay links resolves',
+    history === 'shallow'
+      ? 'this clone is shallow, so nothing but the tip commit can be resolved'
+      : 'there is no git repository here',
+  );
+} else {
+  check('every commit an essay links resolves', () => {
+    const offences: string[] = [];
+    for (const link of COMMIT_LINKS) {
+      try {
+        gitSays('cat-file', '-e', `${link.sha}^{commit}`);
+      } catch {
+        offences.push(
+          `${link.file}:${link.line} links commit ${link.sha}, which is not in this ` +
+            'repository — the paragraph around it describes that commit, so a rebase that ' +
+            'rewrote it has taken the evidence with it',
+        );
+      }
+    }
+    assert.deepEqual(offences, [], `\n  ${offences.join('\n  ')}\n`);
+  });
+}
+
+check('every check an essay names still exists in the suite it names', () => {
+  const offences: string[] = [];
+  for (const citation of TEST_CITATIONS) {
+    const path = join(ROOT, citation.suite);
+    if (!existsSync(path)) {
+      offences.push(
+        `${citation.file}:${citation.line} cites ${citation.suite}, which is not a file ` +
+          'in this repository',
+      );
+      continue;
+    }
+    if (readFileSync(path, 'utf8').includes(citation.name)) continue;
+    offences.push(
+      `${citation.file}:${citation.line} says the check "${citation.name}" in ` +
+        `${citation.suite} holds this, and no check in that file is called that — either ` +
+        'the check was renamed and the essay now cites a guard that does not exist, or it ' +
+        'was deleted and the paragraph is claiming a guarantee nothing provides',
+    );
+  }
+  assert.deepEqual(offences, [], `\n  ${offences.join('\n  ')}\n`);
+});
+
+
 /* --------------------------------------------- the 'building' lab state ---
  * `Lab['status']` has two values and all ten labs use one of them. The other
  * is not decoration: /labs grows an "In progress" section, /about names the
@@ -754,6 +1498,17 @@ const PLANNED_LAB: Lab = {
   technology: 'webgl',
   blurb: 'Exists only inside this test, to prove the unfinished state renders.',
   takeaway: 'That the branch nothing on the live site reaches still works.',
+  // Required on Lab since issue #51, and this fixture is the one Lab in the
+  // repository that no page renders these two fields for — /labs, /about and
+  // /roadmap show a building lab's title and takeaway and never its closing
+  // section, because a lab that is not live has no page to close. They are
+  // written out rather than stubbed anyway: `next build` type-checks this
+  // directory, so the placeholder that seemed harmless is what took the build
+  // down the first time these fields landed.
+  receipt:
+    'You can now be sure the four layouts that branch on an unfinished lab still render, which nothing on the live site has exercised since 0f77054.',
+  boundary:
+    'This did not teach you anything: it is a fixture, its only reader is the harness at the foot of this file, and it is popped off the registry before the run ends.',
   concepts: ['synthetic'],
   status: 'building',
 };
@@ -848,7 +1603,9 @@ async function checkTheBuildingState() {
 
 checkTheBuildingState().then(
   () => {
-    console.log(`\n${passed} content checks passed`);
+    console.log(
+      `\n${passed} content checks passed${skipped > 0 ? `, ${skipped} skipped` : ''}`,
+    );
   },
   (error) => {
     console.error(error);

@@ -63,7 +63,7 @@ export interface TransformParams {
 
 type TransformDefaults = Omit<TransformParams, 'palette'>;
 
-const DEFAULTS: TransformDefaults = {
+export const DEFAULTS: TransformDefaults = {
   tx: 1.4, ty: 0.5, tz: 0,
   rx: 0, ry: 25, rz: 0,
   sx: 1, sy: 1, sz: 1,
@@ -247,6 +247,7 @@ const PRESETS: Preset<TransformDefaults>[] = [
 
           <ControlGroup
             title="Translate"
+            explains="translation"
             action={<ResetButton onClick={() => setParams((p) => ({ ...p, tx: 0, ty: 0, tz: 0 }))} />}
           >
             <Slider label="x" tone="x" value={params.tx} min={-3} max={3} onChange={(v) => set('tx', v)} />
@@ -256,6 +257,7 @@ const PRESETS: Preset<TransformDefaults>[] = [
 
           <ControlGroup
             title="Rotate"
+            explains="rotation"
             action={<ResetButton onClick={() => setParams((p) => ({ ...p, rx: 0, ry: 0, rz: 0 }))} />}
           >
             <Slider label="x" tone="x" value={params.rx} min={-180} max={180} step={1} precision={0} unit="°" onChange={(v) => set('rx', v)} />
@@ -265,6 +267,7 @@ const PRESETS: Preset<TransformDefaults>[] = [
 
           <ControlGroup
             title="Scale"
+            explains="scale"
             action={<ResetButton onClick={() => setParams((p) => ({ ...p, sx: 1, sy: 1, sz: 1 }))} />}
           >
             <Slider label="x" tone="x" value={params.sx} min={-2} max={2.5} onChange={(v) => set('sx', v)} />
@@ -272,7 +275,7 @@ const PRESETS: Preset<TransformDefaults>[] = [
             <Slider label="z" tone="z" value={params.sz} min={-2} max={2.5} onChange={(v) => set('sz', v)} />
           </ControlGroup>
 
-          <ControlGroup title="Composition">
+          <ControlGroup title="Composition" explains="order">
             <Segmented
               value={params.order}
               options={[

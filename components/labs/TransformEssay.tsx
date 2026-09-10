@@ -1,13 +1,20 @@
 'use client';
 
+import { Check } from '@/components/lab/Check';
 import { Slider } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
 import { GLCanvas } from '@/components/lab/GLCanvas';
 import { MatrixView } from '@/components/lab/MatrixView';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { Term } from '@/components/lab/Term';
 import { useFigureState } from '@/components/lab/useFigureState';
 import { usePalette } from '@/components/site/ThemeProvider';
-import { composeModel, createScene, type TransformParams } from '@/components/labs/TransformLab';
+import {
+  composeModel,
+  createScene,
+  DEFAULTS,
+  type TransformParams,
+} from '@/components/labs/TransformLab';
 
 /**
  * The written half of lab 1.
@@ -50,6 +57,7 @@ function TranslateFigure() {
   return (
     <Figure
       id="translate"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="move along x"
@@ -92,6 +100,7 @@ function RotateFigure() {
   return (
     <Figure
       id="rotate"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="turn about y"
@@ -155,6 +164,7 @@ function MemoryFigure() {
   return (
     <Figure
       id="memory-layout"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="apply the transform"
@@ -232,6 +242,7 @@ function ScaleFigure() {
   return (
     <Figure
       id="scale-axes"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="stretch along y"
@@ -281,6 +292,12 @@ function OrderFigure() {
   return (
     <Figure
       id="order-matters"
+      // The left canvas, T · R. The instrument renders one scene, so only one
+      // of the two orders can travel — and the composition order is a control
+      // down there, so a reader who arrives on T · R can reach S · R · T by
+      // flipping the one thing this figure is about. Arriving on S · R · T
+      // instead would leave them holding the counter-example.
+      state={{ defaults: DEFAULTS, current: trs }}
       control={
         <Slider
           label="apply the transform"
@@ -366,8 +383,8 @@ export function TransformEssay() {
         one and is added in. Directions are carried as{' '}
         <code>(x, y, z, 0)</code> instead, which is not a technicality but the
         whole trick: a direction has no position, so the zero deletes the
-        translation and a normal or a light vector is rotated without being
-        dragged across the scene with the object.
+        translation and a <Term name="Normal">normal</Term> or a light vector is
+        rotated without being dragged across the scene with the object.
       </p>
 
       <ProseHeading id="rotation">The other nine numbers are the object&rsquo;s axes</ProseHeading>
@@ -381,14 +398,17 @@ export function TransformEssay() {
       <p>
         The three coloured arms are not a decoration drawn to look like axes.
         They <em>are</em> the first three columns of the matrix, plotted as
-        arrows. The first column is where the object&rsquo;s own x axis has ended
-        up in the world; the second is its y; the third is its z. Read the
-        readout and the picture together for a moment — the numbers in column one
-        are the coordinates of the red arm.
+        arrows: the object&rsquo;s{' '}
+        <Term name="Basis vectors">basis vectors</Term>. The first column is
+        where the object&rsquo;s own x axis has ended up in the world; the second
+        is its y; the third is its z. Read the readout and the picture together
+        for a moment — the numbers in column one are the coordinates of the red
+        arm.
       </p>
       <p>
-        Once you have seen that, a model matrix stops being a grid of numbers and
-        becomes a sentence with four clauses:{' '}
+        Once you have seen that, a{' '}
+        <Term name="Model matrix">model matrix</Term> stops being a grid of
+        numbers and becomes a sentence with four clauses:{' '}
         <strong>here is where your x points, here is your y, here is your z, and
         here is where you are.</strong> Everything else in this lab follows from
         that reading.
@@ -461,16 +481,18 @@ export function TransformEssay() {
         non-uniform one is where trouble starts, and lab 4 is largely about the
         consequence: stretch an object along one axis and its surface normals, if
         you transform them with this same matrix, stop being perpendicular to the
-        surface. They need the inverse-transpose instead. That bug is waiting in{' '}
-        <a href="/labs/shading#normals">Light &amp; Normals</a> with a preset that turns
-        it on.
+        surface. They need the{' '}
+        <Term name="Normal matrix">inverse-transpose</Term> instead. That bug is
+        waiting in <a href="/labs/shading#normals">Light &amp; Normals</a> with a
+        preset that turns it on.
       </p>
       <p>
         A negative scale is worth a second of your attention because it is the
         one transform here that changes the <em>winding</em> of the triangles —
-        the order their corners appear in on screen. Backface culling decides
-        what to throw away using exactly that, so a mirrored object rendered
-        without thinking about it comes out with its faces inside out.
+        the order their corners appear in on screen.{' '}
+        <Term name="Backface culling">Backface culling</Term> decides what to
+        throw away using exactly that, so a mirrored object rendered without
+        thinking about it comes out with its faces inside out.
       </p>
 
       <ProseHeading id="order">Order is the whole difficulty</ProseHeading>
@@ -503,13 +525,103 @@ export function TransformEssay() {
         read that way it stops being something to get wrong.
       </p>
 
+      <Check
+        question={
+          <>
+            You want the cube at half size, turned 90° about y, and standing 5
+            units along x. Written as a product, which chain does that?
+          </>
+        }
+        options={[
+          {
+            option: (
+              <>
+                <code>S · R · T</code> — the three instructions in the order you
+                say them.
+              </>
+            ),
+            response: (
+              <>
+                That is the sentence written left to right, and it is the chain
+                reversed. The vertex sits on the right and meets the rightmost
+                matrix first, so this one moves the cube 5 units before it turns
+                it, and the turn then sweeps it through an arc around the origin
+                — the right-hand canvas in{' '}
+                <a href="#order-matters">the figure above</a>. The chain that
+                scales first is <code>T · R · S</code>.
+              </>
+            ),
+          },
+          {
+            option: (
+              <>
+                <code>T · R · S</code> — the same three instructions, written
+                backwards.
+              </>
+            ),
+            correct: true,
+            response: (
+              <>
+                This is the one. The product is written backwards from the order
+                it happens in, because the vertex is on the right: it meets{' '}
+                <code>S</code> first and is scaled in the object&rsquo;s own
+                frame, then turned, then moved into place. The instrument below
+                has the composition order as a control — leave the nine numbers
+                where they are and switch it, and the cube stands somewhere
+                else.
+              </>
+            ),
+          },
+          {
+            option: (
+              <>
+                Keep <code>S · R · T</code>, and turn the translation by the same
+                90° first so the cube still lands at x = 5.
+              </>
+            ),
+            response: (
+              <>
+                It works, and it is the wrong fix. You have folded the rotation
+                into the position: the last column no longer says where the
+                object stands, it says where it stands given this particular
+                turn, so the next time the turn changes the position is wrong
+                again. <code>T · R · S</code> keeps the two independent, because
+                the translation is applied to the already-turned result rather
+                than through the turn.
+              </>
+            ),
+          },
+          {
+            option: (
+              <>
+                Any of them — matrix multiplication is associative, so the order
+                of the three does not change the product.
+              </>
+            ),
+            response: (
+              <>
+                Associativity is real, and it buys the other thing:{' '}
+                <code>(T · R) · S</code> and <code>T · (R · S)</code> are the
+                same matrix, so a chain can be multiplied out in whatever
+                grouping is convenient and cached. It says nothing about order —
+                that is commutativity, which matrices do not have. Swap two of
+                the three and the object goes somewhere else: at the end of its
+                slider the figure above leaves the two orders standing 2.03
+                units apart.
+              </>
+            ),
+          },
+        ]}
+      />
+
       <ProseHeading id="instrument">Now move all of it at once</ProseHeading>
       <p>
         Everything above is one control at a time. Below is the whole matrix with
         nothing held back: nine numbers of rotation and scale, three of position,
-        the composition order, and the factors it multiplies out from. The presets
-        are worth starting with — each one sets the controls to something that
-        makes a point, and says what to look at.
+        the <Term name="Composition order">composition order</Term>, and the
+        factors it multiplies out from. The presets are worth starting with —
+        each one sets the controls to something that makes a point, and says what
+        to look at.
       </p>
     </Prose>
   );

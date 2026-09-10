@@ -768,6 +768,28 @@ export const termId = (term: string) =>
   term.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 /**
+ * The entry an inline `<Term name="…">` in an essay is asking for.
+ *
+ * Case-insensitive, and nothing else. The headwords here are capitalised
+ * ('Clip space', 'Winding order') because they head a list; a sentence says
+ * them in the middle of a line in lower case, so `<Term name="clip space">` is
+ * the spelling an essay actually wants. An exact-match lookup would turn that
+ * into a build failure over a capital letter. Nothing collides when the fold is
+ * applied — all 61 headwords stay distinct lower-cased, which test/content.test.ts
+ * asserts rather than assumes.
+ *
+ * No aliases, no plural stripping, no nearest match. The visible word is the
+ * component's children, so a variant spelling never needs to resolve — and a
+ * forgiving lookup is precisely how `name="Normal matrix"` would quietly land
+ * on 'Normal' and put the wrong definition under the paragraph, which is the
+ * failure the unknown-name throw in Term.tsx exists to make loud.
+ */
+export function getTerm(name: string): Term | undefined {
+  const wanted = name.trim().toLowerCase();
+  return GLOSSARY.find((entry) => entry.term.toLowerCase() === wanted);
+}
+
+/**
  * The query string a demo restores, in the grammar the labs already read.
  *
  * The instrument owns the unprefixed keys; a figure's are namespaced with its

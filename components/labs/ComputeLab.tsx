@@ -159,7 +159,7 @@ interface ComputeControls {
   running: boolean;
 }
 
-const DEFAULTS: ComputeControls = {
+export const DEFAULTS: ComputeControls = {
   count: 60_000,
   attraction: 0.5,
   swirl: 1.35,
@@ -537,6 +537,7 @@ export function ComputeLab() {
 
           <ControlGroup
             title="Simulation"
+            explains="dispatch"
             action={<ResetButton onClick={() => setControls(DEFAULTS)} />}
           >
             <Slider

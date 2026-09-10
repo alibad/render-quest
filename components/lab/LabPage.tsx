@@ -110,8 +110,14 @@ export function LabPage({
             aria-label="Contents"
             className="mb-8 border-t border-line pt-4 text-xs leading-6 text-fg-faint"
           >
+            {/* On paper a list of sections is worth having and a reading time
+                is not — the page is already in the reader's hand and cannot be
+                scrolled. Swapped rather than hidden, because the separators
+                belong to the items that follow: dropping this span outright
+                would start the printed line with a stray middot. */}
             <span className="mr-1 font-mono text-2xs uppercase tracking-wider">
-              {outline.minutes} min read
+              <span className="print:hidden">{outline.minutes} min read</span>
+              <span className="hidden print:inline">Contents</span>
             </span>
             {contents.map((section) => (
               <span key={section.id}>
@@ -127,6 +133,38 @@ export function LabPage({
         ) : null}
 
         {children}
+
+        {/* The other end of the promise made in the header. The takeaway at the
+            top says what you should come away with and nothing on the page ever
+            returned to it, so a reader finished the instrument, met a row of
+            vocabulary chips and closed the tab with no evidence that anything
+            had happened.
+
+            Two lines, and the second is the one that matters: the boundary
+            names what this lab did not teach, which is what stops a reader
+            generalising a demonstrated claim past the evidence for it.
+
+            Deliberately the same shape as the header's takeaway line — the same
+            bullet, the same measure, the same type size — because it is the same
+            sentence coming back, and dressing the pair up as a panel would read
+            as a summary card rather than as the close of an argument. */}
+        <section
+          id="receipt"
+          aria-labelledby="receipt-heading"
+          className="mt-14 max-w-prose scroll-mt-24 border-t border-line pt-10"
+        >
+          <h2 id="receipt-heading" className="eyebrow mb-3">
+            Where that leaves you
+          </h2>
+          <p className="flex gap-2 text-sm leading-relaxed text-fg-muted">
+            <span className="mt-[0.35rem] h-1 w-1 shrink-0 rounded-full bg-accent" />
+            <span>{lab.receipt}</span>
+          </p>
+          <p className="mt-3 flex gap-2 text-sm leading-relaxed text-fg-faint">
+            <span className="mt-[0.35rem] h-1 w-1 shrink-0 rounded-full bg-line-strong" />
+            <span>{lab.boundary}</span>
+          </p>
+        </section>
 
         <LabFooter lab={lab} />
       </main>

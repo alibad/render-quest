@@ -3,6 +3,7 @@
 import { Segmented, Slider } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { Term } from '@/components/lab/Term';
 import { useFigureState } from '@/components/lab/useFigureState';
 
 /**
@@ -395,10 +396,11 @@ export function InstancingEssay() {
     <Prose>
       <p>
         Ten thousand cubes, a hundred and twenty thousand triangles, one shader
-        module and one pipeline. You can have that picture for one draw call or
-        for ten thousand, and it is the same picture either way &mdash; the same
-        vertices, out of the same buffer, lit by the same code, pixel for pixel.
-        The readout under the canvas measures what the second option costs.
+        module and one pipeline. You can have that picture for one{' '}
+        <Term name="Draw call">draw call</Term> or for ten thousand, and it is
+        the same picture either way &mdash; the same vertices, out of the same
+        buffer, lit by the same code, pixel for pixel. The readout under the
+        canvas measures what the second option costs.
       </p>
       <p>
         This lab is about the price of asking. Not the price of drawing, which
@@ -409,10 +411,11 @@ export function InstancingEssay() {
       <ProseHeading id="loop">The two modes differ by a loop</ProseHeading>
       <p>
         Inside the render pass, the instanced mode records four commands. Set
-        the pipeline. Bind the scene &mdash; the camera matrix and the storage
-        buffer holding every cube&rsquo;s position, tint and scale. Point the
-        per-object binding at object zero. Then draw thirty-six vertices, ten
-        thousand times over, in one call.
+        the pipeline. Bind the scene &mdash; the camera matrix and the{' '}
+        <Term name="Storage buffer">storage buffer</Term> holding every
+        cube&rsquo;s position, tint and scale. Point the per-object binding at
+        object zero. Then draw thirty-six vertices, ten thousand times over, in
+        one call.
       </p>
       <p>
         The per-object mode records the first two and turns the last two into a
@@ -426,8 +429,9 @@ export function InstancingEssay() {
 
       <p>
         Both lists hand the GPU the same work: 360,000 vertex shader
-        invocations and 120,000 triangles, shaded by the same twelve lines of
-        WGSL. What differs is how long the CPU spent writing the list down.
+        invocations and 120,000 triangles, shaded by the same twelve lines of{' '}
+        <Term name="WGSL">WGSL</Term>. What differs is how long the CPU spent
+        writing the list down.
       </p>
       <p>
         The geometry is deliberately negligible, and that is what makes the
@@ -450,8 +454,11 @@ export function InstancingEssay() {
         non-zero.
       </p>
       <p>
-        <code>instanceIndex</code> is <code>@builtin(instance_index)</code>,
-        which the hardware supplies: ask for ten thousand instances and it
+        <code>instanceIndex</code> is{' '}
+        <Term name="Instance index">
+          <code>@builtin(instance_index)</code>
+        </Term>
+        , which the hardware supplies: ask for ten thousand instances and it
         counts from zero to 9,999 on its own, with the CPU no longer involved
         once the call is made. <code>objectRef.index</code> is a four-byte
         integer in a uniform buffer, which the CPU supplies by rebinding.
@@ -460,9 +467,10 @@ export function InstancingEssay() {
       <AdditionFigure />
 
       <p>
-        So instancing is not a fast path bolted onto the side of the API. It is
-        the loop counter moved from the CPU&rsquo;s side of the boundary to the
-        GPU&rsquo;s, and the boundary is the expensive part.
+        So <Term name="Instancing">instancing</Term> is not a fast path bolted
+        onto the side of the API. It is the loop counter moved from the
+        CPU&rsquo;s side of the boundary to the GPU&rsquo;s, and the boundary is
+        the expensive part.
       </p>
 
       <ProseHeading id="rebinding">The cost is the rebinding, not the draw</ProseHeading>
@@ -549,9 +557,10 @@ export function InstancingEssay() {
         scene&rsquo;s cost is not read off its polygon budget &mdash;{' '}
         <a href="/labs/compute#readback">Compute &amp; Particles</a> puts its entire
         particle field on screen with one <code>draw</code> and no instance
-        count at all, multiplying the vertex count instead. Batching, merged
-        materials, texture atlases and instanced foliage all exist to shorten
-        the list, not to shrink the geometry.
+        count at all, multiplying the vertex count instead.{' '}
+        <Term name="Batching">Batching</Term>, merged materials, texture atlases
+        and instanced foliage all exist to shorten the list, not to shrink the
+        geometry.
       </p>
 
       <ProseHeading id="instrument">Now move all of it at once</ProseHeading>

@@ -192,3 +192,257 @@ input[type='range']:focus-visible::-moz-range-thumb {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Print.
+
+   /about and README both name the lecturer as a reader, and "a lecturer cannot
+   assign a canvas" is the stated reason the essays were written at all. Until
+   this block existed, printing one gave the sticky header on every page, the
+   nav and the footer, panels full of sliders, and a blank rectangle wherever a
+   canvas had been — print rendering does not composite WebGL, which is also
+   why test/render.smoke.ts reads pixels out of a canvas rather than
+   screenshotting it.
+
+   Two things do the heavy lifting. The tokens are redefined, because the site
+   is dark by default and a browser drops background graphics when it prints:
+   without the override, every route came out as pale grey text on white paper.
+   And the canvas is hidden at its wrapper rather than at the <canvas> element,
+   because that wrapper carries an inline `aspect-ratio` — hide the canvas
+   alone and the empty box it was sitting in prints at full height, which is
+   precisely the blank rectangle being removed.
+   --------------------------------------------------------------------------- */
+@media print {
+  /* Equal specificity to the two blocks at the top of this file, and later in
+     the output, so it wins whichever way the reader has left the toggle. */
+  :root,
+  :root[data-theme='dark'],
+  :root[data-theme='light'] {
+    --bg: 255 255 255;
+    --sunken: 255 255 255;
+    --surface: 255 255 255;
+    --raised: 255 255 255;
+    --hover: 255 255 255;
+
+    --line: 176 182 191;
+    --line-strong: 120 128 140;
+
+    --fg: 0 0 0;
+    --fg-muted: 34 34 34;
+    --fg-faint: 68 68 68;
+
+    /* Black rather than the site's blue: an accent that survives a monochrome
+       office printer, and links are marked by the underline and the URL below
+       instead of by colour. */
+    --accent: 0 0 0;
+    --accent-dim: 68 68 68;
+    --accent-contrast: 255 255 255;
+
+    --axis-x: 150 30 30;
+    --axis-y: 20 100 55;
+    --axis-z: 30 70 150;
+    --amber: 130 80 10;
+    --red: 150 30 40;
+
+    --grid-alpha: 0;
+    --shadow-panel: none;
+  }
+
+  @page {
+    margin: 18mm;
+  }
+
+  /* Every size on this site is in rem, so one declaration sets the whole
+     document's printed scale. 11pt puts the essay's 0.9375rem paragraphs at
+     about 10.3pt, which is a book. */
+  html {
+    font-size: 11pt;
+  }
+
+  body {
+    background: #fff;
+    /* The blueprint grid: two gradients that a printer would render as a wash
+       of dots across every page. */
+    background-image: none;
+  }
+
+  /* Site chrome. The layout puts the header, the main column and the footer as
+     direct children of body, so the child combinator is what makes the first
+     two exact: a bare `header` or `footer` would also match the lab's own
+     title block and the footer at the end of its essay, which are the parts
+     worth keeping. */
+  body > header,
+  body > footer,
+  body > a[href='#main-content'],
+  #site-menu,
+  [aria-modal='true'] {
+    display: none !important;
+  }
+
+  /* The "← All labs" link. The contents nav carries aria-label="Contents" and
+     stays; on paper a section list is a table of contents. */
+  main > nav:not([aria-label]) {
+    display: none !important;
+  }
+
+  main {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* The canvas and everything painted over it — the axis key, the pause hint,
+     the WebGL failure card. Six components render this wrapper and every one of
+     them sets `aspect-ratio` inline; nothing else on the site does. */
+  [style*='aspect-ratio'],
+  canvas {
+    display: none !important;
+  }
+
+  /* Controls. The instrument's column (LabLayout's only aside), a figure's own
+     control strip — the second child of its panel, present only when the figure
+     has a control — and then every interactive element anywhere, so a widget
+     nobody enumerated cannot print as a stranded box. A slider is hidden at its
+     label, or its name and value would print with nothing to move. */
+  aside.panel,
+  figure[id] > div > div:nth-child(2),
+  button,
+  input,
+  select,
+  textarea,
+  label:has(input) {
+    display: none !important;
+  }
+
+  /* Except the inline glossary term, which is a button only because it opens
+     something — the element itself is a word in the middle of a sentence. The
+     rule above is deliberately blanket, so this exemption is by an attribute
+     the component sets rather than by tag or position: `data-term="inline"` is
+     the trigger in the prose, `data-term="chip"` is the footer's vocabulary
+     pill, which stays hidden with the rest of that section. On paper the word
+     is set as ordinary text — the dotted underline advertises a disclosure the
+     page cannot perform, and the definition it would open is not printable
+     either, since it is not in the document until someone presses it. */
+  button[data-term='inline'] {
+    display: inline !important;
+    text-decoration: none !important;
+  }
+
+  /* A source panel the reader left collapsed holds nothing but its own toggle —
+     React never rendered the code, so no stylesheet can expand it. One that was
+     opened before printing keeps its files, and the rules below stop them being
+     cut off at the edge of the scroll box they were sitting in. */
+  section:has(> button[aria-expanded='false']) {
+    display: none !important;
+  }
+
+  /* The vocabulary list at the foot of a lab, for the same reason: its chips
+     are disclosure buttons and the definitions are not in the document until
+     one is pressed, so with the buttons gone it would print as a heading over
+     an empty list. Matched by what makes it unprintable rather than by where it
+     sits — if those chips ever go back to being plain links, this matches
+     nothing and the vocabulary prints. */
+  main > footer section:has(button[aria-expanded]) {
+    display: none !important;
+  }
+
+  /* Panels lose their frame. What is left inside one — a matrix readout, a
+     command list, a code sample — is worth printing; the border and the tinted
+     fill around it are screen furniture, and an emptied panel would otherwise
+     print as another blank box. */
+  .panel {
+    border: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .panel > div {
+    padding: 0 !important;
+  }
+
+  /* A figure whose canvas has gone still holds the two-column grid it shared
+     with its readout, and a grid item stretches: the matrix beside the picture
+     stayed pinned to the right of an empty column the width of the vanished
+     canvas. Measured in a print render of the transform lab — the empty cell
+     came out 114px tall and half the page wide. Blocking it puts the readout
+     back at the left margin.
+     Deliberately :first-child. The strip beside it is the control row, which
+     nothing should bring back. */
+  figure[id] > div > div:first-child {
+    display: block !important;
+  }
+
+  /* Anything that scrolled on screen has to unroll instead: a scroll container
+     prints the slice it happens to be showing and silently drops the rest. */
+  [class*='overflow-'] {
+    overflow: visible !important;
+  }
+
+  pre {
+    white-space: pre-wrap !important;
+    word-break: break-word;
+  }
+
+  /* The figure caption is now the whole figure. It is written after the fact
+     for exactly this reason — where a figure is load-bearing its caption
+     carries the claim in words — so it comes up from a small grey aside to
+     body text, marked with a rule and a label so a reader can see that a
+     picture stood here. */
+  figure[id] > figcaption {
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    color: rgb(var(--fg-muted));
+    border-left: 1.5pt solid rgb(var(--line-strong));
+    padding-left: 0.75rem;
+  }
+
+  figure[id] > figcaption::before {
+    content: 'Figure — ';
+    color: rgb(var(--fg-faint));
+  }
+
+  /* The permalink glyphs and the "open this in the instrument" link: marks
+     about a live page, and dead text on paper. */
+  main h2 a[href^='#'] span,
+  figcaption a[href^='#'],
+  figcaption a[aria-label^='Open figure'] {
+    display: none !important;
+  }
+
+  main p a,
+  main li a {
+    text-decoration: underline;
+  }
+
+  /* A link on paper is a dead end unless it says where it went. Internal only:
+     these are all one short path under one domain, where an external URL is
+     usually long enough to break the line it sits in. In-page anchors are
+     skipped — the target is on the same sheet. */
+  main a[href^='/']::after {
+    content: ' (www.render-quest.com' attr(href) ')';
+    font-size: 0.8em;
+    color: rgb(var(--fg-faint));
+    word-break: break-all;
+  }
+
+  /* A heading stranded at the foot of a sheet, with the section it announces
+     beginning on the next one, is worse than a page that ends early. */
+  h1,
+  h2,
+  h3 {
+    break-after: avoid-page;
+  }
+
+  figure,
+  figcaption,
+  table,
+  pre {
+    break-inside: avoid;
+  }
+
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+}

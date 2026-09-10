@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
-import { GLOSSARY, termId } from '@/lib/glossary';
+import { Term } from '@/components/lab/Term';
+import { GLOSSARY } from '@/lib/glossary';
 import { labNeighbours, type Lab } from '@/lib/labs';
 import { REPO_URL } from '@/lib/site';
 
@@ -10,6 +11,14 @@ import { REPO_URL } from '@/lib/site';
  * Every lab used to stop dead: no next step, no vocabulary, no way back into
  * the site except the browser's back button. The content for all of it already
  * existed — 46 glossary terms carry a lab slug that no lab page rendered.
+ *
+ * The vocabulary chips carried their definitions in a `title` attribute, which
+ * is a definition only a mouse can read: a native tooltip never opens on a
+ * touch device and never opens from a keyboard. On a phone the 54 definitions
+ * these chips carry across the ten labs did not exist at all — the chip was a
+ * link to a page-long glossary, and the reader had to search it. `Term` shows
+ * the same definition on a press, from any input device, without leaving the
+ * lab.
  */
 export function LabFooter({ lab }: { lab: Lab }) {
   const { previous, next } = labNeighbours(lab.slug);
@@ -23,13 +32,9 @@ export function LabFooter({ lab }: { lab: Lab }) {
           <ul className="flex flex-wrap gap-2">
             {vocabulary.map((term) => (
               <li key={term.term}>
-                <Link
-                  href={`/glossary#${termId(term.term)}`}
-                  className="inline-block rounded-md border border-line px-2.5 py-1.5 text-xs text-fg-muted transition-colors hover:border-line-strong hover:text-fg"
-                  title={term.definition}
-                >
+                <Term name={term.term} variant="chip">
                   {term.term}
-                </Link>
+                </Term>
               </li>
             ))}
           </ul>

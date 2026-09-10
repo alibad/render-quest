@@ -7,6 +7,7 @@ import { Figure } from '@/components/lab/Figure';
 import { GLCanvas } from '@/components/lab/GLCanvas';
 import { MatrixView } from '@/components/lab/MatrixView';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { Term } from '@/components/lab/Term';
 import { useFigureState } from '@/components/lab/useFigureState';
 import { usePalette } from '@/components/site/ThemeProvider';
 import {
@@ -14,6 +15,7 @@ import {
   createCameraScene,
   createWorldScene,
   CAMERA_ASPECT,
+  DEFAULTS,
   type ProjectionParams,
 } from '@/components/labs/ProjectionLab';
 
@@ -23,6 +25,13 @@ import {
  * Every figure drives the lab's own `createWorldScene` and `createCameraScene`,
  * so a figure cannot drift away from the instrument at the foot of the page —
  * same renderer, same six boxes, one control exposed at a time.
+ *
+ * That is also why all four pass `state` to `<Figure>` and none of them omits
+ * it: the record `figureParams` builds is the instrument's own control record
+ * with a palette spread in, so every figure here has a configuration the
+ * instrument can be opened at. `figureParams` starts from the lab's defaults
+ * value for value, so the link each figure builds carries only the one control
+ * that figure exposes — which is the whole claim it was isolating.
  */
 
 /** A figure's scene, with everything the figure is not about held still. */
@@ -71,6 +80,7 @@ function FieldOfViewFigure() {
   return (
     <Figure
       id="field-of-view"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="field of view"
@@ -130,6 +140,7 @@ function NearPlaneFigure() {
   return (
     <Figure
       id="near-plane"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="near plane"
@@ -202,6 +213,7 @@ function DivideFigure() {
   return (
     <Figure
       id="perspective-divide"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Segmented
           value={s.mode}
@@ -262,6 +274,7 @@ function OrthoHeightFigure() {
   return (
     <Figure
       id="view-height"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="view height"
@@ -299,10 +312,11 @@ export function ProjectionEssay() {
     <Prose>
       <p>
         A camera in a renderer is not a lens and not a position. It is a volume.
-        The view matrix has already moved the world so that the camera stands at
-        the origin looking down its own &minus;z; what the projection matrix adds
-        is a shape — a bounded region of the space in front of that origin — and
-        a rule for squashing whatever is inside it into the same cube every time,{' '}
+        The <Term name="View matrix">view matrix</Term> has already moved the
+        world so that the camera stands at the origin looking down its own
+        &minus;z; what the projection matrix adds is a shape — a bounded region
+        of the space in front of that origin — and a rule for squashing whatever
+        is inside it into the same cube every time,{' '}
         <code>[-1, 1]</code> on all three axes.
       </p>
       <p>
@@ -310,8 +324,8 @@ export function ProjectionEssay() {
         away, by comparisons rather than by fading. The lab below draws that
         volume as an object in the world it is clipping, and underneath it the
         picture the same camera produces. Two panels, because the interesting
-        thing about a frustum is that it is a shape, and a shape is the one thing
-        you cannot see from inside.
+        thing about a <Term name="Frustum">frustum</Term> is that it is a shape,
+        and a shape is the one thing you cannot see from inside.
       </p>
 
       <ProseHeading id="frustum">The frustum is an object, not a setting</ProseHeading>
@@ -330,10 +344,11 @@ export function ProjectionEssay() {
       <p>
         The four faint lines converging outside the near rectangle are the eye
         rays, and where they meet is the camera. A frustum is a pyramid with its
-        tip cut off, and the tip is cut off at exactly the near plane; the rays
-        show you the apex the volume would have had. In perspective they lie
-        along the frustum&rsquo;s own side edges, because those edges pass
-        through the eye.
+        tip cut off, and the tip is cut off at exactly the{' '}
+        <Term name="Near and far planes">near plane</Term>; the rays show you the
+        apex the volume would have had. In{' '}
+        <Term name="Perspective projection">perspective</Term> they lie along the
+        frustum&rsquo;s own side edges, because those edges pass through the eye.
       </p>
       <p>
         Field of view sets the angle of that pyramid and nothing else. Widening
@@ -354,12 +369,12 @@ export function ProjectionEssay() {
 
       <ProseHeading id="clipping">Near and far are a test, not a fade</ProseHeading>
       <p>
-        The clip test has no falloff in it and no distance term. A point in clip
-        space is kept when each of x, y and z lies between &minus;w and +w: six
-        comparisons and a boolean. The outside view runs those same six
-        comparisons on the CPU, once per box, which is why a box the camera is
-        about to lose goes dim in the world panel before it vanishes from the
-        picture.
+        The clip test has no falloff in it and no distance term. A point in{' '}
+        <Term name="Clip space">clip space</Term> is kept when each of x, y and z
+        lies between &minus;w and +w: six comparisons and a boolean. The outside
+        view runs those same six comparisons on the CPU, once per box, which is
+        why a box the camera is about to lose goes dim in the world panel before
+        it vanishes from the picture.
       </p>
 
       <NearPlaneFigure />
@@ -399,8 +414,9 @@ export function ProjectionEssay() {
         that row with <code>(x, y, z, 1)</code> and it computes &minus;z: w comes
         out as the distance the point stands in front of the camera, measured
         along the camera&rsquo;s forward axis. Then, between the vertex shader
-        and the rasteriser, the hardware divides x, y and z by w. Dividing by the
-        distance is the whole of perspective. The rest of the matrix is framing.
+        and the <Term name="Rasterisation">rasteriser</Term>, the hardware
+        divides x, y and z by w. Dividing by the distance is the whole of
+        perspective. The rest of the matrix is framing.
       </p>
 
       <DivideFigure />
@@ -410,14 +426,15 @@ export function ProjectionEssay() {
         anywhere in the chain performs the division. The matrix&rsquo;s whole
         contribution is to have the right number waiting in w when the hardware
         arrives. Where that step sits between the others — clip space, the
-        divide, normalised device coordinates, then the viewport transform that
-        turns ±1 into pixels — is walked a vertex at a time in{' '}
-        <a href="/labs/pipeline#divide">Coordinate Spaces</a>.
+        divide, <Term name="NDC">normalised device coordinates</Term>, then the
+        viewport transform that turns ±1 into pixels — is walked a vertex at a
+        time in <a href="/labs/pipeline#divide">Coordinate Spaces</a>.
       </p>
 
       <ProseHeading id="orthographic">Orthographic deletes the distance</ProseHeading>
       <p>
-        The orthographic matrix keeps the identity&rsquo;s bottom row,{' '}
+        The <Term name="Orthographic projection">orthographic</Term> matrix keeps
+        the identity&rsquo;s bottom row,{' '}
         <code>0 0 0 1</code>, so w comes out as 1 for every vertex and the divide
         divides by one. Nothing shrinks with distance because nothing consults
         the distance. The volume changes shape to match: with nothing

@@ -209,19 +209,49 @@ export function ControlGroup({
   title,
   children,
   action,
+  explains,
 }: {
   title: string;
   children: ReactNode;
   action?: ReactNode;
+  /**
+   * The id of a `ProseHeading` in this lab's essay that argues what this group
+   * does. Leave it off a group no paragraph argues: a link to the nearest
+   * heading teaches the reader that these links are guesses, which costs more
+   * than the missing link does.
+   */
+  explains?: string;
 }) {
   const headingId = useId();
   return (
     <GroupContext.Provider value={title}>
       <section role="group" aria-labelledby={headingId} className="space-y-3">
-        <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
-          <h3 id={headingId} className="eyebrow">
-            {title}
-          </h3>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line pb-2">
+          {/* The link is a sibling of the h3 rather than a child of it, because
+              `aria-labelledby` names the group from that h3 — inside it, every
+              slider in the group would be announced as "Normals under scale
+              #normals x".
+
+              Visible without hovering, unlike the `#` on a ProseHeading. That
+              glyph appears on hover only, so a keyboard reader never learned
+              the headings were links at all (todo/2026-09-08.md); repeating
+              that in a sidebar, where the link is the only sign the essay
+              explains any of this, would repeat the same loss. The global
+              :focus-visible ring in globals.css covers the keyboard case. */}
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2">
+            <h3 id={headingId} className="eyebrow">
+              {title}
+            </h3>
+            {explains ? (
+              <a
+                href={`#${explains}`}
+                aria-label={`Read the part of the essay that explains ${title}`}
+                className="font-mono text-2xs tracking-wider text-fg-faint no-underline transition-colors hover:text-accent"
+              >
+                #{explains}
+              </a>
+            ) : null}
+          </div>
           {action}
         </div>
         <div className="space-y-3">{children}</div>
@@ -235,6 +265,18 @@ export interface Preset<T> {
   /** One sentence on what to look at once it is applied. */
   note: string;
   values: Partial<T>;
+  /**
+   * Set only on a preset whose render is deliberately incorrect — the
+   * z-fighting, the lost highlight, the shader that will not compile. Absent
+   * is the silent default, because most presets show something working.
+   *
+   * The note under the buttons arrives after the click and reads as
+   * description; a reader one preset into a lab, looking at a shimmering seam,
+   * has no way to tell the lesson from a broken page, and todo/2026-09-08.md
+   * records a reader being invited to draw exactly that conclusion in the
+   * texture lab. This says so on the button, before the click.
+   */
+  shows?: 'the failure';
 }
 
 /**
@@ -253,6 +295,9 @@ export function Presets<T>({
   onApply: (values: Partial<T>) => void;
 }) {
   const [applied, setApplied] = useState<string | null>(null);
+  // Derived at render from the preset definitions, so nothing about the marker
+  // is stored anywhere.
+  const current = presets.find((preset) => preset.label === applied);
 
   return (
     <div className="space-y-2">
@@ -271,13 +316,32 @@ export function Presets<T>({
                 : 'border-line text-fg-muted hover:border-line-strong hover:text-fg'
             }`}
           >
+            {/* Amber because the reader has already met it as this site's "this
+                one is awkward, look at it" colour on the WebGPU badge and the
+                technologyReason bullet in LabPage. A dot carries nothing to a
+                screen reader, so the warning is also said in words — otherwise
+                the marker exists for sighted readers only. */}
+            {preset.shows ? (
+              <>
+                <span className="mr-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-amber align-middle" />
+                <span className="sr-only">Wrong on purpose: </span>
+              </>
+            ) : null}
             {preset.label}
           </button>
         ))}
       </div>
-      {applied ? (
+      {current ? (
         <p className="text-2xs leading-relaxed text-fg-faint">
-          {presets.find((preset) => preset.label === applied)?.note}
+          {current.shows ? (
+            <>
+              <span className="text-amber">
+                Wrong on purpose. What you are about to see is the failure this lab
+                is about, not a fault in the page.
+              </span>{' '}
+            </>
+          ) : null}
+          {current.note}
         </p>
       ) : (
         <p className="text-2xs leading-relaxed text-fg-faint">

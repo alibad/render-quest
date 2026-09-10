@@ -105,7 +105,7 @@ export interface PipelineParams {
 
 type PipelineControls = Omit<PipelineParams, 'palette'>;
 
-const DEFAULTS: PipelineControls = {
+export const DEFAULTS: PipelineControls = {
   stage: 0,
   showGrid: true,
   azimuth: 0.62,
@@ -326,6 +326,7 @@ export function PipelineLab() {
 
           <ControlGroup
             title="Stage"
+            explains="handover"
             action={<ResetButton onClick={() => setControls(DEFAULTS)} />}
           >
             <ol className="space-y-1">

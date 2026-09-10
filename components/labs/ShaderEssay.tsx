@@ -5,8 +5,10 @@ import { useMemo, type ReactNode } from 'react';
 import { Slider } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { Term } from '@/components/lab/Term';
 import { useFigureState } from '@/components/lab/useFigureState';
 import { PREAMBLE, PRESETS_SOURCE } from '@/components/labs/ShaderLab';
+import { REPO_URL } from '@/lib/site';
 
 /**
  * The written half of lab 10.
@@ -418,9 +420,10 @@ export function ShaderEssay() {
     <Prose>
       <p>
         Nine labs have handed you sliders onto shaders somebody else wrote. This
-        one hands over the keyboard: the editor at the foot of the page holds a
-        fragment shader, and the next animation frame after you change a
-        character compiles it and draws with the result.
+        one hands over the keyboard: the editor at the foot of the page holds
+        a <Term name="Fragment shader">fragment shader</Term>, and the next
+        animation frame after you change a character compiles it and draws with
+        the result.
       </p>
       <p>
         What makes shaders feel hard is not the mathematics. It is that a mistake
@@ -488,9 +491,10 @@ export function ShaderEssay() {
       <p>
         The vertex shader is six lines and never changes. It writes{' '}
         <code>gl_Position</code> straight from the attribute, because the
-        attribute is already in clip space: no model matrix, no view, no
-        projection. Nothing from <a href="/labs/transform">The Model Matrix</a>{' '}
-        applies here, because there is no model to place. Its other statement is{' '}
+        attribute is already in <Term name="Clip space">clip space</Term>: no
+        model matrix, no view, no projection. Nothing from{' '}
+        <a href="/labs/transform">The Model Matrix</a> applies here, because
+        there is no model to place. Its other statement is{' '}
         <code>vUv = aPosition * 0.5 + 0.5</code>, which turns those −1…1 corners
         into the 0…1 the fragment stage reads.
       </p>
@@ -500,12 +504,13 @@ export function ShaderEssay() {
       </ProseHeading>
       <p>
         Four names are declared above your code and exist whether you use them or
-        not. <code>vUv</code> is a varying: interpolated across the triangle and
-        different in every invocation, the only input that changes from pixel to
-        pixel. <code>uTime</code>, <code>uResolution</code> and <code>uKnob</code>{' '}
-        are uniforms — one value each, set before the draw call and identical in
-        all 1,327,104 invocations that follow. Which things vary and which do not
-        is most of the vocabulary.
+        not. <code>vUv</code> is a <Term name="Varying">varying</Term>:
+        interpolated across the triangle and different in every invocation, the
+        only input that changes from pixel to pixel. <code>uTime</code>,{' '}
+        <code>uResolution</code> and <code>uKnob</code> are{' '}
+        <Term name="Uniform">uniforms</Term> — one value each, set before the
+        draw call and identical in all 1,327,104 invocations that follow. Which
+        things vary and which do not is most of the vocabulary.
       </p>
       <p>
         <code>uResolution</code> is the canvas in device pixels rather than CSS
@@ -547,8 +552,9 @@ export function ShaderEssay() {
         <code>vec3</code> assigned to a <code>vec4</code> and a missing
         semicolon. Three things then happen that would not happen in an ordinary
         project. The last program that linked stays bound, so your picture
-        survives the typo. The driver&rsquo;s log is printed verbatim. And the
-        line number is put back where you can use it.
+        survives the typo.{' '}
+        <Term name="Compile error">The driver&rsquo;s log</Term> is printed
+        verbatim. And the line number is put back where you can use it.
       </p>
 
       <PreambleFigure />
@@ -559,17 +565,69 @@ export function ShaderEssay() {
         The shapes do not differ. Nearly everything you will hit is one of three
         things: a missing semicolon, which the compiler cannot notice until it
         has read the next statement, so it names the line after the one you must
-        change; a type that will not convert, because GLSL will not turn a{' '}
-        <code>vec3</code> into a <code>vec4</code> for you; and a name that does
-        not exist, usually a swizzle with a letter that is not in the vector.
+        change; a type that will not convert, because{' '}
+        <Term name="GLSL">GLSL</Term> will not turn a <code>vec3</code> into
+        a <code>vec4</code> for you; and a name that does not exist, usually a
+        swizzle with a letter that is not in the vector.
       </p>
       <p>
         The messages will also name things you did not write. This is GLSL ES
         1.00, the dialect WebGL 1 speaks: <code>attribute</code>,{' '}
         <code>varying</code>, and a colour assigned to <code>gl_FragColor</code>.
         WebGL 2 spells the same ideas as <code>in</code>, <code>out</code> and an
-        output you declare; the WebGPU labs are in WGSL. The ideas carry across,
-        the keywords do not.
+        output you declare; the WebGPU labs are in{' '}
+        <Term name="WGSL">WGSL</Term>. The ideas carry across, the keywords do
+        not.
+      </p>
+
+      <ProseHeading id="mistake">
+        What I got wrong here: a test that passed with every canvas blank
+      </ProseHeading>
+      <p>
+        Every lab on this site, this one included, is loaded in a real browser by
+        a smoke test that asks whether its canvas drew anything at all. The first
+        version of that test took a screenshot of the page and measured how much
+        detail the picture held. The belief underneath it was that a screenshot
+        of a canvas shows what is on the canvas — true of nearly every element on
+        a page, and not of this one.
+      </p>
+      <p>
+        The readings came back healthy, so there was nothing to look into.
+        Headless Chromium does not composite WebGL content into a capture at all,
+        and this site&rsquo;s pages carry a blueprint grid that showed through the
+        transparent canvas and measured as detail: the test was grading the
+        background and reporting it as a picture. A blank lab and a working one
+        produced the same verdict, and the verdict was pass.
+      </p>
+      <p>
+        Nothing on screen could have shown this, because the screen was right and
+        the test was wrong. What caught it was mutation testing — blanking the
+        WebGL path on purpose to see whether the suite noticed, and it did not.
+        The test reads the canvas inside the page now, drawing it into a 2D
+        context and counting distinct colours and the spread of luminance across
+        twelve frames, because a lab&rsquo;s own animation callback and the
+        sampler race for position within a frame. WebGL discards its drawing
+        buffer the moment it is composited, so the canvas component the other
+        WebGL labs share asks for <code>preserveDrawingBuffer</code> only when
+        the test sets a flag before the app loads; in normal use it is off, and
+        free.
+      </p>
+      <p>
+        Fixed in{' '}
+        <a
+          href={`${REPO_URL}/commit/de6a44b`}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          commit de6a44b
+        </a>
+        . What holds it now is the check{' '}
+        <code>the canvas actually drew something</code> in{' '}
+        <code>test/render.smoke.ts</code>, and its thresholds were measured
+        rather than guessed: a canvas that drew nothing comes back with one
+        colour and no spread at all, so the floors sit at three of each. The
+        first guess at those numbers failed two healthy labs, which is the same
+        mistake pointing the other way.
       </p>
 
       <ProseHeading id="instrument">Now type into it</ProseHeading>

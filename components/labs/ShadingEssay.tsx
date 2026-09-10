@@ -4,9 +4,10 @@ import { Segmented, Slider, Toggle } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
 import { GLCanvas } from '@/components/lab/GLCanvas';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { Term } from '@/components/lab/Term';
 import { useFigureState } from '@/components/lab/useFigureState';
 import { usePalette } from '@/components/site/ThemeProvider';
-import { Matrix3, createScene, type ShadingParams } from '@/components/labs/ShadingLab';
+import { DEFAULTS, Matrix3, createScene, type ShadingParams } from '@/components/labs/ShadingLab';
 import { normalMatrix, scaling, upperLeft3x3 } from '@/lib/math/mat4';
 
 /**
@@ -57,6 +58,7 @@ function LambertFigure() {
   return (
     <Figure
       id="diffuse-cosine"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="where the light is"
@@ -107,6 +109,7 @@ function SpecularFigure() {
   return (
     <Figure
       id="highlight-width"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="shininess"
@@ -160,6 +163,7 @@ function ModelFigure() {
   return (
     <Figure
       id="shading-models"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Segmented
           label="where the lighting runs"
@@ -213,6 +217,7 @@ function StretchFigure() {
   return (
     <Figure
       id="stretched-normals"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="stretch y"
@@ -271,6 +276,7 @@ function NormalMatrixFigure() {
   return (
     <Figure
       id="inverse-transpose"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Toggle
           label="Inverse-transpose"
@@ -311,11 +317,11 @@ export function ShadingEssay() {
       <p>
         Nothing in this lab simulates light. No ray leaves the lamp and no photon
         arrives at the eye. There is an equation, evaluated somewhere on a
-        surface, that takes three directions — the surface normal{' '}
-        <code>N</code>, the direction to the light <code>L</code>, and the
-        direction to the eye <code>V</code> — and returns a colour. The three
-        terms it adds together are the whole of the shading in every picture
-        below.
+        surface, that takes three directions — the{' '}
+        <Term name="Normal">surface normal</Term> <code>N</code>, the direction
+        to the light <code>L</code>, and the direction to the eye{' '}
+        <code>V</code> — and returns a colour. The three terms it adds together
+        are the whole of the shading in every picture below.
       </p>
       <p>
         The arguments worth having are about the inputs rather than the sum.
@@ -326,7 +332,7 @@ export function ShadingEssay() {
 
       <ProseHeading id="lambert">Diffuse brightness is a cosine</ProseHeading>
       <p>
-        The diffuse term is one line of the shader:{' '}
+        The <Term name="Lambert">diffuse term</Term> is one line of the shader:{' '}
         <code>float lambert = max(dot(N, L), 0.0);</code>. Both vectors are unit
         length, so their dot product is the cosine of the angle between them. A
         patch of surface facing the light square on gets 1. Tipped sixty degrees
@@ -364,7 +370,8 @@ export function ShadingEssay() {
       <p>
         Nothing in the diffuse term mentions where you are standing. Orbit the
         camera in the instrument below and the diffuse shading does not move at
-        all; it is painted onto the surface. The specular term is the opposite
+        all; it is painted onto the surface. The{' '}
+        <Term name="Specular highlight">specular term</Term> is the opposite
         kind of thing, and it is two lines:{' '}
         <code>vec3 H = normalize(L + V);</code> and then{' '}
         <code>pow(max(dot(N, H), 0.0), uShininess)</code>.
@@ -403,12 +410,14 @@ export function ShadingEssay() {
       </p>
       <p>
         Gouraud runs the lighting in the vertex shader and passes the resulting
-        colour along as a varying, so the hardware interpolates a colour across
-        each triangle. The smooth sphere here carries 2,665 vertices, so the
-        lighting runs 2,665 times a frame however large the sphere is on screen.
-        Phong interpolates the normal instead and runs the lighting in the
-        fragment shader, once per fragment the sphere covers — a cost that grows
-        with the size of the sphere on screen and ignores the mesh entirely.
+        colour along as a <Term name="Varying">varying</Term>, so the hardware
+        interpolates a colour across each triangle. The smooth sphere here
+        carries 2,665 vertices, so the lighting runs 2,665 times a frame however
+        large the sphere is on screen. Phong interpolates the normal instead and
+        runs the lighting in the fragment shader, once per{' '}
+        <Term name="Fragment">fragment</Term> the sphere covers — a cost that
+        grows with the size of the sphere on screen and ignores the mesh
+        entirely.
       </p>
       <p>
         Flat is not a third program in this lab. It is the per-fragment shader
@@ -461,8 +470,8 @@ export function ShadingEssay() {
         relationship that a non-uniform scale does not preserve. Flatten a sphere
         and its surface becomes shallower, so the normals must tilt further
         towards vertical; scaling them the way the geometry was scaled tilts them
-        the opposite way. The transform that preserves the relationship is the
-        inverse-transpose of the model matrix.
+        the opposite way. The transform that preserves the relationship is the{' '}
+        <Term name="Normal matrix">inverse-transpose</Term> of the model matrix.
       </p>
       <p>
         For a diagonal matrix that is short enough to check by eye. The inverse

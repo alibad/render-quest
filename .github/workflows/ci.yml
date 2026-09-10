@@ -12,6 +12,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The "what I got wrong here" sections cite a commit by sha, and
+          # test/content.test.ts resolves each one against this repository — a
+          # rebase that rewrites a cited commit takes the evidence with it and
+          # the essay is left describing something no reader can look up. The
+          # default depth-1 checkout is a shallow clone, where every sha but
+          # the tip fails to resolve, so the check would skip here for good.
+          # The render job below does not need history and keeps the default.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           # Matches engines.node, which is what Vercel deploys with.

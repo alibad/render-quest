@@ -1,12 +1,15 @@
 'use client';
 
+import { Check } from '@/components/lab/Check';
 import { Slider } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
 import { GLCanvas } from '@/components/lab/GLCanvas';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { Term } from '@/components/lab/Term';
 import { useFigureState } from '@/components/lab/useFigureState';
 import { usePalette } from '@/components/site/ThemeProvider';
-import { createScene, type Params as ColourParams } from '@/components/labs/ColourLab';
+import { createScene, DEFAULTS, type Params as ColourParams } from '@/components/labs/ColourLab';
+import { REPO_URL } from '@/lib/site';
 
 /**
  * The written half of lab 8.
@@ -83,6 +86,7 @@ function GreyFigure() {
   return (
     <Figure
       id="grey-test"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="gamma"
@@ -139,6 +143,7 @@ function SplitFigure() {
   return (
     <Figure
       id="divider"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="divider"
@@ -199,6 +204,7 @@ function IntensityFigure() {
   return (
     <Figure
       id="error-changes-sign"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="intensity"
@@ -272,6 +278,7 @@ function GammaFigure() {
   return (
     <Figure
       id="only-difference"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="gamma"
@@ -316,19 +323,20 @@ export function ColourEssay() {
         longest in a renderer, because nothing it does looks like an error.
         Midtones that come out too dark read as mood. A terminator that falls off
         a cliff reads as contrast. Below, one sphere is split down the middle and
-        both halves are lit by the same light with the same Lambert term, in two
-        different colour spaces, so the difference has an edge you can look at.
+        both halves are lit by the same light with the same{' '}
+        <Term name="Lambert">Lambert term</Term>, in two different colour spaces,
+        so the difference has an edge you can look at.
       </p>
 
       <ProseHeading id="encoding">The number 0.5 is about a fifth of the light</ProseHeading>
       <p>
-        sRGB spends its 256 codes unevenly, on purpose. Your eye resolves far
-        finer differences in the dark than in the light, so an encoding that
-        spaced its codes evenly across the light would waste most of them at the
-        bright end and band visibly in the shadows. sRGB stores roughly the
-        1/2.2 power of the light instead, which bunches the codes up where the
-        eye is sensitive. It is a good encoding, and it is not a quantity you can
-        do arithmetic with.
+        <Term name="sRGB">sRGB</Term> spends its 256 codes unevenly, on purpose.
+        Your eye resolves far finer differences in the dark than in the light, so
+        an encoding that spaced its codes evenly across the light would waste
+        most of them at the bright end and band visibly in the shadows. sRGB
+        stores roughly the 1/2.2 power of the light instead, which bunches the
+        codes up where the eye is sensitive. It is a good encoding, and it is not
+        a quantity you can do arithmetic with.
       </p>
       <p>
         The strip along the bottom of the figure is the shortest proof of that.
@@ -342,13 +350,94 @@ export function ColourEssay() {
       <GreyFigure />
 
       <p>
-        At gamma 2.2, half the light is the number 0.730, which is code 186 of
-        255. About three quarters of the available codes are spent below the
-        halfway point of the light. That is the whole reason the encoding exists
-        and the whole reason it is a trap: the midpoint of the numbers and the
-        midpoint of the light are nowhere near each other, so a routine that
-        averages two colours, or halves one, is not doing what its name says.
+        At <Term name="Gamma">gamma</Term> 2.2, half the light is the number
+        0.730, which is code 186 of 255. About three quarters of the available
+        codes are spent below the halfway point of the light. That is the whole
+        reason the encoding exists and the whole reason it is a trap: the
+        midpoint of the numbers and the midpoint of the light are nowhere near
+        each other, so a routine that averages two colours, or halves one, is not
+        doing what its name says.
       </p>
+
+      <Check
+        question={
+          <>
+            A cross-fade blends two colours by averaging their sRGB numbers
+            frame by frame, and halfway through the transition the picture
+            visibly dips darker than either end of the fade. What is happening?
+          </>
+        }
+        options={[
+          {
+            option: (
+              <>
+                Nothing is: a mixture of two colours is duller than either of
+                them, and that is what a fade through the middle looks like.
+              </>
+            ),
+            response: (
+              <>
+                This is the reading the bug survives on, here and in real
+                renderers, and it is why nobody files it. The dip is made by the
+                arithmetic rather than carried in by the two ends: the encoding
+                curve bends so that the number halfway between two codes always
+                stands for less light than halfway between them. Fade red to a
+                green of the same brightness and the midpoint emits 43.5 per
+                cent of the light it should.
+              </>
+            ),
+          },
+          {
+            option: (
+              <>
+                Decode both colours to light, average them there, and encode the
+                result back.
+              </>
+            ),
+            correct: true,
+            response: (
+              <>
+                This is the one. The average of two codes is not the code for the
+                average of two lights, so linear is the only space where the word
+                average means what it says. Half the light is the number 0.730
+                and its code is 186, not 128 — the middle and right patches of{' '}
+                <a href="#grey-test">the grey test above</a> are those two
+                numbers side by side.
+              </>
+            ),
+          },
+          {
+            option: (
+              <>
+                Add a brightness boost that peaks in the middle of the fade,
+                tuned until the dip goes away.
+              </>
+            ),
+            response: (
+              <>
+                It works, and it is the wrong fix. The curve is tuned to this
+                pair of colours, and the size of the dip depends on where the two
+                codes sit, so the next pair sags by a different amount and the
+                one that fades a colour to itself needs no boost at all. What you
+                have compensated for is the encoding, and the encoding is one
+                decode and one encode away from being right everywhere.
+              </>
+            ),
+          },
+          {
+            option: <>Give the framebuffer more bits per channel.</>,
+            response: (
+              <>
+                Precision is not what is wrong here. Sixteen bits under the
+                same encoding put the midpoint at the same fraction of the
+                light, with more decimals behind it, and about three quarters of
+                the codes still sit below half the light. What moves the midpoint is
+                averaging in linear, not describing the wrong one more finely.
+              </>
+            ),
+          },
+        ]}
+      />
       <p>
         The blurring has to happen in your eye, which sums light. Zoom the page
         out, or screenshot it and resize the file, and whatever resamples the
@@ -443,9 +532,9 @@ export function ColourEssay() {
         In a real renderer nobody writes those powers by hand at each multiply.
         A texture authored in sRGB is decoded once, when it is sampled, which is
         what an sRGB texture format is for and what the sampler hardware does at
-        no cost. Lighting, blending and accumulation all happen in linear space
-        after that. The encode happens once, at the very end, when everything has
-        been added up.
+        no cost. Lighting, blending and accumulation all happen in{' '}
+        <Term name="Linear colour">linear space</Term> after that. The encode
+        happens once, at the very end, when everything has been added up.
       </p>
       <p>
         Which textures get that decode is a decision, not a default. A base
@@ -463,11 +552,60 @@ export function ColourEssay() {
         Encoding before the end costs you a second bug on top of the first.
         Encode before you interpolate and the interpolation is wrong too, which
         is exactly what Gouraud shading would do — so in{' '}
-        <a href="/labs/shading#models">Light &amp; Normals</a> the vertex stage returns
-        linear light, the varying carries linear light, and the fragment stage
-        raises it by 1/2.2 at the last possible moment. That lab, and every other
-        one on this site, was written the wrong way round first; this is the lab
-        that corrected them.
+        <a href="/labs/shading#models">Light &amp; Normals</a> the vertex stage
+        returns linear light, the <Term name="Varying">varying</Term> carries
+        linear light, and the fragment stage raises it by 1/2.2 at the last
+        possible moment. That lab, and every other one on this site, was written
+        the wrong way round first; this is the lab that corrected them.
+      </p>
+
+      <ProseHeading id="mistake">
+        What I got wrong here: every shader multiplied sRGB
+      </ProseHeading>
+      <p>
+        The shared lit shader behind four of these labs, and both of the shading
+        lab&rsquo;s own stages, took the base colour exactly as it was written,
+        multiplied it by the light term and wrote the result straight to the
+        framebuffer. The belief underneath is the one this lab exists to take
+        apart: that a colour is a quantity, so scaling the number scales the
+        colour. Nobody decided to skip the decode. The arithmetic looked like
+        arithmetic.
+      </p>
+      <p>
+        The symptom was that every scene on the site came out slightly moody.
+        Midtones sat darker than they should and terminators arrived as edges
+        rather than roll-offs — the two effects the left half of the sphere above
+        still shows on purpose. Both are things a person can deliberately want,
+        so nothing on screen read as a fault and nothing threw. The arithmetic is
+        valid; it was on the wrong quantity.
+      </p>
+      <p>
+        What caught it was building this lab. Two branches on one sphere a pixel
+        apart, under the same light and the same Lambert term, left the
+        difference nowhere to hide — and once the split sphere existed it was
+        plain which side of it every other lab was rendering on. The grey test
+        settled the rest: the number 0.5 and half the light are visibly different
+        tones, and every shader here had been treating them as one.
+      </p>
+      <p>
+        The correction shipped with the lab, in{' '}
+        <a
+          href={`${REPO_URL}/commit/de15cad`}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          commit de15cad
+        </a>
+        : decode, multiply in light, encode on the way out — in the shared
+        shader and in both of the shading lab&rsquo;s stages, where for Gouraud
+        the encode had to move after the interpolation rather than before it.
+        What holds it now is the check{' '}
+        <code>moving a control changes the picture</code> in{' '}
+        <code>test/render.smoke.ts</code>, which drives this lab&rsquo;s gamma
+        slider to 1 in a real browser and measures the canvas against its own
+        noise floor. At gamma 1 the two branches compute the same expression, so
+        if the decode and the encode ever leave this lab&rsquo;s fragment shader
+        the slider stops changing anything and the check fails.
       </p>
 
       <ProseHeading id="instrument">Now move all of it at once</ProseHeading>

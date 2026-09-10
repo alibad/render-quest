@@ -81,7 +81,7 @@ interface ShaderControls {
   knob: number;
 }
 
-const DEFAULTS: ShaderControls = { preset: 'circle', knob: 1 };
+export const DEFAULTS: ShaderControls = { preset: 'circle', knob: 1 };
 
 const PRESETS: Preset<ShaderControls>[] = [
   {
@@ -103,6 +103,7 @@ const PRESETS: Preset<ShaderControls>[] = [
     label: 'Break it on purpose',
     note: 'Two real errors: a vec3 assigned to a vec4, and a missing semicolon. The driver’s own message appears under the editor, with the line. This is what the other labs protect you from, and what you will actually spend your time reading.',
     values: { preset: 'broken' },
+    shows: 'the failure',
   },
 ];
 
@@ -343,7 +344,7 @@ export function ShaderLab() {
             />
           </ControlGroup>
 
-          <ControlGroup title="The knob">
+          <ControlGroup title="The knob" explains="uniforms">
             <Slider
               label="uKnob"
               value={controls.knob}

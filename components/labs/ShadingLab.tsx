@@ -67,7 +67,7 @@ export interface ShadingParams {
 
 type ShadingControls = Omit<ShadingParams, 'palette'>;
 
-const DEFAULTS: ShadingControls = {
+export const DEFAULTS: ShadingControls = {
   model: 'phong',
   lightAzimuth: 0.9,
   lightElevation: 0.6,
@@ -334,11 +334,13 @@ const PRESETS: Preset<ShadingControls>[] = [
     label: 'The normal-matrix bug',
     note: 'The sphere is squashed and the normals are being transformed by the model matrix directly. Watch the highlight sit in the wrong place. Turn "inverse-transpose" back on and it snaps to where the light actually is.',
     values: { stretch: 0.4, correctNormals: false, model: 'phong', specular: 0.9, shininess: 48 },
+    shows: 'the failure',
   },
   {
     label: 'Gouraud loses the highlight',
     note: 'Lighting computed per vertex, with a tight specular. The highlight is about the size of a triangle, so blending three corner values flattens its sides and makes it pulse as it crosses the mesh. Switch to Phong and it comes back round.',
     values: { model: 'gouraud', specular: 1.2, shininess: 120, stretch: 1, correctNormals: true },
+    shows: 'the failure',
   },
   {
     label: 'The diffuse term alone',
@@ -384,6 +386,7 @@ const PRESETS: Preset<ShadingControls>[] = [
 
           <ControlGroup
             title="Shading model"
+            explains="models"
             action={<ResetButton onClick={() => setControls(DEFAULTS)} />}
           >
             <Segmented
@@ -404,19 +407,19 @@ const PRESETS: Preset<ShadingControls>[] = [
             </p>
           </ControlGroup>
 
-          <ControlGroup title="Light">
+          <ControlGroup title="Light" explains="lambert">
             <Slider label="direction" value={controls.lightAzimuth} min={-3.14} max={3.14} precision={2} onChange={(v) => set('lightAzimuth', v)} />
             <Slider label="height" value={controls.lightElevation} min={-1.4} max={1.4} precision={2} onChange={(v) => set('lightElevation', v)} />
           </ControlGroup>
 
-          <ControlGroup title="Terms">
+          <ControlGroup title="Terms" explains="specular">
             <Slider label="ambient" value={controls.ambient} min={0} max={0.6} onChange={(v) => set('ambient', v)} />
             <Slider label="diffuse" value={controls.diffuse} min={0} max={1.4} onChange={(v) => set('diffuse', v)} />
             <Slider label="specular" value={controls.specular} min={0} max={1.4} onChange={(v) => set('specular', v)} />
             <Slider label="shininess" value={controls.shininess} min={1} max={160} step={1} precision={0} onChange={(v) => set('shininess', v)} />
           </ControlGroup>
 
-          <ControlGroup title="Normals under scale">
+          <ControlGroup title="Normals under scale" explains="normals">
             <Slider label="stretch y" value={controls.stretch} min={0.25} max={2.2} onChange={(v) => set('stretch', v)} />
             <Toggle
               label="Inverse-transpose"

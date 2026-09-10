@@ -25,7 +25,7 @@ A transform is not a table of sixteen numbers — it is a motion, and you cannot
 motion on a static page. So each lab is an essay with figures embedded in it — a
 figure being one canvas, one control and a caption — and the full instrument, every
 control at once, at the foot of the page. The prose between the figures runs
-900–1,600 words a lab; the captions are on top of that.
+900–1,900 words a lab; the captions are on top of that.
 
 ## What a lab is
 
@@ -62,7 +62,7 @@ Eight of the ten run anywhere WebGL does. Labs 6 and 7 need WebGPU — Chrome, E
 Safari 26 and later — and say so on a card if the browser has not got it, rather than
 falling back to something that is not what the lab is about.
 
-Around 13,000 words of essay in total, not counting the figure captions.
+Around 15,000 words of essay in total, not counting the figure captions.
 
 Also on the site: four [technology guides](https://www.render-quest.com/tech) writing
 the same two reference scenes — a cosine-palette plasma and a lit, spinning cube — in

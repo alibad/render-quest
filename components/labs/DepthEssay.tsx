@@ -1,16 +1,20 @@
 'use client';
 
+import { Check } from '@/components/lab/Check';
 import { Slider, Toggle } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
 import { GLCanvas } from '@/components/lab/GLCanvas';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { Term } from '@/components/lab/Term';
 import { useFigureState } from '@/components/lab/useFigureState';
 import { usePalette } from '@/components/site/ThemeProvider';
 import {
   createScene,
+  DEFAULTS,
   smallestResolvableGap,
   type Params as DepthParams,
 } from '@/components/labs/DepthLab';
+import { REPO_URL } from '@/lib/site';
 
 /**
  * The written half of lab 9.
@@ -97,6 +101,11 @@ function NearFigure() {
   return (
     <Figure
       id="near-plane"
+      // The whole params record, palette and all: Figure strips everything that
+      // is not a control before it reaches the address bar, so the essay hands
+      // over the object it already built rather than a second, hand-curated one
+      // that would drift away from the picture.
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="near plane"
@@ -148,6 +157,7 @@ function FarFigure() {
   return (
     <Figure
       id="far-plane"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Slider
           label="far plane"
@@ -194,6 +204,7 @@ function DepthWriteFigure() {
   return (
     <Figure
       id="depth-write"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Toggle
           label="Write depth"
@@ -236,6 +247,7 @@ function SortFigure() {
   return (
     <Figure
       id="sort-order"
+      state={{ defaults: DEFAULTS, current: params }}
       control={
         <Toggle
           label="Sort back to front"
@@ -268,26 +280,29 @@ export function DepthEssay() {
     <Prose>
       <p>
         Every pixel on screen carries a colour and one other number: how far away
-        the thing that coloured it was. That second number is the depth buffer,
-        and it is what lets triangles be submitted in any order and still come
-        out with the near ones in front. Before a fragment is written its depth
-        is compared against what is already stored there, and if it loses the
+        the thing that coloured it was. That second number is the{' '}
+        <Term name="Depth buffer">depth buffer</Term>, and it is what lets
+        triangles be submitted in any order and still come out with the near ones
+        in front. Before a <Term name="Fragment">fragment</Term> is written its
+        depth is compared against what is already stored there, and if it loses the
         comparison it is discarded &mdash; the draw call that produced it is
         never told.
       </p>
       <p>
         The buffer is finite, twenty-four bits per pixel in the arithmetic the
         readouts here use, and it is spent very unevenly along the view
-        direction. Both of the failures in this lab come out of that one fact.
-        Z-fighting is the buffer running out of precision and being unable to
+        direction. Both of the failures in this lab come out of that one fact.{' '}
+        <Term name="Z-fighting">Z-fighting</Term> is the buffer running out of
+        precision and being unable to
         decide between two surfaces; broken transparency is the buffer deciding
         when it should have kept out of it.
       </p>
 
       <ProseHeading id="near">The near plane spends the buffer</ProseHeading>
       <p>
-        Perspective does not store distance. After the divide, the value written
-        for a surface <code>d</code> units away is{' '}
+        Perspective does not store distance. After the{' '}
+        <Term name="Perspective divide">divide</Term>, the value written for a
+        surface <code>d</code> units away is{' '}
         <code>f(d &minus; n) / (d(f &minus; n))</code> &mdash; hyperbolic in{' '}
         <code>d</code>, not linear. Half of the buffer&rsquo;s entire range is
         gone by the time that expression reaches 0.5, which happens at{' '}
@@ -353,13 +368,68 @@ export function DepthEssay() {
         around the room.
       </p>
 
+      <Check
+        question={
+          <>
+            Your scene is 200 units deep and the distant walls are z-fighting.
+            Which change fixes it?
+          </>
+        }
+        options={[
+          {
+            option: <>Pull the far plane in from 1000 to 400.</>,
+            response: (
+              <>
+                The far plane is nearly free. Depth is distributed
+                hyperbolically, so almost the whole buffer is spent in the first
+                few units; pulling the far plane in by 600 buys back a sliver of
+                precision that was never the problem. The instrument below prints
+                the smallest resolvable gap &mdash; move the far plane and watch
+                it barely move.
+              </>
+            ),
+          },
+          {
+            option: <>Push the near plane out from 0.01 to 0.5.</>,
+            correct: true,
+            response: (
+              <>
+                This is the one. Precision at 200 units is governed by the near
+                plane, which is why the fix for a problem far away is a number
+                describing something close.
+              </>
+            ),
+          },
+          {
+            option: <>Move the two walls further apart.</>,
+            response: (
+              <>
+                It works, and it is the wrong fix. You have changed the model to
+                suit the camera, and the next scene will fight again.
+              </>
+            ),
+          },
+          {
+            option: <>Ask for a higher-precision depth buffer.</>,
+            response: (
+              <>
+                Sometimes available, and it treats the symptom. A near plane at
+                0.01 wastes so much of the range that more bits mostly buys back
+                what the frustum threw away.
+              </>
+            ),
+          },
+        ]}
+      />
+
       <ProseHeading id="transparency">
         The buffer answers what is nearest; transparency asks what is behind
       </ProseHeading>
       <p>
         Switch scenes. Three translucent panes, three units apart, drawn with
         premultiplied <em>over</em>: the fragment shader emits{' '}
-        <code>vec4(colour * opacity, opacity)</code> and the blend function is{' '}
+        <code>vec4(colour * opacity, opacity)</code> and the{' '}
+        <Term name="Alpha blending">blend function</Term> is{' '}
         <code>ONE, ONE_MINUS_SRC_ALPHA</code>. Read that literally and it says the
         result is this pane&rsquo;s contribution plus whatever was already in the
         framebuffer, faded by how opaque this pane is. It requires that what is
@@ -406,8 +476,8 @@ export function DepthEssay() {
         computed once and stored with the model, because it is not a property of
         the model. It changes when the camera moves, so it is redone every frame,
         on the CPU, for as long as the scene contains anything translucent. That
-        is the real cost of transparency, and it is paid in draw-call ordering
-        rather than in shading.
+        is the real cost of transparency, and it is paid in{' '}
+        <Term name="Draw order">draw-call ordering</Term> rather than in shading.
       </p>
       <p>
         One thing worth checking in the instrument, once you have dragged the
@@ -417,6 +487,58 @@ export function DepthEssay() {
         already in the buffer, so nothing is ever rejected. Depth writing only
         bites when the order is already wrong &mdash; another way of saying that
         the sort is the load-bearing half.
+      </p>
+
+      <ProseHeading id="mistake">
+        What I got wrong here: the scene that never fought
+      </ProseHeading>
+      <p>
+        The first build of this lab never fought. Its distance control orbited
+        the camera around the panels, and the belief underneath that is worth
+        naming: that distance is a property of the picture. Move the panels away,
+        or pull the camera back, and they arrive on screen at the same size, so
+        the two looked like the same operation. They are not the same operation
+        for the depth buffer, which is indifferent to where the panels sit and
+        cares only how far the frustum has to reach to hold them.
+      </p>
+      <p>
+        The symptom was a lab that looked well behaved. The slider said anything
+        from 5 units to 120 and the view distance stayed pinned at 14, so the
+        scene sat comfortably inside precision at every setting and the panels
+        never tore. A clean render makes no complaint. It reads as a lab that
+        works, or at worst as a failure that some other control has to be turned
+        up to produce &mdash; and the control that was supposed to produce it was
+        the one holding it off.
+      </p>
+      <p>
+        What caught it was measuring the pixels rather than looking at them.
+        Counting how much of the far panel breaks through the near one turns
+        &ldquo;it looks fine&rdquo; into a number: at a near plane of 0.02 with
+        the panels 0.002 apart, 52 pixels of the far panel come through, in 52
+        separate transitions, and at a near plane of 1 the count is 0. In the
+        broken build nothing tore at any setting, so that count was flat wherever
+        it was taken. The arithmetic beside the picture was right the whole time;
+        it was the camera that was wrong, which is why reading the source would
+        not have found it either.
+      </p>
+      <p>
+        The fix, in{' '}
+        {/* Built from the constant rather than written out: test/content.test.ts
+            fails any file that restates a lib/site.ts URL in full. */}
+        <a href={`${REPO_URL}/commit/ba5d487`}>commit ba5d487</a>
+        , stops the camera. The eye sits 1.5 units from the origin and the panels
+        move away from it, sized in proportion to distance so that the picture
+        holds still and only the precision behind it changes. What guards a
+        control that does nothing is the check{' '}
+        <code>moving a control changes the picture</code> in{' '}
+        <code>test/render.smoke.ts</code>, which drives one control on every
+        lab&rsquo;s instrument in a real browser and fails the build when the
+        canvas does not move further than that lab&rsquo;s own noise. It is
+        honest about what it cannot see: on this lab it drives the scene switch
+        rather than the frustum, because the bands are finer than its sampler
+        resolves &mdash; moving the near plane from 0.02 to 1 under the{' '}
+        <em>Make it fight</em> preset changes 0.049 per cent of the picture even
+        at the canvas&rsquo;s native resolution.
       </p>
 
       <ProseHeading id="instrument">Both failures, with every control</ProseHeading>

@@ -86,7 +86,7 @@ export interface TextureParams {
 
 type TextureControls = Omit<TextureParams, 'palette'>;
 
-const DEFAULTS: TextureControls = {
+export const DEFAULTS: TextureControls = {
   // Reproduces the fixed viewpoint this lab used to have: looking down the
   // plane from just above it, which is where minification bites hardest.
   azimuth: 0,
@@ -231,6 +231,7 @@ const PRESETS: Preset<TextureControls>[] = [
     label: 'Watch it boil',
     note: 'Nearest, no mip chain, tiled hard. The distance shimmers as the camera holds still — that is aliasing, hundreds of texels fighting over one pixel.',
     values: { minFilter: 'nearest', magFilter: 'nearest', repeat: 16 },
+    shows: 'the failure',
   },
   {
     label: 'Mipmaps fix it',
@@ -286,6 +287,7 @@ const PRESETS: Preset<TextureControls>[] = [
 
           <ControlGroup
             title="Minification"
+            explains="mipmaps"
             action={<ResetButton onClick={() => setControls(DEFAULTS)} />}
           >
             <Segmented
@@ -310,7 +312,7 @@ const PRESETS: Preset<TextureControls>[] = [
             </p>
           </ControlGroup>
 
-          <ControlGroup title="Magnification">
+          <ControlGroup title="Magnification" explains="magnification">
             <Segmented
               value={controls.magFilter}
               options={[
@@ -338,7 +340,7 @@ const PRESETS: Preset<TextureControls>[] = [
             )}
           </ControlGroup>
 
-          <ControlGroup title="Wrap">
+          <ControlGroup title="Wrap" explains="wrap">
             <Segmented
               label="across the plane (S)"
               value={controls.wrapS}
@@ -361,7 +363,7 @@ const PRESETS: Preset<TextureControls>[] = [
             />
           </ControlGroup>
 
-          <ControlGroup title="Coordinates">
+          <ControlGroup title="Coordinates" explains="footprint">
             <Slider
               label="tiles"
               value={controls.repeat}
