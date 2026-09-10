@@ -66,11 +66,20 @@ export const TRACKS: Track[] = [
           {
             title: 'Essence of Linear Algebra',
             author: '3Blue1Brown',
+            // This address is correct and has not moved. Verified by hand on
+            // 2026-09-10: DNS resolves (www.3blue1brown.com →
+            // 3blue1brown.netlify.app → 35.157.26.135), the apex answers 301, and
+            // every TCP connection to the redirect target times out at 25s from
+            // a machine that reaches github.com and webglfundamentals.org in
+            // under a second. That is a host outage at their end, so swapping in
+            // a different URL would be fixing the wrong thing. `npm run
+            // check:links` now reports it as TIMEOUT rather than as a dead link.
+            // Drop the closing sentence of `why` once the site answers again.
             url: 'https://www.3blue1brown.com/topics/linear-algebra',
             kind: 'video',
             level: 'start here',
             free: true,
-            why: 'Fifteen short films that turn matrices from a table of numbers into a motion. If one thing on this page changes how you see the subject, it is this.',
+            why: 'Fifteen short films that turn matrices from a table of numbers into a motion. If one thing on this page changes how you see the subject, it is this. Their site was not answering when this list was last checked, on 10 September 2026 — if it hangs, the same series is on the 3Blue1Brown YouTube channel.',
           },
           {
             title: 'Immersive Linear Algebra',

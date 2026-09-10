@@ -1,0 +1,70 @@
+name: Ask for a lab, or propose a change
+description: A lab that does not exist yet, a control that is missing, or a change to how the site works
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Asks are the specification here — several things on the site exist because
+        somebody asked for them and nothing existed to guess from. So this form is
+        short, and mostly wants to know what you were trying to do.
+
+  - type: checkboxes
+    id: read-not-doing
+    attributes:
+      label: The declined list
+      description: >-
+        https://www.render-quest.com/roadmap ends with five proposals that were
+        considered and declined, each with a reason. Accounts and analytics are on
+        it, and so is rewriting every lab in every technology. Arguing with a
+        reason is welcome; the list just saves you writing a proposal that has
+        already been answered.
+      options:
+        - label: I have read the "not doing" list on /roadmap
+          required: true
+
+  - type: textarea
+    id: want
+    attributes:
+      label: What you want to be able to see or do
+      description: >-
+        Describe it as the thing you were trying to understand, not as the feature
+        you think would deliver it. The second is easier to write and the first is
+        far more useful.
+    validations:
+      required: true
+
+  - type: textarea
+    id: today
+    attributes:
+      label: What you did instead, and where it fell short
+      description: >-
+        Which lab, guide or page came closest, and what it left unanswered. If
+        nothing on the site is near it, say that.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: shape
+    attributes:
+      label: What shape do you think it is
+      description: A guess is fine, and being wrong costs nothing.
+      options:
+        - "A new lab"
+        - "A section or figure inside an existing lab"
+        - "A control or preset an existing lab is missing"
+        - "A glossary term"
+        - "Something on the reading path or the technology guides"
+        - "A change to the site itself — navigation, search, layout, accessibility"
+        - "No idea"
+    validations:
+      required: true
+
+  - type: textarea
+    id: offer
+    attributes:
+      label: Would you like to build it?
+      description: >-
+        Optional, and there is no expectation either way. If yes, CONTRIBUTING.md
+        lists the seven files a lab needs and the constraints a rendering change
+        has to live within.

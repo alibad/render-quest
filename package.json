@@ -2,13 +2,14 @@
   "name": "render-quest",
   "version": "0.2.0",
   "private": true,
+  "license": "MIT",
   "description": "Interactive WebGL labs for learning computer graphics.",
   "scripts": {
     "dev": "next dev",
     "build": "npm run test && next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx test/math.test.ts && tsx test/content.test.ts && tsx test/shader.test.ts && tsx test/url-state.test.ts && tsx test/chooser.test.ts",
+    "test": "tsx test/math.test.ts && tsx test/content.test.ts && tsx test/shader.test.ts && tsx test/url-state.test.ts && tsx test/chooser.test.ts && tsx test/readme.test.ts && tsx test/technologies.test.ts",
     "check:links": "tsx scripts/check-links.ts",
     "test:render": "tsx test/render.smoke.ts"
   },

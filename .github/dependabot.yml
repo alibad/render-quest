@@ -1,0 +1,39 @@
+# Kept deliberately quiet. This is a one-person repository with three runtime
+# dependencies, so the useful signal is "a patch is available", not a pull
+# request per package. Minor and patch updates are grouped into a single weekly
+# pull request; a major bump arrives on its own, because it is a decision.
+#
+# CI runs npm test and next build on every one of these, so a green Dependabot
+# pull request is usually just a merge.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+    open-pull-requests-limit: 3
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore
+      include: scope
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+    open-pull-requests-limit: 2
+    groups:
+      actions:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore

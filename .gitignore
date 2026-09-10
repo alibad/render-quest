@@ -38,3 +38,7 @@ next-env.d.ts
 # Local capture artifacts
 /screenshots
 .playwright-mcp
+
+# Frames kept by `scripts/capture-readme-media.ts --frames`, for looking at a
+# recording that came out wrong. The captures themselves are committed, in docs/media.
+/.capture-frames

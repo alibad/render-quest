@@ -7,7 +7,16 @@ import { LabCard } from '@/components/site/LabCard';
 import { LabsTailCard } from '@/components/site/LabsTailCard';
 import { ORDERED_LABS } from '@/lib/labs';
 import { ALL_RESOURCES, TRACKS } from '@/lib/resources';
-import { SHARED_SCENE, TECHNOLOGIES } from '@/lib/technologies';
+import {
+  CODE_ONLY,
+  REFERENCE_SCENES,
+  RUNS_HERE,
+  SHARED_SCENE,
+  TECHNOLOGIES,
+  inWords,
+  lineFigure,
+  nameList,
+} from '@/lib/technologies';
 import { SITE_SUBHEAD, SITE_TAGLINE } from '@/lib/site';
 
 export default function Home() {
@@ -90,8 +99,11 @@ export default function Home() {
                 Pick a technology
               </h2>
               <p className="mt-1.5 max-w-prose text-sm text-fg-muted">
-                {SHARED_SCENE.title} — WebGL, WebGPU, Three.js and vgpu rendering
-                the same two scenes, so the only thing you are comparing is the code.
+                {SHARED_SCENE.title} — the same{' '}
+                {inWords(REFERENCE_SCENES.length)} reference scenes on every page,{' '}
+                {nameList(RUNS_HERE)} running them here and {nameList(CODE_ONLY)}{' '}
+                honestly labelled as code, so the only thing that differs is what you
+                have to write around them.
               </p>
             </div>
             <Link
@@ -114,7 +126,7 @@ export default function Home() {
                     {tech.name}
                   </h3>
                   <span className="tabular font-mono text-2xs text-accent">
-                    ~{tech.linesForPlasma} lines
+                    {lineFigure(tech.plasmaLines)} lines
                   </span>
                 </div>
                 <p className="mt-1 font-mono text-2xs uppercase tracking-wider text-fg-faint">

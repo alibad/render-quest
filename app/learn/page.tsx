@@ -27,7 +27,8 @@ export default function Learn() {
           {ALL_RESOURCES.length} hand-picked resources across graphics and game
           development. Not a link dump — every one says why it earns your evenings,
           and they are arranged so each stage makes the next one easier. Most are
-          free. Every link is checked.
+          free, and a job checks every link each Monday — one that stops answering says
+          so on its own card.
         </p>
 
         <div className="mt-12">

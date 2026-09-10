@@ -1,14 +1,21 @@
 /**
  * The four ways you might actually draw something on the web, compared.
  *
- * Every page renders the SAME scene — an animated cosine-palette plasma — so
- * the difference between the entries is the code, not the picture. The shader
- * maths is identical in all four; only the plumbing around it changes.
+ * Every page covers the SAME two reference scenes — an animated cosine-palette
+ * plasma and a lit, depth-tested, spinning cube — so the difference between the
+ * entries is the code, not the picture. The shader maths is identical in all
+ * four; only the plumbing around it changes.
  *
  *   colour = 0.5 + 0.5 * cos(time + uv.xyx + vec3(0, 2, 4))
  *
- * Demos marked `code-only` are not running on the page. Saying so matters more
- * than looking impressive: this site's whole claim is that what you see is real.
+ * Covering a scene is not rendering it. Demos marked `code-only` are not
+ * running on the page, and every sentence on the site that enumerates the four
+ * has to say so — which is why the prose below is assembled from the registry
+ * rather than typed. Saying it matters more than looking impressive: this
+ * site's whole claim is that what you see is real.
+ *
+ * The line counts in the comparison table are derived the same way. See
+ * LineCount.
  */
 
 export type DemoSupport = 'webgl' | 'webgpu' | 'code-only';
@@ -20,6 +27,53 @@ export interface CodeSample {
   note?: string;
 }
 
+/**
+ * A line count in the comparison table, and where the number came from.
+ *
+ * Most of them are summed from the listings the pages actually print, by the
+ * same rule the header of every listing uses (`source.split('\n').length` in
+ * CodeBlock), so the table cannot disagree with the code underneath it. The
+ * rest describe an implementation a page only excerpts: there is nothing
+ * printed to count, so the number is an estimate and is marked as one wherever
+ * it is shown.
+ *
+ * The numbers were eight hand-typed constants until issue #34, and two of them
+ * had drifted far enough to contradict the listing headers on the same page.
+ */
+export interface LineCount {
+  lines: number;
+  counted: boolean;
+  /** The listings the number was summed from, when it was counted. */
+  listings: string[];
+  /** What the number estimates, when it was not. */
+  estimates?: string;
+}
+
+/**
+ * How an entry declares a count: name the listings that make up the scene, or
+ * state an estimate and what it is estimating. There is no third option, so a
+ * number cannot arrive in the table without saying where it came from.
+ */
+type LineSpec = { count: string[] } | { estimate: number; of: string };
+
+/** The rule CodeBlock's header uses, so the two numbers can never diverge. */
+const countLines = (source: string) => source.split('\n').length;
+
+function resolveLines(spec: LineSpec, samples: CodeSample[], where: string): LineCount {
+  if ('estimate' in spec) {
+    return { lines: spec.estimate, counted: false, listings: [], estimates: spec.of };
+  }
+  let lines = 0;
+  for (const label of spec.count) {
+    const sample = samples.find((candidate) => candidate.label === label);
+    // Renaming a listing would otherwise quietly count it as nothing, which is
+    // the exact failure mode this whole mechanism exists to remove.
+    if (!sample) throw new Error(`${where}: no listing labelled "${label}"`);
+    lines += countLines(sample.source);
+  }
+  return { lines, counted: true, listings: spec.count };
+}
+
 export interface Technology {
   slug: string;
   name: string;
@@ -27,9 +81,12 @@ export interface Technology {
   /** One-line answer to "what am I choosing here". */
   kind: string;
   demo: DemoSupport;
-  /** Roughly how much code the plasma takes, for the comparison table. */
-  linesForPlasma: number;
+  /** How much code the plasma takes, counted from the listings or estimated. */
+  plasmaLines: LineCount;
   /** And the lit cube, which is where the four actually diverge. */
+  cubeLines: LineCount;
+  /** The same two numbers, for pages that print the figure and nothing else. */
+  linesForPlasma: number;
   linesForCube: number;
   what: string[];
   reachFor: string[];
@@ -78,15 +135,38 @@ export const CUBE_SCENE = {
     'Twelve triangles, three vertex attributes, an index buffer, a model and a view-projection matrix, one directional light, backface culling and a depth buffer. The picture is identical in all four; the amount you have to write to get it is not.',
 } as const;
 
-export const TECHNOLOGIES: Technology[] = [
+/**
+ * The reference scenes, in the order the pages present them, so no sentence
+ * has to remember how many there are. There were two by the time anything on
+ * the site still said "the same scene" in the singular.
+ */
+export const REFERENCE_SCENES = [
+  {
+    title: 'A cosine-palette plasma',
+    short: 'an animated cosine-palette plasma (three cosines a phase apart)',
+  },
+  { title: CUBE_SCENE.title, short: 'a lit, depth-tested, spinning cube' },
+] as const;
+
+/** An entry as it is written here: line counts declared, not typed. */
+interface TechnologyEntry
+  extends Omit<Technology, 'plasmaLines' | 'cubeLines' | 'linesForPlasma' | 'linesForCube'> {
+  plasma: LineSpec;
+  cube: LineSpec;
+}
+
+const ENTRIES: TechnologyEntry[] = [
   {
     slug: 'webgl',
     name: 'WebGL',
     tagline: 'The baseline. Everything on this site runs on it.',
     kind: 'Browser API · GLSL',
     demo: 'webgl',
-    linesForPlasma: 42,
-    linesForCube: 118,
+    plasma: { count: ['The JavaScript around it'] },
+    cube: {
+      estimate: 118,
+      of: 'a complete implementation. The listing here is the attribute and state half of one, and the cube running further down this page is components/tech/CubeWebGL.tsx',
+    },
     homepage: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API',
     what: [
       'WebGL is OpenGL ES 2.0 (or 3.0, for WebGL2) exposed to JavaScript. It has shipped in every browser for over a decade, works on effectively every device you will meet, and needs no library, no build step and no permission prompt.',
@@ -193,8 +273,11 @@ gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, 0);`,
     tagline: 'The successor. Stricter, far more capable, and finally shipping.',
     kind: 'Browser API · WGSL',
     demo: 'webgpu',
-    linesForPlasma: 58,
-    linesForCube: 149,
+    plasma: { count: ['Getting to a frame'] },
+    cube: {
+      estimate: 149,
+      of: 'a complete implementation: the adapter and device, the buffers, the pipeline, the depth texture and the frame. The listing here is the pipeline half of that. components/tech/CubeWebGPU.tsx, which runs the cube further down this page, is longer than the figure because it also carries the WGSL printed above, the React wrapper, the multisampling, the resize handling and the message a device with no WebGPU gets',
+    },
     homepage: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API',
     what: [
       'WebGPU is the modern replacement for WebGL, modelled on Vulkan, Metal and D3D12 rather than on 2008-era OpenGL. It brings compute shaders, storage buffers, render bundles and an explicit pipeline model, and it uses its own shading language, WGSL, instead of GLSL.',
@@ -318,8 +401,8 @@ depth = device.createTexture({
     tagline: 'A scene, not a pipeline. The default answer for most 3D on the web.',
     kind: 'Library · scene graph',
     demo: 'code-only',
-    linesForPlasma: 22,
-    linesForCube: 31,
+    plasma: { count: ['The whole plasma'] },
+    cube: { count: ['The whole thing'] },
     homepage: 'https://threejs.org/',
     what: [
       'Three.js gives you the vocabulary you actually think in: scenes, meshes, materials, lights, cameras. It handles the buffer juggling, the matrix chain, the render loop and a great deal of cross-device sanity, and it has by far the largest ecosystem of loaders, controls and examples of anything here.',
@@ -451,8 +534,8 @@ renderer.setAnimationLoop((t) => {
     tagline: 'A small typed layer over WebGPU that also runs headless.',
     kind: 'Library · WebGPU + WGSL',
     demo: 'code-only',
-    linesForPlasma: 12,
-    linesForCube: 26,
+    plasma: { count: ['A full-screen effect'] },
+    cube: { count: ['The whole thing'] },
     homepage: 'https://vgpu.sh/',
     what: [
       'vgpu is a minimal WebGPU library from Vercel Labs. Its distinguishing idea is that WGSL files behave like TypeScript modules — you import a shader, the loader resolves its import graph at build time, and reflection keeps the bindings correct. A complete full-screen effect comes to about 25 KB gzipped.',
@@ -568,14 +651,66 @@ view.frame((t) => {
   },
 ];
 
+export const TECHNOLOGIES: Technology[] = ENTRIES.map(({ plasma, cube, ...rest }) => {
+  const plasmaLines = resolveLines(plasma, rest.samples, `${rest.name} plasma`);
+  const cubeLines = resolveLines(cube, rest.cubeSamples, `${rest.name} cube`);
+  return {
+    ...rest,
+    plasmaLines,
+    cubeLines,
+    linesForPlasma: plasmaLines.lines,
+    linesForCube: cubeLines.lines,
+  };
+});
+
+/**
+ * How a line count is printed, anywhere it is printed.
+ *
+ * A tilde means the number is an estimate rather than a count, so only the
+ * registry can put one there. Three pages typed the tilde in by hand, which is
+ * how /tech/three came to print "~24 lines" directly above a listing header
+ * reading "24 lines", and how every figure on the home page came to carry a
+ * tilde when all four are counted. One rule, one place.
+ */
+export const lineFigure = (count: LineCount) =>
+  count.counted ? `${count.lines}` : `~${count.lines}`;
+
 export function getTechnology(slug: string): Technology | undefined {
   return TECHNOLOGIES.find((tech) => tech.slug === slug);
 }
 
-/** The shader maths every page shares, quoted once for the index page. */
+/** The ones whose scenes are actually on the page, and the ones that are code. */
+export const RUNS_HERE = TECHNOLOGIES.filter((tech) => tech.demo !== 'code-only');
+export const CODE_ONLY = TECHNOLOGIES.filter((tech) => tech.demo === 'code-only');
+
+/** Small numbers as words, so prose can count without a digit in a sentence. */
+const WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
+export const inWords = (count: number) => WORDS[count] ?? String(count);
+
+/** "WebGL, WebGPU and Three.js" — a list that reads, from a list that is data. */
+export function joinList(items: string[]): string {
+  if (items.length < 2) return items[0] ?? '';
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+export const nameList = (technologies: Technology[]) =>
+  joinList(technologies.map((tech) => tech.name));
+
+/**
+ * The shader maths every page shares, quoted once for the index page.
+ *
+ * Assembled rather than written: four sentences on the site used to claim all
+ * four technologies rendered one scene, when there are two scenes and two of
+ * the four are code only. Both halves of that are counted here.
+ */
 export const SHARED_SCENE = {
-  title: 'The same scenes, four ways',
+  title: `The same scenes, ${inWords(TECHNOLOGIES.length)} ways`,
   formula: 'colour = 0.5 + 0.5 · cos(time + uv.xyx + (0, 2, 4))',
   description:
-    'Every page below renders the same two reference scenes: a cosine-palette plasma, three cosines a phase apart, and a lit, depth-tested, spinning cube. The maths never changes, so what you are comparing is purely the code you have to write around it — and the cube is the more honest half, because a full-screen effect exercises almost no plumbing.',
+    `Every page below covers the same ${inWords(REFERENCE_SCENES.length)} reference scenes: ` +
+    `${joinList(REFERENCE_SCENES.map((scene) => scene.short))}. ` +
+    `${nameList(RUNS_HERE)} render them on the page; ${nameList(CODE_ONLY)} print the code ` +
+    'that would and say so, because neither is a dependency of this site. The maths never ' +
+    'changes, so what you are comparing is purely the code you have to write around it — and ' +
+    'the cube is the more honest half, because a full-screen effect exercises almost no plumbing.',
 };

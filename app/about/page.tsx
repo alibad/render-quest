@@ -4,6 +4,12 @@ import Link from 'next/link';
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
 import { LABS } from '@/lib/labs';
+import {
+  REFERENCE_SCENES,
+  TECHNOLOGIES,
+  inWords,
+  nameList,
+} from '@/lib/technologies';
 import { pageMetadata } from '@/lib/metadata';
 
 export const metadata: Metadata = pageMetadata({
@@ -91,10 +97,10 @@ export default function About() {
             <Link href="/tech" className="link-accent">
               Tech
             </Link>{' '}
-            section renders one identical scene in WebGL, WebGPU, Three.js and vgpu,
-            so you can see what each layer does for you and what it costs you — the
-            first two actually running on the page, the other two honestly labelled
-            as code.
+            section covers the same {inWords(REFERENCE_SCENES.length)} reference
+            scenes in {nameList(TECHNOLOGIES)}, so you can see what each layer does
+            for you and what it costs you — the first two actually running on the
+            page, the other two honestly labelled as code.
           </p>
           <p>
             Alongside those, the{' '}

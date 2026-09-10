@@ -1,0 +1,72 @@
+name: A sentence is wrong, or does not teach what it promised
+description: A claim is false, a paragraph is confusing, or a figure does not show what its caption says
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the most valuable report the site gets, and the least generic.
+        The essays make specific, checkable claims about how a GPU behaves, and
+        some of them are wrong. Naming one is a contribution, whether or not you
+        know what should replace it.
+
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options:
+        - "1 — The Model Matrix (/labs/transform)"
+        - "2 — Projection & the Frustum (/labs/projection)"
+        - "3 — Coordinate Spaces (/labs/pipeline)"
+        - "4 — Light & Normals (/labs/shading)"
+        - "5 — Textures & Sampling (/labs/textures)"
+        - "6 — Compute & Particles (/labs/compute)"
+        - "7 — Draw Calls & Instancing (/labs/instancing)"
+        - "8 — Colour & Gamma (/labs/colour)"
+        - "9 — Depth & Transparency (/labs/depth)"
+        - "10 — Write a Shader (/labs/shader)"
+        - "The glossary (/glossary)"
+        - "A technology guide (/tech)"
+        - "The reading path (/learn)"
+        - "Somewhere else on the site"
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: The URL
+      description: >-
+        Every essay heading is an anchor — click one and the address bar names the
+        section. Paste that, so the paragraph can be found without a search.
+      placeholder: https://www.render-quest.com/labs/colour#encoding
+    validations:
+      required: true
+
+  - type: textarea
+    id: sentence
+    attributes:
+      label: The sentence as it stands
+      description: Quote it. A few words either side helps if it is ambiguous.
+    validations:
+      required: true
+
+  - type: textarea
+    id: correction
+    attributes:
+      label: What is actually true, or what you expected to understand and did not
+      description: >-
+        Both kinds of report belong here. "This is wrong, here is the right
+        version" and "I read this three times and still cannot say what a
+        varying is" are equally useful, and the second is harder to notice from
+        the inside.
+    validations:
+      required: true
+
+  - type: textarea
+    id: source
+    attributes:
+      label: Anything that backs it up
+      description: >-
+        Optional. A spec section, a driver note, a paper, or a lab URL whose state
+        demonstrates it.

@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: A question, rather than a report
+    url: https://github.com/alibad/render-quest/discussions
+    about: Ask in Discussions — Q&A for "why does my renderer do this", General for everything else.
+  - name: What is already planned, and what has been declined
+    url: https://www.render-quest.com/roadmap
+    about: The roadmap ends with five proposals that were considered and turned down, each with a reason. Worth a look before proposing one.
+  - name: Read the contributing guide first
+    url: https://github.com/alibad/render-quest/blob/main/CONTRIBUTING.md
+    about: The dev loop, the prose voice, the seven files a lab needs, and the things this project will not accept.

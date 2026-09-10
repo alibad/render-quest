@@ -4,7 +4,14 @@ import Link from 'next/link';
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
 import { TechnologyChooser } from '@/components/tech/TechnologyChooser';
-import { TECHNOLOGIES } from '@/lib/technologies';
+import {
+  CODE_ONLY,
+  REFERENCE_SCENES,
+  RUNS_HERE,
+  TECHNOLOGIES,
+  inWords,
+  nameList,
+} from '@/lib/technologies';
 import { pageMetadata } from '@/lib/metadata';
 
 /**
@@ -45,8 +52,11 @@ export default function ChoosePage() {
             Or read them side by side
           </h2>
           <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">
-            Every one of these renders the same reference scene, so the only thing
-            that differs between the pages is the code you have to write around it.
+            Every one of these covers the same {inWords(REFERENCE_SCENES.length)}{' '}
+            reference scenes — {nameList(RUNS_HERE)} rendering them on the page,{' '}
+            {nameList(CODE_ONLY)} printing the code that would and saying so — so the
+            only thing that differs between the pages is the code you have to write
+            around them.
           </p>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             {TECHNOLOGIES.map((tech) => (

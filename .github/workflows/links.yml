@@ -1,15 +1,30 @@
 name: Check links
 
 # Deliberately not part of the build: a deploy should never fail because
-# somebody else's server is having a bad afternoon.
+# somebody else's server is having a bad afternoon. The checker retries
+# anything that broke below HTTP before believing it, and reports which way a
+# link failed, so a host outage is not filed as a URL that moved.
+#
+# Note that GitHub disables scheduled workflows after 60 days without a commit
+# to the repository, so a silent Monday is not proof of a clean list.
 on:
   schedule:
     - cron: '0 9 * * 1'
   workflow_dispatch:
 
+# The only thing this job writes is the issue it opens when the check fails.
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   links:
     runs-on: ubuntu-latest
+    env:
+      # The token Actions already provides. Nothing to configure, nothing to rotate.
+      GH_TOKEN: ${{ github.token }}
+      LABEL: link-check
+      TITLE: Weekly link check is failing
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,4 +32,58 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run check:links
+
+      - name: Check links
+        id: check
+        # Kept going so the report reaches a human before the run goes red.
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run check:links 2>&1 | tee report.txt
+
+      # A red scheduled workflow on a repo with few watchers is invisible, which
+      # is indistinguishable from no check at all. One issue, rewritten each
+      # week rather than duplicated.
+      - name: Open or update the failure issue
+        if: steps.check.outcome == 'failure'
+        run: |
+          gh label create "$LABEL" \
+            --color B60205 \
+            --description 'Opened by the weekly link check' 2>/dev/null || true
+          {
+            echo "The weekly link check failed on $(date -u '+%Y-%m-%d')."
+            echo
+            echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo
+            echo "How to read it: a GONE line is a page that moved and needs an"
+            echo "editor. TIMEOUT, DNS, TLS, REFUSED and SERVER are somebody"
+            echo "else's host and usually need only patience — those are tried"
+            echo "three times before they are reported. A GONE line is reported"
+            echo "on the first answer: a 404 is a 404 on the third try too."
+            echo
+            echo '```'
+            cat report.txt
+            echo '```'
+          } > body.md
+
+          existing=$(gh issue list --label "$LABEL" --state open --limit 1 \
+            --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --title "$TITLE" --body-file body.md
+            echo "Updated issue #$existing"
+          else
+            gh issue create --title "$TITLE" --label "$LABEL" --body-file body.md
+          fi
+
+      - name: Close the failure issue once a run comes back clean
+        if: steps.check.outcome == 'success'
+        run: |
+          for number in $(gh issue list --label "$LABEL" --state open \
+            --json number --jq '.[].number'); do
+            gh issue close "$number" --comment \
+              "Every link came back reachable on $(date -u '+%Y-%m-%d'). Closed by the weekly link check."
+          done
+
+      - name: Fail the run when a link failed
+        if: steps.check.outcome == 'failure'
+        run: exit 1

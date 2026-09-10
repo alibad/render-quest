@@ -5,13 +5,25 @@ import { PlasmaWebGL } from '@/components/tech/PlasmaWebGL';
 import { TechnologyChooser } from '@/components/tech/TechnologyChooser';
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
-import { SHARED_SCENE, TECHNOLOGIES } from '@/lib/technologies';
+import {
+  CODE_ONLY,
+  REFERENCE_SCENES,
+  RUNS_HERE,
+  SHARED_SCENE,
+  TECHNOLOGIES,
+  inWords,
+  joinList,
+  lineFigure,
+  nameList,
+} from '@/lib/technologies';
 import { pageMetadata } from '@/lib/metadata';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Technologies',
   description:
-    'WebGL, WebGPU, Three.js and vgpu compared by rendering the same two reference scenes in each — what every one is for, when to reach for it, and the actual code.',
+    `${nameList(TECHNOLOGIES)} compared on the same ${inWords(REFERENCE_SCENES.length)} reference ` +
+    `scenes — what every one is for, when to reach for it, and the actual code. ` +
+    `${nameList(RUNS_HERE)} render the scenes here; ${nameList(CODE_ONLY)} are code only.`,
   path: '/tech',
 });
 
@@ -20,6 +32,20 @@ const DEMO_LABEL: Record<string, string> = {
   webgpu: 'Runs here, with WebGPU',
   'code-only': 'Code only',
 };
+
+/*
+ * The tilde that marks an estimate comes from lineFigure, in the registry, and
+ * so does the caption under the table saying which figures carry one. The table
+ * printed a tilde on all eight until issue #34, including on numbers that could
+ * be — and now are — counted straight from the listings on each page.
+ */
+
+const COUNTS = TECHNOLOGIES.flatMap((tech) => [
+  { tech, scene: 'plasma', count: tech.plasmaLines },
+  { tech, scene: 'cube', count: tech.cubeLines },
+]);
+const COUNTED = COUNTS.filter((entry) => entry.count.counted);
+const ESTIMATED = COUNTS.filter((entry) => !entry.count.counted);
 
 export default function Tech() {
   return (
@@ -38,16 +64,19 @@ export default function Tech() {
         </p>
 
         {/*
-          The page opens by saying every technology below renders one identical
-          thing, and then showed it zero times. Here is that thing, running — so
-          the comparison starts from the picture rather than from a promise.
+          The page opens by describing the reference scenes and then showed
+          neither. Here is the first of them, running — so the comparison starts
+          from the picture rather than from a promise. The caption says which
+          pages can do the same and which cannot, because two of them cannot.
         */}
         {/* GLCanvas draws its own frame, so this only bounds the width. */}
         <figure className="mt-8 max-w-2xl">
           <PlasmaWebGL />
           <figcaption className="mt-2.5 text-xs text-fg-faint">
-            The reference scene, running here in WebGL. Every technology page
-            renders this same image — only the code around it changes.
+            {REFERENCE_SCENES[0].title}, running here in WebGL. Of the{' '}
+            {inWords(TECHNOLOGIES.length)} pages below, {nameList(RUNS_HERE)} render
+            it on their own; {nameList(CODE_ONLY)} print the code that would and say
+            plainly that nothing is running.
           </figcaption>
         </figure>
 
@@ -111,10 +140,10 @@ export default function Tech() {
                   </td>
                   <td className="py-4 pr-4 text-fg-muted">{tech.kind}</td>
                   <td className="tabular py-4 text-right font-mono text-fg-muted">
-                    ~{tech.linesForPlasma}
+                    {lineFigure(tech.plasmaLines)}
                   </td>
                   <td className="tabular py-4 pl-4 text-right font-mono text-fg">
-                    ~{tech.linesForCube}
+                    {lineFigure(tech.cubeLines)}
                   </td>
                   <td className="py-4 pl-6">
                     <span
@@ -131,11 +160,19 @@ export default function Tech() {
           </table>
         </div>
         <p className="mt-4 max-w-prose text-2xs leading-relaxed text-fg-faint">
-          Line counts are for the plumbing around the shader, not a quality score —
-          fewer lines means more is being done for you, which is exactly what you want
-          in one situation and exactly what you do not want in another. The cube column
-          is the more honest of the two: the plasma has no geometry, no camera and no
-          depth buffer, so it barely exercises the differences at all.
+          Of these {inWords(COUNTS.length)} numbers, {inWords(COUNTED.length)} are
+          counted rather than asserted: each is the length of the listing printed on
+          that page, by the same rule as the line count in the listing&rsquo;s own header, so
+          the table cannot disagree with the code underneath it. The{' '}
+          {inWords(ESTIMATED.length)} carrying a tilde —{' '}
+          {joinList(ESTIMATED.map((entry) => `${entry.tech.name}’s ${entry.scene}`))} —
+          are estimates of a complete implementation, because those listings are
+          excerpts and there is nothing printed to count. Either way the figure is the
+          plumbing around the shader, not a quality score: fewer lines means more is
+          being done for you, which is exactly what you want in one situation and
+          exactly what you do not want in another. The cube column is the more honest of
+          the two: the plasma has no geometry, no camera and no depth buffer, so it
+          barely exercises the differences at all.
         </p>
 
         <div className="mt-12 grid gap-4 sm:grid-cols-2">

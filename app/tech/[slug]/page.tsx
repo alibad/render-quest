@@ -11,7 +11,12 @@ import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
 import { ALL_RESOURCES } from '@/lib/resources';
 import { pageMetadata } from '@/lib/metadata';
-import { CUBE_SCENE, TECHNOLOGIES, getTechnology } from '@/lib/technologies';
+import {
+  CUBE_SCENE,
+  TECHNOLOGIES,
+  getTechnology,
+  lineFigure,
+} from '@/lib/technologies';
 
 
 interface Params {
@@ -158,7 +163,8 @@ export default function TechnologyPage({ params }: Params) {
             {CUBE_SCENE.description}
           </p>
           <p className="mt-3 font-mono text-2xs uppercase tracking-wider text-fg-faint">
-            ~{tech.linesForCube} lines here, against ~{tech.linesForPlasma} for the plasma
+            {lineFigure(tech.cubeLines)} lines here, against{' '}
+            {lineFigure(tech.plasmaLines)} for the plasma
           </p>
 
           <div className="mt-5 max-w-2xl">
