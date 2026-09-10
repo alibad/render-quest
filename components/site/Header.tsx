@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { REPO_URL } from '@/lib/site';
+
 import { Wordmark } from './Mark';
 import { SearchDialog } from './SearchDialog';
 import { ThemeToggle } from './ThemeToggle';
@@ -15,8 +17,6 @@ const NAV = [
   { href: '/glossary', label: 'Glossary' },
   { href: '/about', label: 'About' },
 ];
-
-const REPO = 'https://github.com/alibad/render-quest';
 
 export function Header() {
   const pathname = usePathname();
@@ -77,7 +77,7 @@ export function Header() {
         <div className="ml-auto flex items-center gap-1.5">
           <SearchDialog />
           <a
-            href={REPO}
+            href={REPO_URL}
             target="_blank"
             rel="noreferrer noopener"
             aria-label="Source on GitHub"
@@ -142,7 +142,7 @@ export function Header() {
             })}
             <li className="mt-1 border-t border-line pt-1">
               <a
-                href={REPO}
+                href={REPO_URL}
                 target="_blank"
                 rel="noreferrer noopener"
                 className="flex items-center gap-2.5 rounded-md px-2 py-2.5 text-sm text-fg-muted transition-colors hover:text-fg"

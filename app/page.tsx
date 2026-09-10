@@ -5,6 +5,7 @@ import { Header } from '@/components/site/Header';
 import { HeroCanvas } from '@/components/site/HeroCanvas';
 import { LabCard } from '@/components/site/LabCard';
 import { LabsTailCard } from '@/components/site/LabsTailCard';
+import { essayOutline } from '@/lib/essay-outline';
 import { ORDERED_LABS } from '@/lib/labs';
 import { ALL_RESOURCES, TRACKS } from '@/lib/resources';
 import {
@@ -84,9 +85,20 @@ export default function Home() {
             </Link>
           </div>
 
+          {/* The same read time /labs prints, from the same cached call, so the
+              two grids of the same ten labs do not disagree with each other.
+              Guarded on status because a lab still being built has no essay file
+              for `essayOutline` to count, and this grid — unlike the one on
+              /labs — maps every lab rather than only the live ones. */}
           <div className="mt-7 grid gap-4 sm:grid-cols-2">
             {ORDERED_LABS.map((lab) => (
-              <LabCard key={lab.slug} lab={lab} />
+              <LabCard
+                key={lab.slug}
+                lab={lab}
+                minutes={
+                  lab.status === 'live' ? essayOutline(lab.slug).minutes : undefined
+                }
+              />
             ))}
             <LabsTailCard />
           </div>

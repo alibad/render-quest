@@ -22,9 +22,10 @@ algebra assumed.
 ## Why
 
 A transform is not a table of sixteen numbers — it is a motion, and you cannot see a
-motion on a static page. So each lab is an essay of 1,400–2,400 words with figures
-embedded in it — a figure being one canvas, one control and a caption — and the full
-instrument, every control at once, at the foot of the page.
+motion on a static page. So each lab is an essay with figures embedded in it — a
+figure being one canvas, one control and a caption — and the full instrument, every
+control at once, at the foot of the page. The prose between the figures runs
+900–1,600 words a lab; the captions are on top of that.
 
 ## What a lab is
 
@@ -61,7 +62,7 @@ Eight of the ten run anywhere WebGL does. Labs 6 and 7 need WebGPU — Chrome, E
 Safari 26 and later — and say so on a card if the browser has not got it, rather than
 falling back to something that is not what the lab is about.
 
-Around 20,000 words in total.
+Around 13,000 words of essay in total, not counting the figure captions.
 
 Also on the site: four [technology guides](https://www.render-quest.com/tech) writing
 the same two reference scenes — a cosine-palette plasma and a lit, spinning cube — in
@@ -86,16 +87,17 @@ deploys with.
 ## Tests
 
 ```bash
-npm test         # seven suites, no browser — runs as part of npm run build
+npm test         # nine suites, no browser — runs as part of npm run build
 ```
 
 `npm test` covers the matrix core and frustum derivation (composition order, the
 perspective divide, near/far into NDC, `lookAt` orthonormality, inverse round-trips,
 the clip test), the content registries, the URL codec, the chooser, the shaders as
 strings — every uniform the TypeScript asks for must exist in the shader it is
-compiled against, which nothing else here catches — and the prose that quotes those
-registries: this README and the line counts on the technology pages, each checked
-against the data it claims to be describing.
+compiled against, which nothing else here catches — the canvas palette against the CSS
+tokens it mirrors, so a scene cannot be drawn in a colour the page around it does not
+use — and the prose that quotes those registries: this README and the line counts on
+the technology pages, each checked against the data it claims to be describing.
 
 The rendering suite is three commands rather than one, because it needs a browser and
 a production build:

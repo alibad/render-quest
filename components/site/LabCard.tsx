@@ -3,7 +3,20 @@ import Link from 'next/link';
 import { LabGlyph } from '@/components/site/LabGlyph';
 import type { Lab } from '@/lib/labs';
 
-export function LabCard({ lab, children }: { lab: Lab; children?: React.ReactNode }) {
+export function LabCard({
+  lab,
+  minutes,
+  children,
+}: {
+  lab: Lab;
+  /**
+   * Reading time for the essay, from `essayOutline` on the page that renders
+   * this. Optional because a building lab has no essay file to count: passing a
+   * number here for one would mean inventing it.
+   */
+  minutes?: number;
+  children?: React.ReactNode;
+}) {
   const live = lab.status === 'live';
 
   const body = (
@@ -44,6 +57,19 @@ export function LabCard({ lab, children }: { lab: Lab; children?: React.ReactNod
         >
           {lab.technology === 'webgpu' ? 'WebGPU' : 'WebGL'}
         </span>
+        {/*
+          A fourth corner of the plate rather than a fifth line under the blurb.
+          The card is already five stacked blocks in a two-column grid, and the
+          grid is only as short as its tallest card; the plate's corners are
+          the one place on it that costs no height at all. Same register as the
+          number opposite it, which is the card's own voice for a quiet
+          fact — not the uppercase of the API badge, which is a label.
+        */}
+        {minutes !== undefined ? (
+          <span className="absolute bottom-2 right-2.5 font-mono text-2xs text-fg-faint">
+            {minutes} min read
+          </span>
+        ) : null}
       </div>
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-base font-semibold tracking-tight text-fg">

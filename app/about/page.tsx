@@ -11,6 +11,7 @@ import {
   nameList,
 } from '@/lib/technologies';
 import { pageMetadata } from '@/lib/metadata';
+import { AUTHOR, REPO_URL } from '@/lib/site';
 
 export const metadata: Metadata = pageMetadata({
   title: 'About',
@@ -136,9 +137,9 @@ export default function About() {
           </p>
 
           <p className="pt-4">
-            Built by Ali Bader Eddin. The source is{' '}
+            Built by {AUTHOR}. The source is{' '}
             <a
-              href="https://github.com/alibad/render-quest"
+              href={REPO_URL}
               target="_blank"
               rel="noreferrer noopener"
               className="text-accent underline-offset-4 hover:underline"

@@ -5,6 +5,27 @@ import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
 import { LIVE_LABS } from '@/lib/labs';
 
+/**
+ * The one route that does not go through `pageMetadata()`, deliberately.
+ *
+ * That helper exists so every indexable page gets its own canonical URL and its
+ * own og:title, og:description and og:url — without it a page inherits the root
+ * layout's and shares as the home page. None of that applies here: this page is
+ * `noindex`, it has no canonical address to claim (every wrong URL renders it),
+ * and it has no `opengraph-image.tsx` for the same reason. Inheriting the root's
+ * social card is the right answer, not an oversight of file naming.
+ *
+ * `robots` has to stay written out. The root layout sets `index, follow` and
+ * Next merges metadata shallowly, so dropping this line would leave the page
+ * carrying Next's own injected `noindex` alongside an inherited `index, follow`
+ * — two tags contradicting each other. With it, both tags in the served HTML
+ * agree; test/render.smoke.ts asserts that they do.
+ *
+ * A static `metadata` object is what works in a `not-found.tsx`. Verified
+ * against the built page: it serves `<title>Page not found — Render Quest`,
+ * with the root layout's title template applied. The 404 inheriting the site's
+ * default title is a bug this project has already had once.
+ */
 export const metadata: Metadata = {
   title: 'Page not found',
   robots: { index: false, follow: true },

@@ -16,6 +16,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+import { essayOutline } from '../lib/essay-outline.ts';
 import { GLOSSARY } from '../lib/glossary.ts';
 import { LABS, LIVE_LABS } from '../lib/labs.ts';
 import { ALL_RESOURCES } from '../lib/resources.ts';
@@ -236,6 +237,55 @@ check('the README states the number of suites npm test actually runs', () => {
       `npm test runs ${SUITES.length} suites (${SUITES.join(', ')}) and the README says ${count}`,
     );
   }
+});
+
+/**
+ * The two word counts, which were the largest false numbers on this page and
+ * survived because nothing could measure them. The README claimed 1,400–2,400
+ * words a lab against essays that run 989–1,528, and 20,000 words in total
+ * against 13,123 — an overstatement of roughly half, three lines under a
+ * paragraph about what a static page cannot show you.
+ *
+ * `essayOutline` counts the text inside `<Prose>` and nothing else, so the
+ * figure captions — 181 to 423 words a lab, 2,838 across the ten — are outside
+ * both numbers. The README says which of the two it is counting rather than
+ * leaving a reader to assume the larger one.
+ *
+ * Both stated numbers are rounded outward, to hundreds and to thousands, so
+ * that ordinary editing does not falsify the prose: a lab has to cross a
+ * hundred before the range moves.
+ */
+const ESSAYS = LIVE_LABS.map((lab) => ({ lab, words: essayOutline(lab.slug).words }));
+const SHORTEST = ESSAYS.reduce((a, b) => (b.words < a.words ? b : a));
+const LONGEST = ESSAYS.reduce((a, b) => (b.words > a.words ? b : a));
+const TOTAL_WORDS = ESSAYS.reduce((sum, essay) => sum + essay.words, 0);
+
+/** 1600 → "1,600". Grouped by hand, so the result cannot depend on the ICU build. */
+const grouped = (n: number) => String(n).replace(/\B(?=(\d{3})+$)/g, ',');
+
+check('the per-lab word range in the README is one the essays fit inside', () => {
+  const low = Math.floor(SHORTEST.words / 100) * 100;
+  const high = Math.ceil(LONGEST.words / 100) * 100;
+  const stated = PROSE.match(/([\d,]+)–([\d,]+) words a lab/);
+  assert.ok(stated, 'the README states no per-lab word range');
+  const wanted =
+    `the essays run ${grouped(SHORTEST.words)}–${grouped(LONGEST.words)} words ` +
+    `(${SHORTEST.lab.title} shortest, ${LONGEST.lab.title} longest), so the README ` +
+    `should say ${grouped(low)}–${grouped(high)} words a lab`;
+  assert.equal(Number(stated[1].replace(/,/g, '')), low, wanted);
+  assert.equal(Number(stated[2].replace(/,/g, '')), high, wanted);
+});
+
+check('the total the README gives is the total the essays add up to', () => {
+  const rounded = Math.round(TOTAL_WORDS / 1000) * 1000;
+  const stated = PROSE.match(/Around ([\d,]+) words of essay in total/);
+  assert.ok(stated, 'the README states no total word count for the essays');
+  assert.equal(
+    Number(stated[1].replace(/,/g, '')),
+    rounded,
+    `the ${LIVE_LABS.length} essays are ${grouped(TOTAL_WORDS)} words, so this should ` +
+      `read "Around ${grouped(rounded)} words of essay in total"`,
+  );
 });
 
 console.log(`\n${passed} readme checks passed`);

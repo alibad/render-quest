@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-
 import { Segmented, Slider } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
 import { GLCanvas } from '@/components/lab/GLCanvas';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { useFigureState } from '@/components/lab/useFigureState';
 import { usePalette } from '@/components/site/ThemeProvider';
 import { createScene, type TextureParams } from '@/components/labs/TextureLab';
 import type { MagFilter, MinFilter } from '@/lib/gl/texture';
@@ -42,25 +41,44 @@ function figureParams(
 
 function FootprintFigure() {
   const palette = usePalette();
-  const [repeat, setRepeat] = useState(1);
+  // Four tiles, not the one this used to open at.
+  //
+  // The caption's subject is the boundary where the checker stops resolving,
+  // so the boundary has to start somewhere it can walk both ways. Taking it as
+  // the point where the footprint passes 16 texels — half the 32-texel checker
+  // cell, past which the checker cannot be represented — and measuring this
+  // camera against an 800x450 canvas: at one tile the boundary sits 45% of the
+  // way down the visible plane with the slider already at its stop; at four it
+  // sits at 19%, and the nearest ground is still 1.31 texels per pixel, so
+  // there is crisp checker in front of the break to compare it against; at 24
+  // it has reached 3%. All three are on the same slider from here.
+  const [state, setState] = useFigureState(
+    'tile-count',
+    { repeat: 4 },
+    // The slider's own range. Without the guard a URL can put the scene
+    // somewhere the control cannot describe: ?tile-count.repeat=400 draws four
+    // hundred tiles with the thumb stuck against the right-hand stop.
+    { repeat: (value) => value >= 1 && value <= 24 },
+  );
   // Nearest on both filters: no averaging anywhere, so what you see is the raw
   // relationship between the pixel grid and the texel grid.
   const params = figureParams(
-    { repeat, minFilter: 'nearest', magFilter: 'nearest' },
+    { repeat: state.repeat, minFilter: 'nearest', magFilter: 'nearest' },
     palette,
   );
 
   return (
     <Figure
+      id="tile-count"
       control={
         <Slider
           label="tiles across"
-          value={repeat}
+          value={state.repeat}
           min={1}
           max={24}
           step={0.5}
           precision={1}
-          onChange={setRepeat}
+          onChange={(repeat) => setState({ repeat })}
         />
       }
       caption={
@@ -82,24 +100,45 @@ function FootprintFigure() {
   );
 }
 
+const MAGNIFICATION_OPTIONS: { value: MagFilter; label: string }[] = [
+  { value: 'nearest', label: 'Nearest' },
+  { value: 'linear', label: 'Linear' },
+];
+
 function MagnificationFigure() {
   const palette = usePalette();
-  const [magFilter, setMagFilter] = useState<MagFilter>('nearest');
+  // Nearest, because that is the state the caption describes first and the one
+  // with something to look at: hard texel edges in the foreground.
+  const [state, setState] = useFigureState(
+    'magnification-filter',
+    { magFilter: 'nearest' as MagFilter },
+    // A URL is user input, and an unrecognised filter name would reach
+    // texParameteri as undefined — a GL error and a blank plane.
+    { magFilter: (value) => MAGNIFICATION_OPTIONS.some((o) => o.value === value) },
+  );
   // One tile, camera lifted: the near ground is magnified hard, the far ground
   // is still minified, and only one of the two responds to this control.
-  const params = figureParams({ magFilter, repeat: 1, elevation: 0.25 }, palette);
+  //
+  // Do not raise the elevation to the lab preset's 0.9 to make the effect
+  // bigger. Measured against this camera on an 800x450 canvas, elevation 0.25
+  // puts the nearest visible ground at 0.10 texels per pixel — one texel about
+  // ten pixels across, magnified hard — and the far edge at 1.4, minified, so
+  // the caption's last sentence holds. At 0.9 the far edge is 0.4 texels per
+  // pixel: magnified too, and that sentence becomes false.
+  const params = figureParams(
+    { magFilter: state.magFilter, repeat: 1, elevation: 0.25 },
+    palette,
+  );
 
   return (
     <Figure
+      id="magnification-filter"
       control={
         <Segmented
           label="magnification filter"
-          value={magFilter}
-          options={[
-            { value: 'nearest', label: 'Nearest' },
-            { value: 'linear', label: 'Linear' },
-          ]}
-          onChange={setMagFilter}
+          value={state.magFilter}
+          options={MAGNIFICATION_OPTIONS}
+          onChange={(magFilter) => setState({ magFilter })}
         />
       }
       caption={
@@ -124,23 +163,40 @@ function MagnificationFigure() {
   );
 }
 
+const MINIFICATION_OPTIONS: { value: MinFilter; label: string }[] = [
+  { value: 'nearest', label: 'Near' },
+  { value: 'linear', label: 'Linear' },
+  { value: 'linear-mip-linear', label: 'Tri' },
+];
+
 function MipmapFigure() {
   const palette = usePalette();
-  const [minFilter, setMinFilter] = useState<MinFilter>('nearest');
-  const params = figureParams({ minFilter, repeat: 16, magFilter: 'linear' }, palette);
+  // Near, because that is where the phenomenon is. At 16 tiles the footprint
+  // runs from 5.25 texels per pixel at the nearest visible ground to about a
+  // thousand at the far edge (800x450 canvas), so without a mip chain the
+  // plane is undersampled from the front row back and the reader arrives at
+  // the aliasing rather than having to produce it. Tri takes it away.
+  const [state, setState] = useFigureState(
+    'minification-filter',
+    { minFilter: 'nearest' as MinFilter },
+    // Only the three this figure offers: a filter the segmented control cannot
+    // show would leave every option unselected.
+    { minFilter: (value) => MINIFICATION_OPTIONS.some((o) => o.value === value) },
+  );
+  const params = figureParams(
+    { minFilter: state.minFilter, repeat: 16, magFilter: 'linear' },
+    palette,
+  );
 
   return (
     <Figure
+      id="minification-filter"
       control={
         <Segmented
           label="minification filter"
-          value={minFilter}
-          options={[
-            { value: 'nearest', label: 'Near' },
-            { value: 'linear', label: 'Linear' },
-            { value: 'linear-mip-linear', label: 'Tri' },
-          ]}
-          onChange={setMinFilter}
+          value={state.minFilter}
+          options={MINIFICATION_OPTIONS}
+          onChange={(minFilter) => setState({ minFilter })}
         />
       }
       caption={
@@ -163,23 +219,35 @@ function MipmapFigure() {
   );
 }
 
+const HANDOVER_OPTIONS: { value: MinFilter; label: string }[] = [
+  { value: 'nearest-mip-nearest', label: 'N·mip N' },
+  { value: 'linear-mip-nearest', label: 'L·mip N' },
+  { value: 'linear-mip-linear', label: 'Tri' },
+];
+
 function MipLevelFigure() {
   const palette = usePalette();
-  const [minFilter, setMinFilter] = useState<MinFilter>('nearest-mip-nearest');
-  const params = figureParams({ minFilter, repeat: 16, magFilter: 'linear' }, palette);
+  // N·mip N is the only one of the three that shows the hard handover the
+  // caption sends the reader to look for; the other two are what removes it.
+  const [state, setState] = useFigureState(
+    'mip-handover',
+    { minFilter: 'nearest-mip-nearest' as MinFilter },
+    { minFilter: (value) => HANDOVER_OPTIONS.some((o) => o.value === value) },
+  );
+  const params = figureParams(
+    { minFilter: state.minFilter, repeat: 16, magFilter: 'linear' },
+    palette,
+  );
 
   return (
     <Figure
+      id="mip-handover"
       control={
         <Segmented
           label="within a level · between levels"
-          value={minFilter}
-          options={[
-            { value: 'nearest-mip-nearest', label: 'N·mip N' },
-            { value: 'linear-mip-nearest', label: 'L·mip N' },
-            { value: 'linear-mip-linear', label: 'Tri' },
-          ]}
-          onChange={setMinFilter}
+          value={state.minFilter}
+          options={HANDOVER_OPTIONS}
+          onChange={(minFilter) => setState({ minFilter })}
         />
       }
       caption={
@@ -205,26 +273,44 @@ function MipLevelFigure() {
 
 function AngleFigure() {
   const palette = usePalette();
-  const [degrees, setDegrees] = useState(6);
+  // 24°, a little over half the 2–43° range, because the caption starts from
+  // above — "the ground holds its detail nearly to the far edge" — and then
+  // asks the reader to drop the camera. At the 6° this used to open at, it did
+  // not: measured on an 800x450 canvas the footprint is already 2.06 texels
+  // per pixel at the nearest visible ground and 411 at the far edge, so the
+  // reader arrived at the soft picture with four degrees of slider left to
+  // produce it in. At 24° the near ground is back to 1.14 texels, detail
+  // survives to 43% up the visible plane rather than 34%, the far edge is 120
+  // texels rather than 411, and the drop the caption describes is 22° of
+  // travel away.
+  const [state, setState] = useFigureState(
+    'grazing-angle',
+    { degrees: 24 },
+    // The slider's own range. Its top, 43°, is the lab's own drag clamp of
+    // 0.75 radians, so no link can put this figure's camera anywhere the
+    // instrument at the foot of the page would refuse to go.
+    { degrees: (value) => value >= 2 && value <= 43 },
+  );
   // Elevation is the lab's own orbit control, in degrees so the readout means
   // something. The lab clamps the camera between about 1° and 43°.
   const params = figureParams(
-    { elevation: degToRad(degrees), repeat: 8 },
+    { elevation: degToRad(state.degrees), repeat: 8 },
     palette,
   );
 
   return (
     <Figure
+      id="grazing-angle"
       control={
         <Slider
           label="camera above the plane"
-          value={degrees}
+          value={state.degrees}
           min={2}
           max={43}
           step={1}
           precision={0}
           unit="°"
-          onChange={setDegrees}
+          onChange={(degrees) => setState({ degrees })}
         />
       }
       caption={
@@ -249,24 +335,36 @@ function AngleFigure() {
 
 function WrapFigure() {
   const palette = usePalette();
-  const [offset, setOffset] = useState(0.5);
+  // 0.70, not the 0.50 the caption names as the exact fit. The shader builds
+  // u as x/28 + offset and x runs −14…14, so at 0.50 u is exactly 0…1: nothing
+  // across the width of the plane is outside the range, and the smear this
+  // figure exists to show does not exist yet. At 0.70 u runs 0.2…1.2, so the
+  // right fifth of the plane is edge texel — the cyan stripe — with four
+  // fifths of unsmeared tile beside it to compare against. The exact fit is a
+  // short drag down rather than the state the reader is stranded in.
+  const [state, setState] = useFigureState(
+    'clamp-smear',
+    { offset: 0.7 },
+    { offset: (value) => value >= 0.3 && value <= 1 },
+  );
   const params = figureParams(
-    { offset, wrapS: 'clamp', wrapT: 'clamp', repeat: 1, elevation: 0.3 },
+    { offset: state.offset, wrapS: 'clamp', wrapT: 'clamp', repeat: 1, elevation: 0.3 },
     palette,
   );
 
   return (
     <Figure
+      id="clamp-smear"
       control={
         <Slider
           label="shift the coordinates"
-          value={offset}
+          value={state.offset}
           // Narrower than the instrument's −1…1: past about 0.3 in either
           // direction the whole plane is clamped edge texel and there is
           // nothing left to compare the smear against.
           min={0.3}
           max={1}
-          onChange={setOffset}
+          onChange={(offset) => setState({ offset })}
         />
       }
       caption={
@@ -399,7 +497,7 @@ export function TexturesEssay() {
         averaged as stored they give 138, where averaging the light they stand
         for and re-encoding gives 173. Every level of the chain is therefore a
         little too dark. That is a small instance of the mistake{' '}
-        <a href="/labs/colour">Colour &amp; Gamma</a> is built around.
+        <a href="/labs/colour#encoding">Colour &amp; Gamma</a> is built around.
       </p>
       <p>
         The five minification settings are not a scale from worse to better.

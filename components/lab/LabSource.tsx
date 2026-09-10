@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { CodeBlock } from '@/components/tech/CodeBlock';
+import { REPO_URL } from '@/lib/site';
 import type { CodeSample } from '@/lib/technologies';
 
 /**
@@ -58,7 +59,7 @@ export function LabSource({ samples }: { samples: CodeSample[] }) {
             Not an illustration — these are the exact shader sources this page
             compiles and runs. Everything around them is in{' '}
             <a
-              href="https://github.com/alibad/render-quest"
+              href={REPO_URL}
               target="_blank"
               rel="noreferrer noopener"
               className="link-accent"

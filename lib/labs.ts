@@ -2,6 +2,13 @@
  * The lab registry. `status` is load-bearing: the site renders planned labs as
  * plainly unfinished rather than as links, so nothing on the page promises a
  * page that is not there.
+ *
+ * All ten labs are 'live', and the last one that was not left this file in
+ * 0f77054 (2026-08-29) — so the site itself has not rendered a 'building' lab
+ * since, and the four layouts that branch on it would otherwise be discovered
+ * broken by the eleventh lab rather than by a test. test/content.test.ts keeps
+ * them honest by pushing a synthetic 'building' lab and rendering /labs,
+ * /about and /roadmap against it; it pops the lab again afterwards.
  */
 
 /** Which GPU API a lab is built on. Labs teach concepts; this is the vehicle. */
@@ -177,6 +184,28 @@ export function labNeighbours(slug: string): { previous?: Lab; next?: Lab } {
     previous: index > 0 ? LIVE_LABS[index - 1] : undefined,
     next: index < LIVE_LABS.length - 1 ? LIVE_LABS[index + 1] : undefined,
   };
+}
+
+/**
+ * A link into one section of a lab's essay.
+ *
+ * Cross-lab links are the one place on this site where a sentence promises a
+ * specific argument in another lab: sixteen of them, one to three per essay.
+ * Typed out by hand each one is two chances to be wrong — the slug and the
+ * fragment — and both fail the same silent way, as a page that loads and then
+ * sits at the top with the promised paragraph nowhere in sight.
+ *
+ * This checks the half it can see. The fragment is a `<ProseHeading id="…">`
+ * in `components/labs/<Name>Essay.tsx`, which only `essayOutline` can read, and
+ * that module uses `node:fs` — importing it here would drag the filesystem into
+ * every client component that imports this registry. So the section id is
+ * checked in test/links.test.ts instead, which can read both sides at once.
+ */
+export function labSectionHref(slug: string, sectionId: string): string {
+  if (!getLab(slug)) {
+    throw new Error(`labSectionHref("${slug}", "${sectionId}"): no such lab`);
+  }
+  return `/labs/${slug}#${sectionId}`;
 }
 
 export const LAB_TECHNOLOGIES: { id: LabTechnology; label: string }[] = [

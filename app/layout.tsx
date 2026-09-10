@@ -30,10 +30,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: SITE_TITLE,
-    template: '%s — Render Quest',
+    template: `%s — ${SITE_NAME}`,
   },
-  description:
-    'Interactive labs for computer graphics. Drag a matrix and watch the geometry move; open a camera frustum and watch what falls out of it. Real WebGL, running live in the browser.',
+  description: SITE_DESCRIPTION,
   keywords: [
     'WebGL',
     'computer graphics',
@@ -43,7 +42,7 @@ export const metadata: Metadata = {
     'interactive learning',
     'graphics programming',
   ],
-  authors: [{ name: 'Ali Bader Eddin' }],
+  authors: [{ name: AUTHOR }],
   // Only the home page's card. Next merges metadata shallowly, so a child that
   // sets `title` and `description` but no `openGraph` inherits this object
   // whole — which is exactly how all 23 routes came to share as the home page,

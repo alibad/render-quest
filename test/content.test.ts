@@ -10,11 +10,27 @@ import assert from 'node:assert/strict';
 
 import { GLOSSARY, GLOSSARY_SORTED, termId } from '../lib/glossary.ts';
 import { LABS, LIVE_LABS, ORDERED_LABS, labNeighbours } from '../lib/labs.ts';
+import type { Lab } from '../lib/labs.ts';
 import { GLYPH_SLUGS } from '../components/site/LabGlyph.tsx';
 import { ALL_RESOURCES, TRACKS } from '../lib/resources.ts';
 import { TECHNOLOGIES } from '../lib/technologies.ts';
+import {
+  AUTHOR,
+  REPO_URL,
+  SITE_DESCRIPTION,
+  SITE_TAGLINE,
+  SITE_URL,
+} from '../lib/site.ts';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { createRequire } from 'node:module';
+import { join, relative } from 'node:path';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+
+// tsconfig sets "jsx": "preserve", so tsx compiles every .tsx in this repo with
+// the classic runtime — the page components below reference a global `React`
+// that Next would otherwise have provided.
+(globalThis as unknown as { React: typeof React }).React = React;
 
 const ROOT = new URL('..', import.meta.url).pathname;
 
@@ -410,4 +426,432 @@ check('every reading-path stage has somewhere to start', () => {
   }
 });
 
-console.log(`\n${passed} content checks passed`);
+
+/* ------------------------------------------------------- figure addresses ---
+ * Issue #7 gave the in-prose figures ids, and an id is only worth having if it
+ * is unique in the document it lives in. Two figures called `near-plane` on one
+ * page are two `#near-plane` links that both land on the first, and two
+ * `useFigureState` namespaces writing each other's keys — so moving one figure
+ * moves the other. Neither failure shows on the page, which is why neither
+ * would be found.
+ *
+ * The runtime does not cover this. `useFigureState` throws on a malformed id,
+ * but only for a figure that has controls to move; a figure with none never
+ * calls the hook, and no two ids on a page are ever compared to each other at
+ * all. Headings are checked alongside, because they share the document: `#near`
+ * reaching a figure instead of the section it names is the same defect.
+ *
+ * `PipelineEssay` is why this counts call sites and not elements. It declares
+ * one `<Figure id={id}>` inside a `StageFigure` wrapper and renders it five
+ * times, so one element carries five addresses.
+ */
+
+const ESSAY_DIR = join(ROOT, 'components/labs');
+const ESSAY_FILES = readdirSync(ESSAY_DIR)
+  .filter((name) => name.endsWith('Essay.tsx'))
+  .sort();
+
+/** The id rule useFigureState enforces at runtime, applied here to all of them. */
+const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/**
+ * Whether the tag at `at` is prose about JSX rather than JSX.
+ *
+ * Three of these exist today and each would be a phantom figure or heading:
+ * two JSDoc lines mentioning `<Figure>`, and ProjectionEssay.tsx:190, a line
+ * comment that spells out `<ProseHeading id="divide">` to explain why the
+ * figure beneath it is not called `divide`. Taking that comment at its word
+ * would invent a heading the page does not have.
+ */
+function isCommentedOut(source: string, at: number): boolean {
+  const lastOpen = source.lastIndexOf('/*', at);
+  const lastClose = source.lastIndexOf('*/', at);
+  if (lastOpen > lastClose) return true;
+  const lineStart = source.lastIndexOf('\n', at) + 1;
+  return source.slice(lineStart, at).includes('//');
+}
+
+/**
+ * The text of the JSX opening tag that starts at `at`, `<Figure` included.
+ *
+ * Stopping at the first `>` is not good enough: every figure on this site
+ * passes `control={<Slider … />}` and a `caption={<>…</>}`, so the first `>`
+ * after `<Figure` is usually inside a nested element. Brace depth is tracked
+ * instead, and quoted spans are skipped whole, so that a `>` or a `}` inside a
+ * caption or an aria-label cannot end the tag early.
+ */
+function openingTag(source: string, at: number): string {
+  let depth = 0;
+  for (let i = at + 1; i < source.length; i++) {
+    const c = source[i];
+    if (c === '"' || c === "'" || c === '`') {
+      const close = source.indexOf(c, i + 1);
+      if (close === -1) break;
+      i = close;
+      continue;
+    }
+    if (c === '{') depth++;
+    else if (c === '}') depth--;
+    else if (c === '>' && depth === 0) return source.slice(at, i + 1);
+  }
+  return source.slice(at);
+}
+
+/** Every real `<Name` opening tag in `source`, with the offset it starts at. */
+function tagsNamed(source: string, name: string): { at: number; text: string }[] {
+  const out: { at: number; text: string }[] = [];
+  for (const match of source.matchAll(new RegExp(`<${name}(?=[\\s/>])`, 'g'))) {
+    const at = match.index!;
+    if (isCommentedOut(source, at)) continue;
+    out.push({ at, text: openingTag(source, at) });
+  }
+  return out;
+}
+
+/** `id="translate"` -> the string; `id={id}` -> the identifier, flagged. */
+function idOn(tag: string): { value: string; literal: boolean } | null {
+  const match = /(?:^|\s)id=(?:"([^"]*)"|\{\s*([A-Za-z_$][\w$]*)\s*\})/.exec(tag);
+  if (!match) return null;
+  return match[1] !== undefined
+    ? { value: match[1], literal: true }
+    : { value: match[2], literal: false };
+}
+
+/** The function an offset sits inside, which is how a wrapper gets named. */
+function enclosingFunction(source: string, at: number): string | null {
+  const found = [...source.slice(0, at).matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)];
+  return found.length > 0 ? found[found.length - 1][1] : null;
+}
+
+const lineOf = (source: string, at: number) => source.slice(0, at).split('\n').length;
+
+type Address = { id: string; line: number };
+
+const ESSAYS = ESSAY_FILES.map((file) => {
+  const source = readFileSync(join(ESSAY_DIR, file), 'utf8');
+  const elements = tagsNamed(source, 'Figure');
+  const addresses: Address[] = [];
+  const idless: string[] = [];
+
+  for (const element of elements) {
+    const id = idOn(element.text);
+    if (!id) {
+      idless.push(`${file}:${lineOf(source, element.at)} <Figure> has no id`);
+      continue;
+    }
+    if (id.literal) {
+      addresses.push({ id: id.value, line: lineOf(source, element.at) });
+      continue;
+    }
+    // The id is forwarded from a wrapper's own prop, so this element's
+    // addresses are its wrapper's call sites — one each, however many there are.
+    const wrapper = enclosingFunction(source, element.at);
+    assert.ok(
+      wrapper,
+      `${file}:${lineOf(source, element.at)} forwards id={${id.value}} out of no named function`,
+    );
+    for (const call of tagsNamed(source, wrapper!)) {
+      const forwarded = idOn(call.text);
+      if (!forwarded) {
+        idless.push(`${file}:${lineOf(source, call.at)} <${wrapper}> has no id to forward`);
+        continue;
+      }
+      assert.ok(
+        forwarded.literal,
+        `${file}:${lineOf(source, call.at)} passes <${wrapper} id={${forwarded.value}}> — a wrapper's call site has to spell the id out, or the address is unreadable from here`,
+      );
+      addresses.push({ id: forwarded.value, line: lineOf(source, call.at) });
+    }
+  }
+
+  const headings = tagsNamed(source, 'ProseHeading').map((tag) => ({
+    id: idOn(tag.text)?.value ?? '',
+    line: lineOf(source, tag.at),
+  }));
+
+  return { file, elements: elements.length, addresses, headings, idless };
+});
+
+// Printed, not asserted. The count is meant to grow with the site, so pinning
+// it would be a chore every new figure pays. What the print is for is the
+// parse: a scanner that quietly stopped seeing half the figures would pass
+// every check below while proving nothing, and a total that dropped says so.
+console.log('\n  figures per essay');
+for (const essay of ESSAYS) {
+  const extra = essay.addresses.length - essay.elements;
+  console.log(
+    `    ${essay.file.padEnd(20)} ${String(essay.elements).padStart(2)}` +
+      (extra > 0 ? `  -> ${essay.addresses.length} addresses, one wrapper rendered ${extra + 1} times` : ''),
+  );
+}
+console.log(
+  `    ${'total'.padEnd(20)} ${String(ESSAYS.reduce((n, e) => n + e.elements, 0)).padStart(2)}` +
+    `  -> ${ESSAYS.reduce((n, e) => n + e.addresses.length, 0)} addresses across ${ESSAYS.length} essays\n`,
+);
+
+check('every essay was parsed and renders figures', () => {
+  assert.ok(ESSAYS.length > 0, 'no *Essay.tsx found — this check read nothing');
+  for (const essay of ESSAYS) {
+    assert.ok(
+      essay.elements > 0,
+      `${essay.file} renders no <Figure>, which no lab essay on this site does`,
+    );
+  }
+});
+
+check('every figure has an id', () => {
+  const offences = ESSAYS.flatMap((essay) => essay.idless);
+  assert.deepEqual(
+    offences,
+    [],
+    `\n  ${offences.join('\n  ')}\n  a figure with no id has no address, and its "#" links to the top of the page\n`,
+  );
+});
+
+check('no two figures in one essay share an id', () => {
+  const offences: string[] = [];
+  for (const essay of ESSAYS) {
+    const lines = new Map<string, number[]>();
+    for (const address of essay.addresses) {
+      lines.set(address.id, [...(lines.get(address.id) ?? []), address.line]);
+    }
+    for (const [id, at] of lines) {
+      if (at.length < 2) continue;
+      offences.push(
+        `${essay.file}: "${id}" is used ${at.length} times, at lines ${at.join(' and ')}` +
+          ` — #${id} reaches only the first, and both write the same useFigureState keys`,
+      );
+    }
+  }
+  assert.deepEqual(offences, [], `\n  ${offences.join('\n  ')}\n`);
+});
+
+check('no figure id collides with a heading id in the same essay', () => {
+  const offences: string[] = [];
+  for (const essay of ESSAYS) {
+    const figures = new Map(essay.addresses.map((address) => [address.id, address.line]));
+    for (const heading of essay.headings) {
+      const line = figures.get(heading.id);
+      if (line === undefined) continue;
+      offences.push(
+        `${essay.file}: "${heading.id}" is a heading at line ${heading.line} and a figure at line ${line}` +
+          ' — one document, two destinations, one anchor',
+      );
+    }
+  }
+  assert.deepEqual(offences, [], `\n  ${offences.join('\n  ')}\n`);
+});
+
+check('every figure id is kebab-case', () => {
+  const offences: string[] = [];
+  for (const essay of ESSAYS) {
+    for (const address of essay.addresses) {
+      if (KEBAB.test(address.id)) continue;
+      offences.push(
+        `${essay.file}:${address.line} has id "${address.id}" — expected kebab-case, e.g. "order-matters"`,
+      );
+    }
+  }
+  assert.deepEqual(offences, [], `\n  ${offences.join('\n  ')}\n`);
+});
+
+
+/* ---------------------------------------------- one place per constant ---
+ * lib/site.ts opens by calling itself "One place for the things that must
+ * agree across metadata, OG images and the sitemap", and then five files
+ * pasted the repository URL in anyway and the root layout restated three of
+ * its own imports as literals. That is not a tidiness complaint: while the
+ * repo was private every one of those links 404'd, and fixing them meant
+ * grepping for a string instead of following an import.
+ *
+ * So any file under the directories below that writes one of these values
+ * verbatim fails this check, and the only way to be excused is to be named in
+ * LITERAL_EXEMPT with a reason a reader can weigh.
+ *
+ * SITE_NAME is deliberately absent from the list. "Render Quest" is a
+ * two-word phrase that appears as ordinary prose and as social-card alt text
+ * in roughly thirty files, where an import buys nothing and the check would
+ * only teach people to add exemptions.
+ */
+
+const SINGLE_SOURCED: { name: string; value: string }[] = [
+  { name: 'REPO_URL', value: REPO_URL },
+  { name: 'SITE_URL', value: SITE_URL },
+  { name: 'SITE_TAGLINE', value: SITE_TAGLINE },
+  { name: 'SITE_DESCRIPTION', value: SITE_DESCRIPTION },
+  { name: 'AUTHOR', value: AUTHOR },
+];
+
+const LITERAL_SEARCH_DIRS = ['app', 'components', 'lib', 'scripts'];
+
+/**
+ * Path (relative to the repo root) -> why that file may write the literal.
+ * Anything added here should be a case where the import genuinely cannot be
+ * made, not a case where it was inconvenient.
+ */
+const LITERAL_EXEMPT: Record<string, string> = {
+  // The definitions themselves. Every other exemption would need an argument;
+  // this one is the point of the file.
+  'lib/site.ts': 'declares the constants',
+};
+
+function sourceFilesUnder(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const child = join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...sourceFilesUnder(child));
+    else if (/\.tsx?$/.test(entry.name)) out.push(child);
+  }
+  return out;
+}
+
+check('nothing restates a lib/site.ts constant as a literal', () => {
+  const offences: string[] = [];
+  for (const dir of LITERAL_SEARCH_DIRS) {
+    for (const file of sourceFilesUnder(join(ROOT, dir))) {
+      const rel = relative(ROOT, file);
+      if (rel in LITERAL_EXEMPT) continue;
+      const source = readFileSync(file, 'utf8');
+      for (const { name, value } of SINGLE_SOURCED) {
+        const at = source.indexOf(value);
+        if (at === -1) continue;
+        const line = source.slice(0, at).split('\n').length;
+        offences.push(`${rel}:${line} writes ${name} out in full — import it from lib/site.ts`);
+      }
+    }
+  }
+  assert.deepEqual(offences, [], `\n  ${offences.join('\n  ')}\n`);
+});
+
+
+/* --------------------------------------------- the 'building' lab state ---
+ * `Lab['status']` has two values and all ten labs use one of them. The other
+ * is not decoration: /labs grows an "In progress" section, /about names the
+ * unfinished labs in a sentence, /roadmap adds a "Labs in progress" list, and
+ * LabCard renders such a lab as a dimmed panel with a badge instead of a link.
+ * None of that has run since 0f77054 (2026-08-29), the commit that made the
+ * last planned lab live — so the eleventh lab would be the first thing to
+ * exercise four layouts at once, which is a poor moment to find out.
+ *
+ * Rendering Next's page components outside Next needs three arrangements,
+ * each a property of the harness rather than of the pages:
+ *   - a global `React`, set at the top of this file, because tsconfig's
+ *     "jsx": "preserve" leaves tsx compiling JSX with the classic runtime;
+ *   - a stub for next/navigation, installed in require.cache before any page
+ *     is loaded, because Header calls usePathname() and the real hook returns
+ *     null with no router above it, which takes the render down inside
+ *     `pathname.startsWith`;
+ *   - a real ThemeProvider around the tree, exactly as app/layout.tsx wraps
+ *     it, because the header's theme toggle throws without one.
+ * The pages read LABS and ORDERED_LABS at render time, so the synthetic lab
+ * is pushed and popped around the render rather than mocked.
+ */
+
+const PLANNED_LAB: Lab = {
+  slug: 'not-a-real-lab',
+  order: 99,
+  title: 'A Lab That Does Not Exist Yet',
+  technology: 'webgl',
+  blurb: 'Exists only inside this test, to prove the unfinished state renders.',
+  takeaway: 'That the branch nothing on the live site reaches still works.',
+  concepts: ['synthetic'],
+  status: 'building',
+};
+
+async function checkTheBuildingState() {
+  const require_ = createRequire(import.meta.url);
+  const navigation = require_.resolve('next/navigation');
+  require_.cache[navigation] = {
+    id: navigation,
+    filename: navigation,
+    loaded: true,
+    exports: {
+      usePathname: () => '/labs',
+      useRouter: () => ({
+        push() {},
+        replace() {},
+        prefetch() {},
+        back() {},
+        forward() {},
+        refresh() {},
+      }),
+      useSearchParams: () => new URLSearchParams(),
+      useParams: () => ({}),
+    },
+  } as unknown as NodeModule;
+
+  const { ThemeProvider } = await import('../components/site/ThemeProvider.tsx');
+  const Labs = (await import('../app/labs/page.tsx')).default;
+  const About = (await import('../app/about/page.tsx')).default;
+  const Roadmap = (await import('../app/roadmap/page.tsx')).default;
+
+  const render = (Page: React.ComponentType) =>
+    renderToStaticMarkup(
+      React.createElement(ThemeProvider, null, React.createElement(Page)),
+    );
+  const renderAll = () => ({
+    labs: render(Labs),
+    about: render(About),
+    roadmap: render(Roadmap),
+  });
+
+  const asShipped = renderAll();
+  LABS.push(PLANNED_LAB);
+  ORDERED_LABS.push(PLANNED_LAB);
+  let withPlanned: ReturnType<typeof renderAll>;
+  try {
+    withPlanned = renderAll();
+  } finally {
+    LABS.pop();
+    ORDERED_LABS.pop();
+  }
+
+  check('with nothing building, no page renders an in-progress section', () => {
+    // /roadmap says "Nothing is in progress" in this state, which is why these
+    // match the section headings exactly rather than the phrase.
+    assert.ok(!asShipped.labs.includes('>In progress<'), '/labs');
+    assert.ok(!asShipped.about.includes('still in progress'), '/about');
+    assert.ok(!asShipped.roadmap.includes('Labs in progress'), '/roadmap');
+    assert.ok(asShipped.about.includes('Everything planned there has shipped'));
+  });
+
+  check('a building lab appears on /labs, unfinished and not a link', () => {
+    assert.ok(withPlanned.labs.includes('>In progress<'), 'no "In progress" heading');
+    assert.ok(withPlanned.labs.includes(PLANNED_LAB.title), 'the lab is not listed');
+    assert.ok(withPlanned.labs.includes('>Building<'), 'the card carries no badge');
+    assert.ok(
+      !withPlanned.labs.includes(`/labs/${PLANNED_LAB.slug}`),
+      'the card links to a page that does not exist',
+    );
+  });
+
+  check('a building lab is named on /about, and the finished wording drops', () => {
+    assert.ok(withPlanned.about.includes('still in progress'));
+    assert.ok(withPlanned.about.includes(PLANNED_LAB.title));
+    assert.ok(
+      !withPlanned.about.includes('Everything planned there has shipped'),
+      'both halves of the sentence rendered at once',
+    );
+  });
+
+  check('a building lab gets a section on /roadmap', () => {
+    assert.ok(withPlanned.roadmap.includes('Labs in progress'));
+    assert.ok(withPlanned.roadmap.includes(PLANNED_LAB.title));
+    assert.ok(withPlanned.roadmap.includes(PLANNED_LAB.takeaway));
+  });
+
+  check('the synthetic lab leaves no trace in the registry', () => {
+    assert.ok(!LABS.some((lab) => lab.slug === PLANNED_LAB.slug));
+    assert.ok(!ORDERED_LABS.some((lab) => lab.slug === PLANNED_LAB.slug));
+  });
+}
+
+checkTheBuildingState().then(
+  () => {
+    console.log(`\n${passed} content checks passed`);
+  },
+  (error) => {
+    console.error(error);
+    process.exit(1);
+  },
+);

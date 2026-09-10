@@ -23,6 +23,15 @@ import { Prose, ProseHeading } from '@/components/lab/Prose';
  * against a median of about 230 — and a reader who has been shown nothing yet
  * has no reason to keep going. It draws the claim the opening paragraph makes
  * and nothing else, which puts a figure at word 90.
+ *
+ * None of the five uses `useFigureState`, and that is not an oversight. A
+ * diagram with no control has no state to put in a link: the id on the figure
+ * is already the whole address, and a `?who-calls-each-stage.` key would encode
+ * nothing. The five wrappers spell their id out at the `<Figure>` call rather
+ * than taking it as a prop, because each wrapper renders exactly one figure and
+ * is used exactly once — the forwarding rule in Figure.tsx exists for a wrapper
+ * used several times, where a hard-coded id would give several figures one
+ * address.
  */
 
 /** A labelled node in a dataflow diagram. */
@@ -81,6 +90,7 @@ function CallerFigure() {
   const head = 'url(#cq-call-head)';
   return (
     <Figure
+      id="who-calls-each-stage"
       caption={
         <>
           The top two rows have the same shape: something downstream wanted an
@@ -173,6 +183,7 @@ function PingPongFigure() {
   const head = 'url(#cq-pp-head)';
   return (
     <Figure
+      id="webgl-ping-pong"
       caption={
         <>
           Four objects and a swap, where the stage below needs one buffer. The
@@ -256,6 +267,7 @@ function StorageFigure() {
   }
   return (
     <Figure
+      id="one-buffer-two-bindings"
       caption={
         <>
           The particles never move. One allocation is bound twice — writable to
@@ -388,6 +400,7 @@ function DispatchFigure() {
 
   return (
     <Figure
+      id="dispatch-rounds-up"
       caption={
         <>
           A hundred thousand particles is 1,563 workgroups, and 1,563 workgroups
@@ -473,6 +486,7 @@ function QuadFigure() {
 
   return (
     <Figure
+      id="six-vertices-per-particle"
       caption={
         <>
           Nothing on the left is stored anywhere. The vertex index is divided by

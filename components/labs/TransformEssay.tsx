@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-
 import { Slider } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
 import { GLCanvas } from '@/components/lab/GLCanvas';
 import { MatrixView } from '@/components/lab/MatrixView';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { useFigureState } from '@/components/lab/useFigureState';
 import { usePalette } from '@/components/site/ThemeProvider';
 import { composeModel, createScene, type TransformParams } from '@/components/labs/TransformLab';
 
@@ -36,14 +35,30 @@ function figureParams(overrides: Partial<TransformParams>, palette: TransformPar
 
 function TranslateFigure() {
   const palette = usePalette();
-  const [tx, setTx] = useState(0);
-  const params = figureParams({ tx }, palette);
+  // Opens moved rather than at the identity. The caption says the ghost marks
+  // where the cube started; at tx = 0 the cube is inside its own ghost and there
+  // is nothing it can be seen to have started from. 1.2 leaves daylight between
+  // the two and still sits at 70% of a track that runs to 3.
+  //
+  // The guard mirrors the slider's range for the reason the codec drops a NaN:
+  // ?translate.tx=1e9 is finite, so it would be accepted, and the reader would
+  // get an empty canvas with the slider pinned at one end explaining nothing.
+  const [s, setS] = useFigureState('translate', { tx: 1.2 }, { tx: (v) => v >= -3 && v <= 3 });
+  const params = figureParams({ tx: s.tx }, palette);
   const { M } = composeModel(params);
 
   return (
     <Figure
+      id="translate"
       control={
-        <Slider label="move along x" tone="x" value={tx} min={-3} max={3} onChange={setTx} />
+        <Slider
+          label="move along x"
+          tone="x"
+          value={s.tx}
+          min={-3}
+          max={3}
+          onChange={(tx) => setS((p) => ({ ...p, tx }))}
+        />
       }
       readout={<MatrixView matrix={M} label="M" />}
       caption={
@@ -65,23 +80,29 @@ function TranslateFigure() {
 
 function RotateFigure() {
   const palette = usePalette();
-  const [ry, setRy] = useState(0);
-  const params = figureParams({ ry, showBasis: true }, palette);
+  // 35° rather than 0. At the identity the three coloured arms lie exactly along
+  // the world axes drawn behind them, so the caption's "the cube is turning"
+  // describes a cube that visibly is not, and the matrix beside it is all ones
+  // and zeros. 35° is far enough off the camera's own 41° azimuth that the arms
+  // do not foreshorten into each other.
+  const [s, setS] = useFigureState('rotate', { ry: 35 }, { ry: (v) => v >= -180 && v <= 180 });
+  const params = figureParams({ ry: s.ry, showBasis: true }, palette);
   const { M } = composeModel(params);
 
   return (
     <Figure
+      id="rotate"
       control={
         <Slider
           label="turn about y"
           tone="y"
-          value={ry}
+          value={s.ry}
           min={-180}
           max={180}
           step={1}
           precision={0}
           unit="°"
-          onChange={setRy}
+          onChange={(ry) => setS((p) => ({ ...p, ry }))}
         />
       }
       readout={<MatrixView matrix={M} label="M" />}
@@ -119,17 +140,29 @@ const IDENTITY_FLAT = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 
 function MemoryFigure() {
   const palette = usePalette();
-  const [t, setT] = useState(0);
   // One slider drives both halves of a model matrix: at 1 the cube has turned
   // 55° about y and moved 2.2 along x. Exactly five of the sixteen floats move
   // — m[0], m[2], m[8], m[10] from the turn and m[12] from the move.
-  const params = figureParams({ ry: 55 * t, tx: 2.2 * t }, palette);
+  //
+  // It opens at 0.65 rather than 0 because a cell is dimmed when it still equals
+  // the identity: at 0 all sixteen are dimmed, so the five the caption says move
+  // are indistinguishable from the eleven that never do. At 0.65 they read 0.81,
+  // −0.58, 0.58, 0.81 and 1.43, and the eleven around them are still grey.
+  const [s, setS] = useFigureState('memory-layout', { t: 0.65 }, { t: (v) => v >= 0 && v <= 1 });
+  const params = figureParams({ ry: 55 * s.t, tx: 2.2 * s.t }, palette);
   const { M } = composeModel(params);
 
   return (
     <Figure
+      id="memory-layout"
       control={
-        <Slider label="apply the transform" value={t} min={0} max={1} onChange={setT} />
+        <Slider
+          label="apply the transform"
+          value={s.t}
+          min={0}
+          max={1}
+          onChange={(t) => setS((p) => ({ ...p, t }))}
+        />
       }
       caption={
         <>
@@ -187,14 +220,27 @@ function MemoryFigure() {
 
 function ScaleFigure() {
   const palette = usePalette();
-  const [sy, setSy] = useState(1);
-  const params = figureParams({ ry: 25, sy, showBasis: true }, palette);
+  // 1.5 rather than 1. The basis arms are drawn at unit length and then scaled by
+  // the matrix, so at sy = 1 all three are the same length and the caption's
+  // green arm has not got longer than anything. At 1.5 it is half again as long
+  // as the red and blue, with a third of the track left above it and the whole
+  // reflection half of the range — the second thing the caption asks for — below.
+  const [s, setS] = useFigureState('scale-axes', { sy: 1.5 }, { sy: (v) => v >= -1 && v <= 2.5 });
+  const params = figureParams({ ry: 25, sy: s.sy, showBasis: true }, palette);
   const { M } = composeModel(params);
 
   return (
     <Figure
+      id="scale-axes"
       control={
-        <Slider label="stretch along y" tone="y" value={sy} min={-1} max={2.5} onChange={setSy} />
+        <Slider
+          label="stretch along y"
+          tone="y"
+          value={s.sy}
+          min={-1}
+          max={2.5}
+          onChange={(sy) => setS((p) => ({ ...p, sy }))}
+        />
       }
       readout={<MatrixView matrix={M} label="M" />}
       caption={
@@ -218,18 +264,31 @@ function ScaleFigure() {
 
 function OrderFigure() {
   const palette = usePalette();
-  const [t, setT] = useState(0);
   // One slider drives both matrices: at 0 nothing has happened, at 1 both the
   // rotation and the translation are fully applied. The two orders agree at
   // the start and disagree everywhere after it.
-  const shared = { ry: 55 * t, tx: 2.2 * t, sx: 1, sy: 1, sz: 1 };
+  //
+  // Which is why it must not open at 0. This figure exists to show that T·R·S
+  // and S·R·T differ, and at the identity the two canvases are pixel-identical:
+  // it opened by demonstrating the one thing it is here to disprove. With S the
+  // identity the two centres are T·(0,0,0) = (tx,0,0) and R·T·(0,0,0), so they
+  // sit 2·tx·sin(ry/2) apart — 0.88 at t = 0.65, close to the cube's own width.
+  const [s, setS] = useFigureState('order-matters', { t: 0.65 }, { t: (v) => v >= 0 && v <= 1 });
+  const shared = { ry: 55 * s.t, tx: 2.2 * s.t, sx: 1, sy: 1, sz: 1 };
   const trs = figureParams({ ...shared, order: 'trs' }, palette);
   const srt = figureParams({ ...shared, order: 'srt' }, palette);
 
   return (
     <Figure
+      id="order-matters"
       control={
-        <Slider label="apply the transform" value={t} min={0} max={1} onChange={setT} />
+        <Slider
+          label="apply the transform"
+          value={s.t}
+          min={0}
+          max={1}
+          onChange={(t) => setS((p) => ({ ...p, t }))}
+        />
       }
       caption={
         <>
@@ -403,7 +462,7 @@ export function TransformEssay() {
         consequence: stretch an object along one axis and its surface normals, if
         you transform them with this same matrix, stop being perpendicular to the
         surface. They need the inverse-transpose instead. That bug is waiting in{' '}
-        <a href="/labs/shading">Light &amp; Normals</a> with a preset that turns
+        <a href="/labs/shading#normals">Light &amp; Normals</a> with a preset that turns
         it on.
       </p>
       <p>

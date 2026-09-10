@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { LabPage } from '@/components/lab/LabPage';
 import { InstancingEssay } from '@/components/labs/InstancingEssay';
 import { InstancingLab } from '@/components/labs/InstancingLab';
+import { essayOutline } from '@/lib/essay-outline';
 import { getLab } from '@/lib/labs';
 import { pageMetadata } from '@/lib/metadata';
 
@@ -18,7 +19,7 @@ export const metadata: Metadata = pageMetadata({
 export default function InstancingLabPage() {
   if (!lab) notFound();
   return (
-    <LabPage lab={lab}>
+    <LabPage lab={lab} outline={essayOutline('instancing')}>
       <InstancingEssay />
       <div className="mt-10">
         <InstancingLab />

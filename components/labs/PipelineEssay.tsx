@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { Slider } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
+import { useFigureState } from '@/components/lab/useFigureState';
 import { GLCanvas } from '@/components/lab/GLCanvas';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
 import { usePalette } from '@/components/site/ThemeProvider';
@@ -116,6 +117,20 @@ function TraceRows({
 }
 
 /**
+ * Where a handover figure opens.
+ *
+ * At 0 the five figures showed nothing but the space the previous figure had
+ * already finished in, under captions about a transformation that had not
+ * happened: the frustum was still a widescreen rectangle beneath "becomes a
+ * square", and the clip-space pyramid was still a pyramid beneath "the pyramid
+ * becomes a cube". Past 0.5 the readout lights the destination row, which is
+ * the row whose numbers the captions quote. Short of 1 the slider still has
+ * somewhere to go in both directions, and a reader who wants the untouched
+ * space the caption starts from can drag left to reach it.
+ */
+const OPEN_AT = 0.6;
+
+/**
  * One handover, and nothing else.
  *
  * The slider runs 0 to 1 across a single pair of spaces rather than 0 to 5
@@ -123,33 +138,44 @@ function TraceRows({
  * the paragraph above it just described.
  */
 function StageFigure({
+  id,
   from,
   to,
   caption,
   sceneLabel,
 }: {
+  /** Forwarded to `<Figure>` and used as this figure's URL namespace: they must agree. */
+  id: string;
   from: number;
   to: number;
   caption: ReactNode;
   sceneLabel: string;
 }) {
   const palette = usePalette();
-  const [t, setT] = useState(0);
+  const [s, setS] = useFigureState(
+    id,
+    { t: OPEN_AT },
+    // A t outside the slider's own range would blend to a space this figure's
+    // caption never mentions — at t = 5 the model-to-world figure is showing
+    // screen space — so a URL that asks for one is ignored rather than obeyed.
+    { t: (value) => value >= 0 && value <= 1 },
+  );
   const spaces: readonly [Space, Space] = [SPACES[from], SPACES[to]];
-  const params = figureParams({ stage: from + (to - from) * t }, palette);
+  const params = figureParams({ stage: from + (to - from) * s.t }, palette);
 
   return (
     <Figure
+      id={id}
       control={
         <Slider
           label={`${SPACE_LABELS[spaces[0]].title} to ${SPACE_LABELS[spaces[1]].title}`}
-          value={t}
+          value={s.t}
           min={0}
           max={1}
-          onChange={setT}
+          onChange={(t) => setS({ t })}
         />
       }
-      readout={<TraceRows spaces={spaces} active={t < 0.5 ? spaces[0] : spaces[1]} />}
+      readout={<TraceRows spaces={spaces} active={s.t < 0.5 ? spaces[0] : spaces[1]} />}
       caption={caption}
     >
       <GLCanvas
@@ -187,6 +213,7 @@ export function PipelineEssay() {
       </p>
 
       <StageFigure
+        id="model-to-world"
         from={0}
         to={1}
         sceneLabel="A cube moving from model space into world space, where a ground grid and the camera frustum appear"
@@ -213,6 +240,7 @@ export function PipelineEssay() {
       </p>
 
       <StageFigure
+        id="world-to-view"
         from={1}
         to={2}
         sceneLabel="The world rotating and sliding around a fixed camera as it moves into view space"
@@ -254,6 +282,7 @@ export function PipelineEssay() {
       </p>
 
       <StageFigure
+        id="view-to-clip"
         from={2}
         to={3}
         sceneLabel="The view frustum changing shape as it moves into clip space, its cross-section becoming square"
@@ -296,6 +325,7 @@ export function PipelineEssay() {
       </p>
 
       <StageFigure
+        id="clip-to-ndc"
         from={3}
         to={4}
         sceneLabel="The clip-space pyramid collapsing into the normalised device cube after the perspective divide"
@@ -329,7 +359,7 @@ export function PipelineEssay() {
         <code>m[11]</code> is zero, so the step runs with nothing left to do
         &mdash; the difference between a volume that converges and one that does
         not, which is{' '}
-        <a href="/labs/projection">Projection &amp; the Frustum</a>.
+        <a href="/labs/projection#orthographic">Projection &amp; the Frustum</a>.
       </p>
 
       <ProseHeading id="screen">The viewport transform is the least mysterious step</ProseHeading>
@@ -344,6 +374,7 @@ export function PipelineEssay() {
       </p>
 
       <StageFigure
+        id="ndc-to-screen"
         from={4}
         to={5}
         sceneLabel="The normalised device cube flattening into a plane as depth is dropped for screen space"

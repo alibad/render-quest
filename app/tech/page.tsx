@@ -33,6 +33,18 @@ const DEMO_LABEL: Record<string, string> = {
   'code-only': 'Code only',
 };
 
+/** Code only is a fact about the page, not a warning, so it is faint, not amber. */
+const demoTone = (demo: string) =>
+  demo === 'code-only' ? 'text-fg-faint' : 'text-accent';
+
+/*
+ * One class list for the table's column headers and for the field names in the
+ * stacked cards that replace the table below md. The claim that the two shapes
+ * are the same object only holds if the labels look identical, and two copies
+ * of a class list drift.
+ */
+const COLUMN_LABEL = 'font-mono text-2xs font-normal uppercase tracking-wider';
+
 /*
  * The tilde that marks an estimate comes from lineFigure, in the registry, and
  * so does the caption under the table saying which figures carry one. The table
@@ -106,25 +118,82 @@ export default function Tech() {
         <h2 className="mt-14 text-lg font-semibold tracking-tight">
           Side by side
         </h2>
-        <div className="mt-5 overflow-x-auto">
-          <table className="w-full min-w-[48rem] border-collapse text-left text-sm">
+        {/*
+          Two shapes for one comparison, because a five-column table does not
+          survive a phone. At 375px the wrapper is 335px wide (px-5 either side)
+          and the table was 768px, so the three columns this section exists for
+          began at x=392, x=454 and x=536 — measured on the live site in issue
+          #17, every one of them off-screen, behind a swipe with nothing on
+          screen to suggest a swipe was possible. overflow-x-auto
+          kept the *page* from scrolling sideways, which is all the smoke test
+          asks for, so the failure sat there looking healthy (issue #17).
+
+          The other two shapes are worse here. A sticky first column keeps the
+          technology name in view and still hides four of its five values
+          behind that same undiscoverable swipe. A transposed table puts the
+          four technologies across the top, which is four value columns plus a
+          label column in 335px — the same overflow with the axes relabelled.
+          Stacking one block per technology is the only shape that gets every
+          figure on screen at once. What it costs is the comparison down a
+          column, which is the entire reason to draw a table, so it is confined
+          to the widths where a table cannot fit; both shapes map the same
+          TECHNOLOGIES through the same lineFigure, so no figure can differ
+          between them.
+        */}
+        <div className="mt-5 border-t border-line md:hidden">
+          {TECHNOLOGIES.map((tech) => (
+            <div key={tech.slug} className="border-b border-line/70 py-4">
+              <Link
+                href={`/tech/${tech.slug}`}
+                className="font-semibold tracking-tight text-fg transition-colors hover:text-accent"
+              >
+                {tech.name}
+              </Link>
+              <p className="mt-0.5 text-sm text-fg-muted">{tech.kind}</p>
+              <dl className="mt-3 flex flex-col gap-1.5">
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className={`${COLUMN_LABEL} text-fg-faint`}>Plasma</dt>
+                  <dd className="tabular font-mono text-sm text-fg-muted">
+                    {lineFigure(tech.plasmaLines)}
+                  </dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className={`${COLUMN_LABEL} text-fg-faint`}>Lit cube</dt>
+                  <dd className="tabular font-mono text-sm text-fg">
+                    {lineFigure(tech.cubeLines)}
+                  </dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className={`${COLUMN_LABEL} text-fg-faint`}>Demo</dt>
+                  <dd
+                    className={`text-right font-mono text-2xs uppercase tracking-wider ${demoTone(
+                      tech.demo,
+                    )}`}
+                  >
+                    {DEMO_LABEL[tech.demo]}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          ))}
+        </div>
+
+        {/*
+          The floor is 44rem rather than the 48rem it was: this is hidden below
+          md, and at md exactly the content box is 728px, so a 768px floor made
+          a tablet scroll 40px sideways for no reason. overflow-x-auto stays as
+          a backstop — nothing should reach it now, but a cell that grows later
+          must not be able to push the page itself sideways.
+        */}
+        <div className="mt-5 hidden overflow-x-auto md:block">
+          <table className="w-full min-w-[44rem] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-line text-fg-faint">
-                <th className="pb-3 font-mono text-2xs font-normal uppercase tracking-wider">
-                  Technology
-                </th>
-                <th className="pb-3 font-mono text-2xs font-normal uppercase tracking-wider">
-                  What it is
-                </th>
-                <th className="pb-3 text-right font-mono text-2xs font-normal uppercase tracking-wider">
-                  Plasma
-                </th>
-                <th className="pb-3 text-right font-mono text-2xs font-normal uppercase tracking-wider">
-                  Lit cube
-                </th>
-                <th className="pb-3 pl-6 font-mono text-2xs font-normal uppercase tracking-wider">
-                  Demo
-                </th>
+                <th className={`pb-3 ${COLUMN_LABEL}`}>Technology</th>
+                <th className={`pb-3 ${COLUMN_LABEL}`}>What it is</th>
+                <th className={`pb-3 text-right ${COLUMN_LABEL}`}>Plasma</th>
+                <th className={`pb-3 text-right ${COLUMN_LABEL}`}>Lit cube</th>
+                <th className={`pb-3 pl-6 ${COLUMN_LABEL}`}>Demo</th>
               </tr>
             </thead>
             <tbody>
@@ -147,9 +216,9 @@ export default function Tech() {
                   </td>
                   <td className="py-4 pl-6">
                     <span
-                      className={`font-mono text-2xs uppercase tracking-wider ${
-                        tech.demo === 'code-only' ? 'text-fg-faint' : 'text-accent'
-                      }`}
+                      className={`font-mono text-2xs uppercase tracking-wider ${demoTone(
+                        tech.demo,
+                      )}`}
                     >
                       {DEMO_LABEL[tech.demo]}
                     </span>
@@ -163,15 +232,15 @@ export default function Tech() {
           Of these {inWords(COUNTS.length)} numbers, {inWords(COUNTED.length)} are
           counted rather than asserted: each is the length of the listing printed on
           that page, by the same rule as the line count in the listing&rsquo;s own header, so
-          the table cannot disagree with the code underneath it. The{' '}
+          the figures here cannot disagree with the code underneath them. The{' '}
           {inWords(ESTIMATED.length)} carrying a tilde —{' '}
           {joinList(ESTIMATED.map((entry) => `${entry.tech.name}’s ${entry.scene}`))} —
           are estimates of a complete implementation, because those listings are
           excerpts and there is nothing printed to count. Either way the figure is the
           plumbing around the shader, not a quality score: fewer lines means more is
           being done for you, which is exactly what you want in one situation and
-          exactly what you do not want in another. The cube column is the more honest of
-          the two: the plasma has no geometry, no camera and no depth buffer, so it
+          exactly what you do not want in another. Of the two scenes the cube is the more
+          honest: the plasma has no geometry, no camera and no depth buffer, so it
           barely exercises the differences at all.
         </p>
 

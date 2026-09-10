@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-
 import { Slider, Toggle } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
 import { GLCanvas } from '@/components/lab/GLCanvas';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { useFigureState } from '@/components/lab/useFigureState';
 import { usePalette } from '@/components/site/ThemeProvider';
 import {
   createScene,
@@ -80,15 +79,35 @@ function GapReadout({ near, far, distance, separation }: {
 
 function NearFigure() {
   const palette = usePalette();
-  const [near, setNear] = useState(0.02);
-  const params = figureParams({ near }, palette);
+  // 0.02 is the slider's bottom stop, and it stays there. It is the one number
+  // the paragraph above and the caption below both name, and it is where the
+  // failure is largest: the resolvable gap is 1.91e-2 against a separation of
+  // 0.002, so the reader arrives at slivers rather than having to find them.
+  // The argument only runs one way — raise the near plane and the fight goes —
+  // and it crosses at 0.1906, a tenth of the way along.
+  const [state, setState] = useFigureState(
+    'near-plane',
+    { near: 0.02 },
+    // The figure's own range, which is narrower than the lab's 0.01–5. Below
+    // 0.02 the caption's arithmetic describes a picture nobody is looking at.
+    { near: (value) => value >= 0.02 && value <= 2 },
+  );
+  const params = figureParams({ near: state.near }, palette);
 
   return (
     <Figure
+      id="near-plane"
       control={
-        <Slider label="near plane" value={near} min={0.02} max={2} step={0.01} onChange={setNear} />
+        <Slider
+          label="near plane"
+          value={state.near}
+          min={0.02}
+          max={2}
+          step={0.01}
+          onChange={(near) => setState({ near })}
+        />
       }
-      readout={<GapReadout near={near} far={200} distance={80} separation={0.002} />}
+      readout={<GapReadout near={state.near} far={200} distance={80} separation={0.002} />}
       caption={
         <>
           At a near plane of 0.02 the buffer cannot resolve anything finer than
@@ -113,15 +132,34 @@ function NearFigure() {
 
 function FarFigure() {
   const palette = usePalette();
-  const [far, setFar] = useState(100);
-  const params = figureParams({ far }, palette);
+  // Opens at 400, not at the slider's bottom stop of 100. The claim here is that
+  // the control does nothing, and nothing-happening is only visible if you can
+  // move — parked at the stop the reader can drag one way and has to take the
+  // return trip on trust. Costs nothing to move off it: the prediction is
+  // 7.63e-3 at 100, at 400 and at 1000 alike, and 0.002 of separation loses to
+  // all three, so the panels are already fighting when the reader arrives.
+  const [state, setState] = useFigureState(
+    'far-plane',
+    { far: 400 },
+    { far: (value) => value >= 100 && value <= 1000 },
+  );
+  const params = figureParams({ far: state.far }, palette);
 
   return (
     <Figure
+      id="far-plane"
       control={
-        <Slider label="far plane" value={far} min={100} max={1000} step={10} precision={0} onChange={setFar} />
+        <Slider
+          label="far plane"
+          value={state.far}
+          min={100}
+          max={1000}
+          step={10}
+          precision={0}
+          onChange={(far) => setState({ far })}
+        />
       }
-      readout={<GapReadout near={0.05} far={far} distance={80} separation={0.002} />}
+      readout={<GapReadout near={0.05} far={state.far} distance={80} separation={0.002} />}
       caption={
         <>
           A factor of ten on the far plane, and to the three significant figures
@@ -144,15 +182,25 @@ function FarFigure() {
 
 function DepthWriteFigure() {
   const palette = usePalette();
-  const [depthWrite, setDepthWrite] = useState(true);
+  // On, which is the broken state and the one the caption opens on: three
+  // sheets at 55% opacity and not one showing through another. The switch is
+  // here to take the failure away, not to produce it.
+  const [state, setState] = useFigureState('depth-write', { depthWrite: true });
   const params = figureParams(
-    { scene: 'blend', azimuth: 2.5, sorted: false, depthWrite },
+    { scene: 'blend', azimuth: 2.5, sorted: false, depthWrite: state.depthWrite },
     palette,
   );
 
   return (
     <Figure
-      control={<Toggle label="Write depth" checked={depthWrite} onChange={setDepthWrite} />}
+      id="depth-write"
+      control={
+        <Toggle
+          label="Write depth"
+          checked={state.depthWrite}
+          onChange={(depthWrite) => setState({ depthWrite })}
+        />
+      }
       caption={
         <>
           With writing on, the pane nearest the camera stamps its depth into the
@@ -175,15 +223,26 @@ function DepthWriteFigure() {
 
 function SortFigure() {
   const palette = usePalette();
-  const [sorted, setSorted] = useState(false);
+  // Unsorted, for the same reason as the figure above: the caption's first
+  // sentence is about the blue pane at z = +3 reading as though it were on top,
+  // and at azimuth 2.5 that is what arrives on screen before anything is
+  // touched.
+  const [state, setState] = useFigureState('sort-order', { sorted: false });
   const params = figureParams(
-    { scene: 'blend', azimuth: 2.5, depthWrite: false, sorted },
+    { scene: 'blend', azimuth: 2.5, depthWrite: false, sorted: state.sorted },
     palette,
   );
 
   return (
     <Figure
-      control={<Toggle label="Sort back to front" checked={sorted} onChange={setSorted} />}
+      id="sort-order"
+      control={
+        <Toggle
+          label="Sort back to front"
+          checked={state.sorted}
+          onChange={(sorted) => setState({ sorted })}
+        />
+      }
       caption={
         <>
           Unsorted, the panes are drawn in the order the array holds them &mdash;
@@ -284,7 +343,7 @@ export function DepthEssay() {
         under the panels&rsquo; own eighty units does not dim them or fade them
         out &mdash; they disappear. Near and far are a clip rather than a
         falloff, which is what{' '}
-        <a href="/labs/projection">Projection &amp; the Frustum</a> is about.
+        <a href="/labs/projection#clipping">Projection &amp; the Frustum</a> is about.
       </p>
       <p>
         The flicker deserves a moment on its own. Below the threshold, which of

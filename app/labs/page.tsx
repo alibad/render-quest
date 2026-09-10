@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 import { LabCard } from '@/components/site/LabCard';
 import { LabsTailCard } from '@/components/site/LabsTailCard';
+import { essayOutline } from '@/lib/essay-outline';
 import { ORDERED_LABS } from '@/lib/labs';
 import { pageMetadata } from '@/lib/metadata';
 
@@ -53,9 +54,16 @@ export default function Labs() {
           answers it.
         </p>
 
+        {/* `essayOutline` reads the essay source with `node:fs`, so the count is
+            taken here and handed down as a prop — this page is a Server
+            Component, and LabCard has to stay usable from anywhere. It is the
+            same call the lab's own header makes, cached per slug, so the five to
+            eight minutes a card shows is the number that page will repeat: a
+            card promising six against a header then saying eight would be worse
+            than neither of them saying anything. */}
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
           {live.map((lab) => (
-            <LabCard key={lab.slug} lab={lab} />
+            <LabCard key={lab.slug} lab={lab} minutes={essayOutline(lab.slug).minutes} />
           ))}
           <LabsTailCard />
         </div>

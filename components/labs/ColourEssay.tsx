@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-
 import { Slider } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
 import { GLCanvas } from '@/components/lab/GLCanvas';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { useFigureState } from '@/components/lab/useFigureState';
 import { usePalette } from '@/components/site/ThemeProvider';
 import { createScene, type Params as ColourParams } from '@/components/labs/ColourLab';
 
@@ -36,6 +35,19 @@ function figureParams(
   };
 }
 
+/**
+ * What a hand-edited URL is allowed to say.
+ *
+ * A figure's state comes off the address bar now, and a URL is user input.
+ * `?grey-test.gamma=0` reaches `1.0 / uGamma` in the fragment shader, and
+ * `pow(c, 0.0)` is 1.0 in every channel, so the sphere goes white with no error
+ * anywhere. These are the sliders' own min and max below, and the same three
+ * guards `ColourLab` already hands `useLabState`.
+ */
+const GAMMA_RANGE = { gamma: (value: number) => value >= 1 && value <= 3 };
+const SPLIT_RANGE = { split: (value: number) => value >= 0 && value <= 1 };
+const INTENSITY_RANGE = { intensity: (value: number) => value >= 0 && value <= 3 };
+
 /** Numbers beside a figure, in the same shape the lab's own readout uses. */
 function Readout({
   rows,
@@ -65,12 +77,21 @@ function Readout({
  */
 function GreyFigure() {
   const palette = usePalette();
-  const [gamma, setGamma] = useState(2.2);
+  const [{ gamma }, setState] = useFigureState('grey-test', { gamma: 2.2 }, GAMMA_RANGE);
   const params = figureParams({ gamma, showStrip: true, split: 1 }, palette);
 
   return (
     <Figure
-      control={<Slider label="gamma" value={gamma} min={1} max={3} onChange={setGamma} />}
+      id="grey-test"
+      control={
+        <Slider
+          label="gamma"
+          value={gamma}
+          min={1}
+          max={3}
+          onChange={(next) => setState({ gamma: next })}
+        />
+      }
       readout={
         <Readout
           rows={[
@@ -112,12 +133,21 @@ function GreyFigure() {
 /** The divider, wiping the correction across a sphere lit one way. */
 function SplitFigure() {
   const palette = usePalette();
-  const [split, setSplit] = useState(0.5);
+  const [{ split }, setState] = useFigureState('divider', { split: 0.5 }, SPLIT_RANGE);
   const params = figureParams({ split }, palette);
 
   return (
     <Figure
-      control={<Slider label="divider" value={split} min={0} max={1} onChange={setSplit} />}
+      id="divider"
+      control={
+        <Slider
+          label="divider"
+          value={split}
+          min={0}
+          max={1}
+          onChange={(next) => setState({ split: next })}
+        />
+      }
       caption={
         <>
           At the far left of the slider the whole sphere is corrected; at the far
@@ -138,10 +168,27 @@ function SplitFigure() {
   );
 }
 
-/** Intensity, which decides which half of the sphere is the brighter one. */
+/**
+ * Intensity, which decides which half of the sphere is the brighter one.
+ *
+ * Opens at 1.35, not at the lab's default of 1. The caption makes three claims
+ * and at intensity 1 only the first is visible: the halves agree at lambert
+ * 0.950, which is a cap the size of the highlight rather than a ring, and
+ * neither highlight has clamped — the left one does not reach 1.0 until 1.17
+ * and the right not until 1.50, so "the left highlight is losing its colour
+ * while the right one keeps it" is false everywhere below 1.17. At 1.35 the
+ * left half's red channel is 1.148 and clamped, the right's is 0.956 and is
+ * not, and the seam is a ring at lambert 0.704. Both directions stay open: down
+ * the ring closes onto the highlight and the left half recovers its colour, up
+ * it sweeps towards the terminator and the right half blows out too.
+ */
 function IntensityFigure() {
   const palette = usePalette();
-  const [intensity, setIntensity] = useState(1);
+  const [{ intensity }, setState] = useFigureState(
+    'error-changes-sign',
+    { intensity: 1.35 },
+    INTENSITY_RANGE,
+  );
   const params = figureParams({ intensity }, palette);
 
   // Read back from the params rather than restating them, so the numbers
@@ -151,8 +198,15 @@ function IntensityFigure() {
 
   return (
     <Figure
+      id="error-changes-sign"
       control={
-        <Slider label="intensity" value={intensity} min={0} max={3} onChange={setIntensity} />
+        <Slider
+          label="intensity"
+          value={intensity}
+          min={0}
+          max={3}
+          onChange={(next) => setState({ intensity: next })}
+        />
       }
       readout={
         <Readout
@@ -197,15 +251,36 @@ function IntensityFigure() {
   );
 }
 
-/** Gamma on the sphere: the control experiment. */
+/**
+ * Gamma on the sphere: the control experiment.
+ *
+ * Opens at 2.2, not at 1. The heading above it is an instruction — set gamma to
+ * 1 — and a figure already sitting at 1 leaves nothing to set: the reader
+ * arrives at a sphere with no divider in it and a slider already pinned at its
+ * minimum, having never seen the two halves apart, which is the only thing that
+ * would make their merging mean anything. At 2.2, the value every other figure
+ * on this page and the instrument below run at, the seam is plainly there and
+ * dragging down to 1.00 closes it. The caption is unchanged and still true: it
+ * says what happens at 1.00 and what happens as you raise it, and both are now
+ * one drag away in either direction.
+ */
 function GammaFigure() {
   const palette = usePalette();
-  const [gamma, setGamma] = useState(1);
+  const [{ gamma }, setState] = useFigureState('only-difference', { gamma: 2.2 }, GAMMA_RANGE);
   const params = figureParams({ gamma }, palette);
 
   return (
     <Figure
-      control={<Slider label="gamma" value={gamma} min={1} max={3} onChange={setGamma} />}
+      id="only-difference"
+      control={
+        <Slider
+          label="gamma"
+          value={gamma}
+          min={1}
+          max={3}
+          onChange={(next) => setState({ gamma: next })}
+        />
+      }
       caption={
         <>
           At 1.00 the divider is gone — the two branches are computing the same
@@ -388,7 +463,7 @@ export function ColourEssay() {
         Encoding before the end costs you a second bug on top of the first.
         Encode before you interpolate and the interpolation is wrong too, which
         is exactly what Gouraud shading would do — so in{' '}
-        <a href="/labs/shading">Light &amp; Normals</a> the vertex stage returns
+        <a href="/labs/shading#models">Light &amp; Normals</a> the vertex stage returns
         linear light, the varying carries linear light, and the fragment stage
         raises it by 1/2.2 at the last possible moment. That lab, and every other
         one on this site, was written the wrong way round first; this is the lab

@@ -82,8 +82,17 @@ export function LearnExplorer() {
     return haystack.includes(query.trim().toLowerCase());
   };
 
+  // The number is stamped on before the filter runs, because it belongs to the
+  // stage's place in the whole track and not to its position in whatever the
+  // filters left on screen. Numbering the filtered array instead relabelled
+  // stage 04, "Get light right", as 01 the moment anyone picked Book — and the
+  // page promises this list in the order worth reading it.
   const stages = track.stages
-    .map((stage) => ({ ...stage, resources: stage.resources.filter(matches) }))
+    .map((stage, index) => ({
+      ...stage,
+      number: String(index + 1).padStart(2, '0'),
+      resources: stage.resources.filter(matches),
+    }))
     .filter((stage) => stage.resources.length > 0);
 
   const trackTotal = track.stages.reduce((n, s) => n + s.resources.length, 0);
@@ -193,11 +202,11 @@ export function LearnExplorer() {
         </p>
       ) : (
         <ol className="mt-10 space-y-14">
-          {stages.map((stage, index) => (
+          {stages.map((stage) => (
             <li key={stage.id}>
               <div className="flex items-baseline gap-3">
                 <span className="font-mono text-2xs text-accent">
-                  {String(index + 1).padStart(2, '0')}
+                  {stage.number}
                 </span>
                 <h2 className="text-lg font-semibold tracking-tight text-fg">
                   {stage.title}

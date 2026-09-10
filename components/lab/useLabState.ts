@@ -52,9 +52,40 @@ export function useLabState<T extends object>(
       state as unknown as LabState,
     );
     setQuery(next);
-    const url = next
-      ? `${window.location.pathname}?${next}`
-      : window.location.pathname;
+
+    // Only the instrument's own keys are ours to rewrite. The figures above
+    // write the same address bar under their own prefixes — `translate.tx`,
+    // `rotate.ry` — and rebuilding the query from `next` alone deleted every
+    // one of them the first time the reader touched a control down here.
+    //
+    // Nothing looked wrong when it did: the figure sliders kept their restored
+    // positions, so the pictures were all correct, and only the link the reader
+    // copied next was short. The per-figure copy button made it worse than
+    // silent — a button reading "Copy a link to figure translate in this state"
+    // handed over a URL with no `translate.` key in it at all.
+    //
+    // So the write is `useFigureState`'s write, with the instrument's flat keys
+    // standing in for that hook's prefix: read the search fresh at write time
+    // (a snapshot taken at mount would lose whatever a figure wrote in the same
+    // tick), delete exactly the keys this hook owns — including the ones now
+    // back at their default, or dragging a slider home would leave the link
+    // claiming it had moved — put ours back, and sort, so the same page state
+    // always produces the same link.
+    const params = new URLSearchParams(window.location.search);
+    for (const key of Object.keys(defaultsRef.current)) params.delete(key);
+    for (const [key, value] of new URLSearchParams(next)) params.append(key, value);
+    params.sort();
+
+    // The hash is carried through, for the reason `useFigureState` carries it:
+    // a reader who arrived on `/labs/transform?rotate.ry=-120#rotate` is looking
+    // at the figure the link named, and this effect runs on mount whether or not
+    // anything has been touched. Rebuilding the URL from pathname and search
+    // alone stripped `#rotate` out of the address bar a moment after arrival, so
+    // the link that reader then copied restored the state and landed the next
+    // person at the top of the page — the half of the feature nobody would ever
+    // see fail, because the first arrival scrolls correctly.
+    const search = params.toString();
+    const url = `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
     window.history.replaceState(null, '', url);
   }, [state]);
 

@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 
 import { Slider } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { useFigureState } from '@/components/lab/useFigureState';
 import { PREAMBLE, PRESETS_SOURCE } from '@/components/labs/ShaderLab';
 
 /**
@@ -72,8 +73,21 @@ function Readout({ rows }: { rows: [string, ReactNode][] }) {
 
 /** The starter shader evaluated once per cell, at whatever resolution you ask for. */
 function PixelFigure() {
-  const [across, setAcross] = useState(20);
-  const cols = Math.round(across);
+  // 20 across is 20 × 11 = 220 cells: coarse enough that the picture is
+  // visibly assembled out of them, fine enough that four of them land in the
+  // smoothstep band the caption calls muddy. It is 36% of the 4–48 range, so
+  // both of the caption's directions are still open — down to four, where
+  // nothing circular is left, and up to where the cells stop being cells.
+  const [state, setState] = useFigureState(
+    'once-per-pixel',
+    { across: 20 },
+    // The number becomes that many <rect> elements, so an unguarded
+    // `?once-per-pixel.across=100000` would ask the browser for 100,000 ×
+    // 56,250 of them and never come back. decodeState range-checks only what
+    // it is handed a guard for; this repeats the slider's own bounds.
+    { across: (value) => value >= 4 && value <= 48 },
+  );
+  const cols = Math.round(state.across);
   const rows = Math.max(1, Math.round((cols * 9) / 16));
   const height = (cols * 9) / 16;
   const cellHeight = height / rows;
@@ -100,6 +114,7 @@ function PixelFigure() {
 
   return (
     <Figure
+      id="once-per-pixel"
       control={
         <Slider
           label="pixels across"
@@ -108,7 +123,7 @@ function PixelFigure() {
           max={48}
           step={1}
           precision={0}
-          onChange={setAcross}
+          onChange={(across) => setState({ across })}
         />
       }
       readout={
@@ -151,6 +166,7 @@ function TriangleFigure() {
 
   return (
     <Figure
+      id="oversized-triangle"
       caption={
         <>
           The square is the viewport; the triangle is four times its area. Two
@@ -227,15 +243,36 @@ function TriangleFigure() {
 
 /** One uniform, and the one number in the starter it reaches. */
 function KnobFigure() {
-  const [knob, setKnob] = useState(1);
+  // uKnob 1 is an identity for a multiplier but not a null for this figure: it
+  // is the full 0.08 swing the preset was written around, which puts the two
+  // dashed outlines 3.6 units either side of a 24.75-unit disc — the sweep the
+  // caption describes, plainly visible before anything is touched. It is also
+  // the midpoint of 0–2 and ShaderLab's own DEFAULTS.knob, so the figure and
+  // the instrument below it do not open disagreeing about the same uniform.
+  const [state, setState] = useFigureState(
+    'knob-sweep',
+    { knob: 1 },
+    // The lab's guard, repeated: a link carrying knob=1e6 makes `base - swing`
+    // negative, and an SVG circle with a negative r is dropped, so the figure
+    // would quietly lose the outline that is the whole point of it.
+    { knob: (value) => value >= 0 && value <= 2 },
+  );
+  const knob = state.knob;
   const unit = 45;
   const base = 0.55;
   const swing = 0.08 * knob;
 
   return (
     <Figure
+      id="knob-sweep"
       control={
-        <Slider label="uKnob" value={knob} min={0} max={2} onChange={setKnob} />
+        <Slider
+          label="uKnob"
+          value={knob}
+          min={0}
+          max={2}
+          onChange={(value) => setState({ knob: value })}
+        />
       }
       readout={
         <Readout
@@ -337,6 +374,7 @@ function ListingRow({
 function PreambleFigure() {
   return (
     <Figure
+      id="preamble-offset"
       caption={
         <>
           The preamble is five lines, and the driver compiles it and your source
@@ -488,7 +526,7 @@ export function ShaderEssay() {
         bright part of each ring is about seven tenths of a pixel wide on this
         canvas — narrower than the thing sampling it — so what you see is not
         rings but the noise of sampling them too rarely, which is{' '}
-        <a href="/labs/textures">Textures &amp; Sampling</a> arriving from the
+        <a href="/labs/textures#footprint">Textures &amp; Sampling</a> arriving from the
         other side.
       </p>
       <p>
@@ -498,7 +536,7 @@ export function ShaderEssay() {
         cannot remember. When you need it to — a particle whose position now
         depends on where it was last frame — you need a buffer and a different
         kind of shader, which is{' '}
-        <a href="/labs/compute">Compute &amp; Particles</a>.
+        <a href="/labs/compute#storage">Compute &amp; Particles</a>.
       </p>
 
       <ProseHeading id="errors">

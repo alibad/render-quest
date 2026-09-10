@@ -3,11 +3,33 @@ import Link from 'next/link';
 import { LabFooter } from '@/components/lab/LabFooter';
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
+import type { EssayOutline } from '@/lib/essay-outline';
 import { getLab, type Lab } from '@/lib/labs';
 
-/** Shared chrome around every lab: title, takeaway, and the lab itself. */
-export function LabPage({ lab, children }: { lab: Lab; children: React.ReactNode }) {
+/**
+ * A lab page shows its contents only when there is a shape worth showing. Two
+ * headings is not a map, it is a repetition of the page, and the line would
+ * cost more vertical space than it saved.
+ */
+const ENOUGH_SECTIONS = 3;
+
+/** Shared chrome around every lab: title, takeaway, contents, and the lab itself. */
+export function LabPage({
+  lab,
+  outline,
+  children,
+}: {
+  lab: Lab;
+  /**
+   * Parsed from the essay source by `essayOutline`, which uses `node:fs`. It
+   * arrives as a prop rather than being read here so that no route can pull the
+   * filesystem across a `'use client'` boundary by importing this component.
+   */
+  outline: EssayOutline;
+  children: React.ReactNode;
+}) {
   const prereq = lab.prereq ? getLab(lab.prereq) : undefined;
+  const contents = outline.sections.length >= ENOUGH_SECTIONS ? outline.sections : [];
 
   return (
     <>
@@ -22,7 +44,7 @@ export function LabPage({ lab, children }: { lab: Lab; children: React.ReactNode
           </Link>
         </nav>
 
-        <header className="mb-8 max-w-prose">
+        <header className="mb-6 max-w-prose">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <span className="font-mono text-2xs uppercase tracking-wider text-fg-faint">
               Lab {lab.order}
@@ -71,6 +93,38 @@ export function LabPage({ lab, children }: { lab: Lab; children: React.ReactNode
             </p>
           ) : null}
         </header>
+
+        {/* Deliberately not a sixth block in the header, and deliberately not a
+            panel. The header already stacks an eyebrow, an h1, a blurb, a
+            takeaway and up to two more bullets; another card between that and
+            the essay would push the first canvas down the page, which is the
+            regression db4d0ea fixed in the compute lab. So: one wrapped line of
+            plain links, no heading of its own, no bullets, no box.
+
+            Nothing here is nowrap. A long section title — "A pixel covers a
+            different number of texels everywhere you look" is 63 characters —
+            has to be allowed to break mid-title, or at 375px it sets the line's
+            min-content width and the whole page scrolls sideways. */}
+        {contents.length > 0 ? (
+          <nav
+            aria-label="Contents"
+            className="mb-8 border-t border-line pt-4 text-xs leading-6 text-fg-faint"
+          >
+            <span className="mr-1 font-mono text-2xs uppercase tracking-wider">
+              {outline.minutes} min read
+            </span>
+            {contents.map((section) => (
+              <span key={section.id}>
+                <span aria-hidden className="px-1.5 text-line-strong">
+                  ·
+                </span>
+                <a href={`#${section.id}`} className="link-accent">
+                  {section.title}
+                </a>
+              </span>
+            ))}
+          </nav>
+        ) : null}
 
         {children}
 

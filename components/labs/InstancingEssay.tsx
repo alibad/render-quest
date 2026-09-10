@@ -1,10 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-
 import { Segmented, Slider } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { useFigureState } from '@/components/lab/useFigureState';
 
 /**
  * The written half of lab 7.
@@ -63,6 +62,7 @@ function CommandListFigure() {
   const right = 206;
   return (
     <Figure
+      id="command-lists"
       caption={
         <>
           The left column is the entire frame. The right column is the same
@@ -132,21 +132,31 @@ function CommandListFigure() {
 
 /** Which term of `instanceIndex + objectRef.index` is doing the counting. */
 function AdditionFigure() {
-  const [mode, setMode] = useState<'instanced' | 'per-object'>('instanced');
-  const instanced = mode === 'instanced';
+  // Opens instanced because that is the mode the two paragraphs above it have
+  // just described, and because the instanced rows are the ones that show the
+  // claim: instance_index counts 0,1,2,3 down the accent column while
+  // objectRef.index sits at zero. A shared link is user input reaching a
+  // string compare, so the guard is the same one InstancingLab gives `mode`.
+  const [state, setState] = useFigureState(
+    'which-term-counts',
+    { mode: 'instanced' as 'instanced' | 'per-object' },
+    { mode: (value) => value === 'instanced' || value === 'per-object' },
+  );
+  const instanced = state.mode === 'instanced';
   const rows = [0, 1, 2, 3];
 
   return (
     <Figure
+      id="which-term-counts"
       control={
         <Segmented<'instanced' | 'per-object'>
           label="How the four cubes are asked for"
-          value={mode}
+          value={state.mode}
           options={[
             { value: 'instanced', label: 'One call' },
             { value: 'per-object', label: 'One each' },
           ]}
-          onChange={setMode}
+          onChange={(mode) => setState({ mode })}
         />
       }
       caption={
@@ -187,13 +197,27 @@ function AdditionFigure() {
 
 /** Four bytes in a 256-byte slot, and the offset that selects one. */
 function AlignmentFigure() {
-  const [index, setIndex] = useState(0);
+  // Opened at slot 0 this figure contradicted its own caption. The caption says
+  // the slider "picks one of them with arithmetic", and the readout at zero is
+  // `0 x 256 = 0 bytes` — no arithmetic visible, and the highlighted slot is the
+  // first one, which reads as nothing selected rather than as a selection. Slot
+  // 3 of 0-9 shows a real offset (768 bytes), keeps the highlight clear of both
+  // ends of the strip, and leaves the slider obvious room in both directions.
+  // The guard exists because ?dynamic-offset.index=99 would highlight no slot
+  // and print an offset past the end of a buffer that only has ten slots drawn.
+  const [state, setState] = useFigureState(
+    'dynamic-offset',
+    { index: 3 },
+    { index: (value) => Number.isInteger(value) && value >= 0 && value <= 9 },
+  );
+  const index = state.index;
   const slotWidth = 34;
   const slotPitch = 38;
   const payload = (388 * 4) / 256;
 
   return (
     <Figure
+      id="dynamic-offset"
       control={
         <Slider
           label="which object"
@@ -202,7 +226,7 @@ function AlignmentFigure() {
           max={9}
           step={1}
           precision={0}
-          onChange={(value) => setIndex(Math.round(value))}
+          onChange={(value) => setState({ index: Math.round(value) })}
         />
       }
       readout={
@@ -290,6 +314,7 @@ function AlignmentFigure() {
 function BracketFigure() {
   return (
     <Figure
+      id="timer-bracket"
       caption={
         <>
           1.38 ms is about a twelfth of a frame at 60 Hz, and the measurement
@@ -522,7 +547,7 @@ export function InstancingEssay() {
         modes, and the readout says so while the millisecond figure changes by
         an order of magnitude. That is the thing to carry out of here. A
         scene&rsquo;s cost is not read off its polygon budget &mdash;{' '}
-        <a href="/labs/compute">Compute &amp; Particles</a> puts its entire
+        <a href="/labs/compute#readback">Compute &amp; Particles</a> puts its entire
         particle field on screen with one <code>draw</code> and no instance
         count at all, multiplying the vertex count instead. Batching, merged
         materials, texture atlases and instanced foliage all exist to shorten

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { Segmented, Slider } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
 import { GLCanvas } from '@/components/lab/GLCanvas';
 import { MatrixView } from '@/components/lab/MatrixView';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { useFigureState } from '@/components/lab/useFigureState';
 import { usePalette } from '@/components/site/ThemeProvider';
 import {
   buildProjection,
@@ -53,21 +54,33 @@ function PanelLabel({ children }: { children: ReactNode }) {
 
 function FieldOfViewFigure() {
   const palette = usePalette();
-  const [fov, setFov] = useState(50);
-  const params = figureParams({ fov }, palette);
+  // 50° is kept rather than defaulted-into. The caption's two checkable claims
+  // are both on screen here: the closest box needs 40.6° of vertical angle to
+  // clear the frustum edge (it sits 3.03 out with its centre 1.12 off-axis), so
+  // at 50 it is in the picture and a short drag takes it out; and the two boxes
+  // at 12.8 and 15.8 are ghosted at every angle, because far is 11. An angle has
+  // no identity value to open at — the pyramid is the subject and it is already
+  // a pyramid.
+  const [s, setS] = useFigureState(
+    'field-of-view',
+    { fov: 50 },
+    { fov: (value) => value >= 10 && value <= 120 },
+  );
+  const params = figureParams({ fov: s.fov }, palette);
 
   return (
     <Figure
+      id="field-of-view"
       control={
         <Slider
           label="field of view"
-          value={fov}
+          value={s.fov}
           min={10}
           max={120}
           step={1}
           precision={0}
           unit="°"
-          onChange={setFov}
+          onChange={(fov) => setS({ fov })}
         />
       }
       caption={
@@ -93,20 +106,39 @@ function FieldOfViewFigure() {
 
 function NearPlaneFigure() {
   const palette = usePalette();
-  const [near, setNear] = useState(1.5);
-  const params = figureParams({ near }, palette);
+  // Opens at 3.10, not at the lab's 1.5. Everything this caption describes lives
+  // in one narrow window and at 1.5 none of it was on screen: the reader arrived
+  // to an uncut scene under a sentence about a box being cut open, and to a
+  // canvas whose own label says "the nearest box cut open by the near plane".
+  //
+  // The window is the closest box, a 0.6 cube whose centre is 3.025 along the
+  // camera's forward axis; a cube of half-size 0.3 reaches 0.3 × (0.164 + 0.986)
+  // = 0.345 either way along that axis, so it spans 2.68 to 3.37 — the caption's
+  // "between about 2.7 and 3.4". 3.10 is chosen inside it rather than at its
+  // middle because it has to be past 3.025 for the world panel's centre test to
+  // drop the box, and well short of 3.37 so the camera panel still has 0.27 of
+  // it left to draw. That is the disagreement the caption is about, and both
+  // halves of it are visible before the reader touches anything. Nothing culls
+  // back faces in this lab, so the cut really does show the far wall's inside.
+  const [s, setS] = useFigureState(
+    'near-plane',
+    { near: 3.1 },
+    { near: (value) => value >= 0.5 && value <= 6 },
+  );
+  const params = figureParams({ near: s.near }, palette);
 
   return (
     <Figure
+      id="near-plane"
       control={
         <Slider
           label="near plane"
-          value={near}
+          value={s.near}
           min={0.5}
           max={6}
           step={0.05}
           precision={2}
-          onChange={setNear}
+          onChange={(near) => setS({ near })}
         />
       }
       caption={
@@ -147,25 +179,43 @@ function NearPlaneFigure() {
 
 function DivideFigure() {
   const palette = usePalette();
-  const [mode, setMode] = useState<ProjectionParams['mode']>('perspective');
-  const params = figureParams({ mode }, palette);
+  // Perspective is the state the caption is written from — it says "switch to
+  // orthographic" and "the bottom row went from 0 0 −1 0", so opening in ortho
+  // would run the figure backwards. It is also the loaded half of the pair: it
+  // is orthographic that is the identity here, w = 1 and a divide by one. Both
+  // numbers hold on arrival — the 0.6 box lands 1.89× the height of the 1.0 box
+  // in perspective, and exactly 0.600 of it in ortho.
+  //
+  // Id is "perspective-divide", not "divide": the heading this figure sits under
+  // is already <ProseHeading id="divide">, and two elements cannot share an id.
+  const [s, setS] = useFigureState(
+    'perspective-divide',
+    { mode: 'perspective' as ProjectionParams['mode'] },
+    // A string comes out of the URL as whatever was typed. Unguarded,
+    // ?perspective-divide.mode=x reaches buildProjection, misses the
+    // perspective branch, and silently draws an orthographic scene under a
+    // control showing neither option selected.
+    { mode: (value) => value === 'perspective' || value === 'orthographic' },
+  );
+  const params = figureParams({ mode: s.mode }, palette);
 
   return (
     <Figure
+      id="perspective-divide"
       control={
         <Segmented
-          value={mode}
+          value={s.mode}
           options={[
             { value: 'perspective', label: 'Perspective' },
             { value: 'orthographic', label: 'Ortho' },
           ]}
-          onChange={setMode}
+          onChange={(mode) => setS({ mode })}
         />
       }
       readout={
         <MatrixView
           matrix={buildProjection(params)}
-          label={mode === 'perspective' ? 'P  perspective' : 'P  orthographic'}
+          label={s.mode === 'perspective' ? 'P  perspective' : 'P  orthographic'}
           precision={3}
           highlightChanges={false}
         />
@@ -193,20 +243,34 @@ function DivideFigure() {
 
 function OrthoHeightFigure() {
   const palette = usePalette();
-  const [orthoHeight, setOrthoHeight] = useState(4);
-  const params = figureParams({ mode: 'orthographic', orthoHeight }, palette);
+  // 4 is kept. The claim to be true on arrival is that the eye rays cut across
+  // the volume instead of running along its edges, and at height 4 they enter
+  // the near face 0.44 and 0.27 from the axis while that face reaches 3.2 and
+  // 2.0 — they are nowhere near its corners, which is the point. The other
+  // claim, that opening all the way to 14 leaves the back boxes dim, is a
+  // sentence about moving, and it needs the reader to start below 14.
+  const [s, setS] = useFigureState(
+    'view-height',
+    { orthoHeight: 4 },
+    { orthoHeight: (value) => value >= 1 && value <= 14 },
+  );
+  const params = figureParams(
+    { mode: 'orthographic', orthoHeight: s.orthoHeight },
+    palette,
+  );
 
   return (
     <Figure
+      id="view-height"
       control={
         <Slider
           label="view height"
-          value={orthoHeight}
+          value={s.orthoHeight}
           min={1}
           max={14}
           step={0.1}
           precision={1}
-          onChange={setOrthoHeight}
+          onChange={(orthoHeight) => setS({ orthoHeight })}
         />
       }
       caption={
@@ -307,7 +371,7 @@ export function ProjectionEssay() {
         buffer&rsquo;s range is used up by 2.6 units out, and dropping near to
         0.1 pulls that halfway mark in to 0.2. What the rest of the scene is left
         to share, and what happens to two surfaces sharing too little of it, is{' '}
-        <a href="/labs/depth">Depth &amp; Transparency</a> — where the fix is
+        <a href="/labs/depth#near">Depth &amp; Transparency</a> — where the fix is
         this plane and not anything in the model.
       </p>
       <p>
@@ -348,7 +412,7 @@ export function ProjectionEssay() {
         arrives. Where that step sits between the others — clip space, the
         divide, normalised device coordinates, then the viewport transform that
         turns ±1 into pixels — is walked a vertex at a time in{' '}
-        <a href="/labs/pipeline">Coordinate Spaces</a>.
+        <a href="/labs/pipeline#divide">Coordinate Spaces</a>.
       </p>
 
       <ProseHeading id="orthographic">Orthographic deletes the distance</ProseHeading>

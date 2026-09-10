@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { KIND_LABEL, search, type SearchEntry } from '@/lib/search';
+import type { SearchEntry } from '@/lib/search';
 import { LIVE_LABS } from '@/lib/labs';
 import { TECHNOLOGIES } from '@/lib/technologies';
 import { GLOSSARY } from '@/lib/glossary';
@@ -15,21 +15,88 @@ const KIND_CLASS: Record<string, string> = {
   term: 'text-axis-y',
   resource: 'text-amber',
   page: 'text-fg-faint',
+  section: 'text-accent',
 };
+
+type SearchModule = typeof import('@/lib/search');
+
+/**
+ * The index is fetched on the reader's first sign of interest, not on page load.
+ *
+ * It carries the whole essay text — 67 KB of the 80 KB module — because a
+ * search that cannot find "premultiplied alpha" in the paragraph that explains
+ * it is the bug this exists to fix. Making every visitor download that to read
+ * one lab would be paying for the fix with someone else's bandwidth. Hovering
+ * the button, focusing it, or pressing the shortcut all start the fetch, so by
+ * the time there is a query to run the module is there.
+ *
+ * Module scope, not state: the promise has to survive the dialog unmounting.
+ */
+let searchModule: SearchModule | null = null;
+let pending: Promise<SearchModule> | null = null;
+
+function loadSearch(): Promise<SearchModule> {
+  return (pending ??= import('@/lib/search').then((module) => {
+    searchModule = module;
+    return module;
+  }));
+}
+
+/**
+ * Which key this reader's keyboard actually has.
+ *
+ * `navigator.platform` is deprecated, so ask `userAgentData` first and keep the
+ * old one as the fallback Safari and Firefox still need. Null until the effect
+ * runs: rendering "⌘" on the server and "Ctrl" on a Windows client is a
+ * hydration mismatch, and the smoke test reads a console error as a failure.
+ */
+function usePlatformModifier(): { symbol: string | null; label: string } {
+  const [apple, setApple] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
+    const platform = nav.userAgentData?.platform ?? navigator.platform ?? '';
+    setApple(/mac|iphone|ipad|ipod/i.test(platform));
+  }, []);
+
+  if (apple === null) return { symbol: null, label: 'Search' };
+  return apple
+    ? { symbol: '⌘K', label: 'Search (⌘K)' }
+    : { symbol: 'Ctrl K', label: 'Search (Ctrl+K)' };
+}
+
+/**
+ * Grepped, not remembered: `event.key` appears in this file, Header, Controls,
+ * GLCanvas and InstancingLab and nowhere else in the site. Documenting a key
+ * the site does not bind would be worse than documenting none.
+ */
+const SHORTCUTS: { keys: string[]; what: string }[] = [
+  { keys: ['↑', '↓'], what: 'move through the results' },
+  { keys: ['⏎'], what: 'open the highlighted one' },
+  { keys: ['esc'], what: 'close this, or the menu' },
+  { keys: ['←', '→', '↑', '↓'], what: 'orbit the camera on a focused lab canvas' },
+  { keys: ['shift'], what: 'with an arrow, orbit four times as far' },
+  { keys: ['←', '→'], what: 'move between presets in a control group' },
+];
 
 export function SearchDialog() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
+  const [index, setIndex] = useState<SearchModule | null>(searchModule);
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   // Navigating away is not the same as dismissing: only a dismiss should send
   // focus back where it came from.
   const restoreFocus = useRef(true);
+  const modifier = usePlatformModifier();
 
-  const results = useMemo(() => search(query), [query]);
+  const results = useMemo(
+    () => (index ? index.search(query) : []),
+    [index, query],
+  );
 
   // Cmd/Ctrl-K from anywhere, Escape to leave.
   useEffect(() => {
@@ -43,6 +110,17 @@ export function SearchDialog() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  useEffect(() => {
+    if (!open || index) return;
+    let live = true;
+    loadSearch().then((module) => {
+      if (live) setIndex(module);
+    });
+    return () => {
+      live = false;
+    };
+  }, [open, index]);
 
   /**
    * Open, and put focus back afterwards.
@@ -125,15 +203,25 @@ export function SearchDialog() {
       <button
         type="button"
         onClick={() => setOpen(true)}
+        onPointerEnter={() => loadSearch()}
+        onFocus={() => loadSearch()}
         aria-label="Search"
-        title="Search (⌘K)"
+        title={modifier.label}
         className="grid h-8 w-8 place-items-center rounded-md border border-line text-fg-muted transition-colors hover:border-line-strong hover:text-fg sm:h-8 sm:w-auto sm:gap-2 sm:px-2.5 sm:grid-flow-col"
       >
         <svg viewBox="0 0 16 16" className="h-[14px] w-[14px]" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
           <circle cx="7" cy="7" r="4.5" />
           <path d="M10.5 10.5 L14 14" strokeLinecap="round" />
         </svg>
-        <span className="hidden font-mono text-2xs text-fg-faint sm:inline">⌘K</span>
+        {/* The slot is as wide as the longer form, so filling it in after mount
+            settles nothing sideways. Decorative either way — the button's
+            aria-label is what a screen reader reads. */}
+        <span
+          aria-hidden
+          className="hidden min-w-[2.5rem] text-left font-mono text-2xs text-fg-faint sm:inline"
+        >
+          {modifier.symbol ?? ' '}
+        </span>
       </button>
 
       {open ? (
@@ -163,7 +251,7 @@ export function SearchDialog() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={onInputKey}
-                placeholder="Search labs, technologies, terms, resources…"
+                placeholder="Search labs, essays, terms, resources…"
                 aria-label="Search"
                 className="w-full bg-transparent py-3.5 text-sm text-fg placeholder:text-fg-faint focus:outline-none"
               />
@@ -173,28 +261,61 @@ export function SearchDialog() {
             </div>
 
             {query.trim() === '' ? (
-              <p className="px-4 py-8 text-center text-xs text-fg-faint">
-                {/* Counted, not typed. These read "five labs … 33 terms" for
-                    months after the site had ten and sixty-one. */}
-                Search everything — {LIVE_LABS.length} labs,{' '}
-                {TECHNOLOGIES.length} technologies, {GLOSSARY.length} terms and{' '}
-                {ALL_RESOURCES.length} resources.
-              </p>
+              /*
+               * The empty state is where the shortcuts are written down. It is
+               * the only screen on the site that is already about the keyboard,
+               * it costs no page of its own, and the reader who is most likely
+               * to want the list is the one who just pressed a shortcut to get
+               * here.
+               */
+              <div className="px-4 py-5">
+                <p className="text-center text-xs text-fg-faint">
+                  {/* Counted, not typed. These read "five labs … 33 terms" for
+                      months after the site had ten and sixty-one. */}
+                  Search everything — {LIVE_LABS.length} labs,{' '}
+                  {index ? `${index.ESSAY_SECTION_COUNT} essay sections, ` : ''}
+                  {TECHNOLOGIES.length} technologies, {GLOSSARY.length} terms and{' '}
+                  {ALL_RESOURCES.length} resources.
+                </p>
+                <dl className="mx-auto mt-5 max-w-sm space-y-1.5">
+                  {SHORTCUTS.map((shortcut) => (
+                    <div key={shortcut.what} className="flex items-baseline gap-2.5">
+                      <dt className="flex shrink-0 gap-1">
+                        {shortcut.keys.map((key) => (
+                          <kbd
+                            key={key}
+                            className="rounded border border-line px-1.5 py-0.5 font-mono text-2xs text-fg-faint"
+                          >
+                            {key}
+                          </kbd>
+                        ))}
+                      </dt>
+                      <dd className="text-xs text-fg-faint">{shortcut.what}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
             ) : results.length === 0 ? (
               <p className="px-4 py-8 text-center text-xs text-fg-faint">
-                Nothing matches &ldquo;{query}&rdquo;.
+                {index ? (
+                  <>Nothing matches &ldquo;{query}&rdquo;.</>
+                ) : (
+                  // The index is still arriving. Saying "nothing matches" here
+                  // would be a lie for about one frame, and the wrong one.
+                  <>Searching&hellip;</>
+                )}
               </p>
             ) : (
               <ul className="max-h-[52vh] overflow-y-auto py-1.5">
-                {results.map((entry, index) => (
+                {results.map((entry, position) => (
                   <li key={`${entry.kind}-${entry.href}-${entry.title}`}>
                     <button
                       type="button"
-                      onMouseEnter={() => setActive(index)}
+                      onMouseEnter={() => setActive(position)}
                       onClick={() => go(entry)}
-                      aria-current={index === active}
+                      aria-current={position === active}
                       className={`flex w-full flex-col gap-0.5 px-4 py-2.5 text-left transition-colors ${
-                        index === active ? 'bg-ink-500' : ''
+                        position === active ? 'bg-ink-500' : ''
                       }`}
                     >
                       <span className="flex items-baseline gap-2">
@@ -206,14 +327,21 @@ export function SearchDialog() {
                             KIND_CLASS[entry.kind] ?? 'text-fg-faint'
                           }`}
                         >
-                          {KIND_LABEL[entry.kind]}
+                          {index?.KIND_LABEL[entry.kind]}
                         </span>
+                        {/* A section's heading says nothing about which of the
+                            ten labs it is in, and the URL is not on screen. */}
+                        {entry.context ? (
+                          <span className="truncate text-2xs text-fg-faint">
+                            {entry.context}
+                          </span>
+                        ) : null}
                         {entry.external ? (
                           <span className="font-mono text-2xs text-fg-faint">↗</span>
                         ) : null}
                       </span>
-                      <span className="line-clamp-1 text-xs text-fg-muted">
-                        {entry.description}
+                      <span className="line-clamp-2 text-xs text-fg-muted">
+                        {index ? index.excerpt(entry, query) : entry.description}
                       </span>
                     </button>
                   </li>

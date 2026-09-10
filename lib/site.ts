@@ -10,7 +10,7 @@ export const SITE_NAME = 'Render Quest';
 export const SITE_TAGLINE = 'Learn graphics by moving the numbers.';
 
 /** The tagline as it appears in a page title, after the site name. */
-export const SITE_TITLE = `${'Render Quest'} — ${SITE_TAGLINE.replace(/\.$/, '').replace(/^./, (c) => c.toLowerCase())}`;
+export const SITE_TITLE = `${SITE_NAME} — ${SITE_TAGLINE.replace(/\.$/, '').replace(/^./, (c) => c.toLowerCase())}`;
 
 /** Sits under the tagline on the home page. */
 export const SITE_SUBHEAD =

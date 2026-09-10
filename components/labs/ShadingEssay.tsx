@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-
 import { Segmented, Slider, Toggle } from '@/components/lab/Controls';
 import { Figure } from '@/components/lab/Figure';
 import { GLCanvas } from '@/components/lab/GLCanvas';
 import { Prose, ProseHeading } from '@/components/lab/Prose';
+import { useFigureState } from '@/components/lab/useFigureState';
 import { usePalette } from '@/components/site/ThemeProvider';
 import { Matrix3, createScene, type ShadingParams } from '@/components/labs/ShadingLab';
 import { normalMatrix, scaling, upperLeft3x3 } from '@/lib/math/mat4';
@@ -44,22 +43,28 @@ function figureParams(
 
 function LambertFigure() {
   const palette = usePalette();
-  const [lightAzimuth, setLightAzimuth] = useState(0.9);
+  // 0.9 against a camera at 0.5: the light sits 0.4 radians to the side of the
+  // viewer, which is the state the caption opens on — lit sphere, brightest
+  // point at the foot of the amber stub. The light passes behind the sphere
+  // near -2.6, so the crescent the caption ends on is a drag down the slider
+  // away, and the figure opens at neither end of the range.
+  const [s, setS] = useFigureState('diffuse-cosine', { lightAzimuth: 0.9 });
   const params = figureParams(
-    { lightAzimuth, lightElevation: 0.35, ambient: 0, specular: 0, diffuse: 1 },
+    { lightAzimuth: s.lightAzimuth, lightElevation: 0.35, ambient: 0, specular: 0, diffuse: 1 },
     palette,
   );
 
   return (
     <Figure
+      id="diffuse-cosine"
       control={
         <Slider
           label="where the light is"
-          value={lightAzimuth}
+          value={s.lightAzimuth}
           min={-3.14}
           max={3.14}
           precision={2}
-          onChange={setLightAzimuth}
+          onChange={(lightAzimuth) => setS((p) => ({ ...p, lightAzimuth }))}
         />
       }
       caption={
@@ -87,23 +92,30 @@ function LambertFigure() {
 
 function SpecularFigure() {
   const palette = usePalette();
-  const [shininess, setShininess] = useState(8);
+  // 40, where this used to open at 8. The caption contrasts the chalky wash "at
+  // the bottom of the range" with the tight disc at the top; 8 sits 7 units up a
+  // slider 159 units long, so it *was* the bottom of the range, and the reader
+  // arrived at a sphere with no highlight to speak of under a paragraph about
+  // where the highlight goes. 40 shows a formed highlight with both ends of the
+  // claim still reachable.
+  const [s, setS] = useFigureState('highlight-width', { shininess: 40 });
   const params = figureParams(
-    { shininess, specular: 1, diffuse: 0.6, ambient: 0.08 },
+    { shininess: s.shininess, specular: 1, diffuse: 0.6, ambient: 0.08 },
     palette,
   );
 
   return (
     <Figure
+      id="highlight-width"
       control={
         <Slider
           label="shininess"
-          value={shininess}
+          value={s.shininess}
           min={1}
           max={160}
           step={1}
           precision={0}
-          onChange={setShininess}
+          onChange={(shininess) => setS((p) => ({ ...p, shininess }))}
         />
       }
       caption={
@@ -129,24 +141,35 @@ function SpecularFigure() {
 
 function ModelFigure() {
   const palette = usePalette();
-  const [model, setModel] = useState<ShadingParams['model']>('gouraud');
+  // Opens on Gouraud, the one of the three with the artefact the caption is
+  // about: at shininess 120 its highlight is drawn as a blended polygon. Phong
+  // and Flat are each one click away, and neither shows the flaw.
+  const [s, setS] = useFigureState<{ model: ShadingParams['model'] }>(
+    'shading-models',
+    { model: 'gouraud' },
+    // A value out of the URL is just a string. `?shading-models.model=phone`
+    // would leave the Segmented with nothing selected while the canvas fell
+    // back to Phong, which reads as a broken control rather than a bad link.
+    { model: (value) => value === 'flat' || value === 'gouraud' || value === 'phong' },
+  );
   const params = figureParams(
-    { model, specular: 1.1, shininess: 120, diffuse: 0.7, ambient: 0.08 },
+    { model: s.model, specular: 1.1, shininess: 120, diffuse: 0.7, ambient: 0.08 },
     palette,
   );
 
   return (
     <Figure
+      id="shading-models"
       control={
         <Segmented
           label="where the lighting runs"
-          value={model}
+          value={s.model}
           options={[
             { value: 'flat', label: 'Flat' },
             { value: 'gouraud', label: 'Gouraud' },
             { value: 'phong', label: 'Phong' },
           ]}
-          onChange={setModel}
+          onChange={(model) => setS((p) => ({ ...p, model }))}
         />
       }
       caption={
@@ -173,22 +196,31 @@ function ModelFigure() {
 
 function StretchFigure() {
   const palette = usePalette();
-  const [stretch, setStretch] = useState(1);
+  // Opens squashed, not at 1. The hairs are `normalLines()` pushed through
+  // `scaling(1, stretch, 1)` like any other geometry, so the factor between the
+  // slope they are drawn at and the slope the surface needs is the stretch
+  // squared — exactly 1 at stretch 1. This figure used to open there, which put
+  // a caption about normals leaning the wrong way under a picture of a sphere
+  // with nothing wrong with it. At 0.6 a hair on the 45-degree latitude leans 31
+  // degrees off horizontal where the flattened surface under it needs 59, and
+  // the slider still has 0.35 of travel down and 1.6 up.
+  const [s, setS] = useFigureState('stretched-normals', { stretch: 0.6 });
   const params = figureParams(
-    { stretch, showNormals: true, specular: 0.35, elevation: 0.32 },
+    { stretch: s.stretch, showNormals: true, specular: 0.35, elevation: 0.32 },
     palette,
   );
 
   return (
     <Figure
+      id="stretched-normals"
       control={
         <Slider
           label="stretch y"
           tone="y"
-          value={stretch}
+          value={s.stretch}
           min={0.25}
           max={2.2}
-          onChange={setStretch}
+          onChange={(stretch) => setS((p) => ({ ...p, stretch }))}
         />
       }
       caption={
@@ -218,20 +250,32 @@ const SQUASHED = scaling(1, 0.4, 1);
 
 function NormalMatrixFigure() {
   const palette = usePalette();
-  const [correctNormals, setCorrectNormals] = useState(false);
+  // The one figure here that opens at its control's neutral value on purpose:
+  // off is the broken lighting, and the broken lighting is the subject. The
+  // caption describes the off state first and the readout beside the canvas
+  // reads 0.40 to prove it, so the reader arrives at something the essay is
+  // about rather than at a correctly lit sphere.
+  const [s, setS] = useFigureState('inverse-transpose', { correctNormals: false });
   const params = figureParams(
-    { stretch: 0.4, correctNormals, specular: 0.9, shininess: 48, elevation: 0.32 },
+    {
+      stretch: 0.4,
+      correctNormals: s.correctNormals,
+      specular: 0.9,
+      shininess: 48,
+      elevation: 0.32,
+    },
     palette,
   );
-  const normals = correctNormals ? normalMatrix(SQUASHED) : upperLeft3x3(SQUASHED);
+  const normals = s.correctNormals ? normalMatrix(SQUASHED) : upperLeft3x3(SQUASHED);
 
   return (
     <Figure
+      id="inverse-transpose"
       control={
         <Toggle
           label="Inverse-transpose"
-          checked={correctNormals}
-          onChange={setCorrectNormals}
+          checked={s.correctNormals}
+          onChange={(correctNormals) => setS((p) => ({ ...p, correctNormals }))}
         />
       }
       readout={
@@ -313,7 +357,7 @@ export function ShadingEssay() {
         down: the shader decodes the base colour, multiplies there, and encodes
         the result on the way out, which is why halving the light does not halve
         the number that reaches the framebuffer. That round trip is the subject
-        of <a href="/labs/colour">Colour &amp; Gamma</a>.
+        of <a href="/labs/colour#multiply">Colour &amp; Gamma</a>.
       </p>
 
       <ProseHeading id="specular">The highlight belongs to the eye</ProseHeading>
@@ -449,7 +493,7 @@ export function ShadingEssay() {
         itself. The mistake is invisible through every rotation and every uniform
         scale in the project, and shows up on the day somebody squashes one axis
         of one model — which is the bug{' '}
-        <a href="/labs/transform">The Model Matrix</a> said was waiting here.
+        <a href="/labs/transform#scale">The Model Matrix</a> said was waiting here.
       </p>
 
       <ProseHeading id="instrument">Now move all of it at once</ProseHeading>

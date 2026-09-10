@@ -59,7 +59,7 @@ export function Footer() {
             About
           </Link>
           <a
-            href="https://github.com/alibad/render-quest"
+            href={REPO_URL}
             target="_blank"
             rel="noreferrer noopener"
             className="transition-colors hover:text-fg"

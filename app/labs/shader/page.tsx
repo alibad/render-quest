@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { LabPage } from '@/components/lab/LabPage';
 import { ShaderEssay } from '@/components/labs/ShaderEssay';
 import { ShaderLab } from '@/components/labs/ShaderLab';
+import { essayOutline } from '@/lib/essay-outline';
 import { getLab } from '@/lib/labs';
 import { pageMetadata } from '@/lib/metadata';
 
@@ -18,7 +19,7 @@ export const metadata: Metadata = pageMetadata({
 export default function ShaderLabPage() {
   if (!lab) notFound();
   return (
-    <LabPage lab={lab}>
+    <LabPage lab={lab} outline={essayOutline('shader')}>
       <ShaderEssay />
       <div className="mt-10">
         <ShaderLab />
