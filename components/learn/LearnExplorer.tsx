@@ -318,8 +318,14 @@ function RouteMap({
    * by a font size. At the 1024px breakpoint the hero box measures 984px, so a
    * 932-unit viewBox renders at 1.055px per unit and 9.5 units is 10px. Below
    * that breakpoint the compact plate takes over and drops every label but the
-   * stage number, which at 7 units is 6.6px on a 335px phone column — small,
-   * and the reason the compact plate says nothing else.
+   * stage number, which at 7 units is 6.6px on a 335px phone column.
+   *
+   * ⚠️ This used to end "and the reason the compact plate says nothing else",
+   * which read as a reason to say nothing and was taken as one. Type that small
+   * is a reason to keep labels OUT OF the drawing, not to leave the drawing
+   * unlabelled: for a month the phone plate was three channels with no key to
+   * any of them. The caption under the SVG says them in HTML instead, where
+   * 11px is 11px whatever the container is doing.
    */
   const textSize = hero ? 9.5 : 7;
   // 158 baseline in a 168-unit box leaves 10 units for the labels under it, so
@@ -365,8 +371,11 @@ function RouteMap({
             only shape it accepts here. */}
         <title id={titleId}>{`${track.title} route map — ${route.stations.length} resources across ${route.stageBands.length} stages, ordered left to right and banded by depth. Each station links to its entry below.`}</title>
 
-        {/* Depth bands. Position is the level channel; the rule is what makes
-            "further down is harder" readable without a legend. */}
+        {/* Depth bands. Position is the level channel. The rule shows that the
+            channel EXISTS; on the hero the labels beside it say what it means,
+            and on the compact plate the caption underneath does. The rule alone
+            never did — that assumption is what shipped an undecodable plate to
+            every phone reader. */}
         {route.bands.map((band) => (
           <g key={band.level}>
             <line
@@ -416,7 +425,17 @@ function RouteMap({
               strokeWidth={0.5}
             />
             <text
-              x={band.x0 + (hero ? 4 : 2)}
+              // 6 units on the compact plate, not 2. The first stage band's x0
+              // IS the viewBox edge — x0 8 less half a 16 pitch — so at 2 the
+              // `01` sat 1.9px inside a box whose corner is rounded by 12px,
+              // and the corner clipped the left half of the zero: at 375px the
+              // label read `91`, while at 1440 it was clean, so only a phone
+              // reader ever saw it. The legend under the SVG is what carries
+              // this row out of the corner's reach; the inset is what keeps the
+              // number off the border. The narrowest stage band is 48 units, so
+              // 6 plus two digits of 7-unit mono still sits well inside its own
+              // band.
+              x={band.x0 + (hero ? 4 : 6)}
               y={labelY}
               fontSize={textSize}
               className="fill-fg-faint font-mono"
@@ -614,6 +633,42 @@ function RouteMap({
           </g>
         ) : null}
       </svg>
+
+      {/*
+        The compact plate's caption, and the reason it is a diagram rather than
+        a squiggle.
+
+        The hero labels its axes inside the drawing — START HERE / CORE / GO
+        DEEP down the left edge, the stage titles along the bottom — so a
+        stranger can read it unaided. The compact plate keeps the channels and
+        drops all six labels, which left a phone reader with vertical position
+        encoding level and capsule width encoding cost, and nothing anywhere
+        saying so.
+
+        Labels down the left edge are the obvious repair and they do not fit,
+        which is worth settling with the numbers rather than by eye: the first
+        capsule is centred half a pitch in at x=8 and reaches back to x=5 on
+        Graphics and x=3 on Games, whose first resource is heavier. One
+        character of 7-unit mono is about 4.2 units wide. Nothing fits in 3
+        units, not even a single letter, so the label would sit on top of the
+        first station. The empty tail on the right is no better: Games leaves
+        101 units spare and Graphics 21, so a label parked there would vanish on
+        the longest track.
+
+        So the three channels are named once, in a sentence, under the drawing.
+        Measured in the browser at 375px: 290px of Inter at 11px in the 309px
+        the padding leaves — one line, with room to spare, and it wraps rather
+        than clips on anything narrower.
+
+        The row is load-bearing twice over: the 26px it puts below the SVG is
+        what moves the stage numbers clear of the container's 12px rounded
+        corner. See the inset on the stage label above before removing it.
+      */}
+      {hero ? null : (
+        <p className="relative px-3 pb-2 pt-1 text-2xs leading-tight text-fg-faint">
+          Across is order, down is harder, wider is more evenings.
+        </p>
+      )}
     </div>
   );
 }

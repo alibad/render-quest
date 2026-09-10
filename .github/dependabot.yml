@@ -14,6 +14,16 @@ updates:
       day: monday
       time: "09:00"
     open-pull-requests-limit: 3
+    # Tailwind 4 is a rewrite, not a bump: configuration moves out of
+    # tailwind.config.ts and into CSS, which is the file lib/theme.ts mirrors by
+    # hand so the GPU can read the same colours. Dependabot proposed it within
+    # minutes of this file landing, CI went red on it, and it would have gone red
+    # again every Monday until someone decided. The decision is recorded in
+    # issue #66; remove this block when it is made, not before.
+    ignore:
+      - dependency-name: tailwindcss
+        update-types:
+          - version-update:semver-major
     groups:
       npm-minor-and-patch:
         update-types:
