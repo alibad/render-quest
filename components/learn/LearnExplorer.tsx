@@ -83,7 +83,7 @@ export function LearnExplorer() {
   };
 
   const stages = track.stages
-    .map((stage) => ({ ...stage, resources: stage.resources.filter(matches) }))
+    .map((stage, i) => ({ ...stage, resources: stage.resources.filter(matches), _originalIndex: i }))
     .filter((stage) => stage.resources.length > 0);
 
   const trackTotal = track.stages.reduce((n, s) => n + s.resources.length, 0);
@@ -197,7 +197,7 @@ export function LearnExplorer() {
             <li key={stage.id}>
               <div className="flex items-baseline gap-3">
                 <span className="font-mono text-2xs text-accent">
-                  {String(index + 1).padStart(2, '0')}
+                  {String(stage._originalIndex + 1).padStart(2, '0')}
                 </span>
                 <h2 className="text-lg font-semibold tracking-tight text-fg">
                   {stage.title}

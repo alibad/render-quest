@@ -410,4 +410,28 @@ check('every reading-path stage has somewhere to start', () => {
   }
 });
 
+check('filtering preserves original stage indices (LearnExplorer numbering)', () => {
+  for (const track of TRACKS) {
+    // Simulate filtering to only 'book' kind resources
+    const stages = track.stages
+      .map((stage, i) => ({
+        ...stage,
+        resources: stage.resources.filter((r) => r.kind === 'book'),
+        _originalIndex: i,
+      }))
+      .filter((stage) => stage.resources.length > 0);
+
+    // After filtering, each stage's _originalIndex should match its position
+    // in the original track.stages array — numbers must not renumber
+    for (const stage of stages) {
+      const originalStage = track.stages[stage._originalIndex];
+      assert.strictEqual(
+        stage.id,
+        originalStage.id,
+        `Stage "${stage.title}" has _originalIndex ${stage._originalIndex} but track.stages[${stage._originalIndex}] is "${originalStage.title}"`,
+      );
+    }
+  }
+});
+
 console.log(`\n${passed} content checks passed`);
