@@ -6,7 +6,18 @@ import { fontFamily } from 'tailwindcss/defaultTheme';
  * hairline rules, one cyan accent for interaction, and the three axis colours
  * reserved for X / Y / Z so they mean the same thing in the UI as on canvas.
  */
-/** Wires a CSS custom property up so Tailwind opacity modifiers still work. */
+/**
+ * Wires a CSS custom property up so Tailwind opacity modifiers still work.
+ *
+ * Note what this does not do: it never names a colour, only a token. The
+ * channels live in app/globals.css and nowhere else, which is why importing
+ * CANVAS_PALETTE from lib/theme.ts here would unify nothing — that palette is
+ * the browser-bundled float mirror of these same tokens, not their source. The
+ * two are held together by test/theme.test.ts instead, which also checks that
+ * every token named below is actually declared, in both themes: a class
+ * pointing at a deleted token emits `rgb(var(--gone))`, which the browser drops
+ * silently, so the element renders with no colour at all rather than an error.
+ */
 const token = (name: string) => `rgb(var(${name}) / <alpha-value>)`;
 
 const config: Config = {
