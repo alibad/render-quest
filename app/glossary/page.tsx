@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { GlossaryExplorer } from '@/components/glossary/GlossaryExplorer';
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
-import { GLOSSARY } from '@/lib/glossary';
+import { DEMONSTRATED, GLOSSARY } from '@/lib/glossary';
 import { pageMetadata } from '@/lib/metadata';
 
 export const metadata: Metadata = pageMetadata({
@@ -32,7 +32,9 @@ export default function Glossary() {
             lab
           </Link>{' '}
           that demonstrates the idea, because the fastest definition of &ldquo;perspective
-          divide&rdquo; is a slider that performs one.
+          divide&rdquo; is a slider that performs one. {DEMONSTRATED.length} of those links
+          open the lab with the controls already set to show the term, and say what to look
+          at when they land.
         </p>
 
         <div className="mt-10">

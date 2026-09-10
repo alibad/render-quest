@@ -18,12 +18,66 @@ export type ResourceKind =
 
 export type Level = 'start here' | 'core' | 'deep';
 
+/**
+ * The three levels in the order they are read: an invitation, then the body of
+ * the work, then the warning. Anything drawing a depth axis derives its band
+ * order from here rather than restating it, so a fourth level cannot appear in
+ * one place and be silently missing from another.
+ */
+export const LEVELS: Level[] = ['start here', 'core', 'deep'];
+
+export const LEVEL_LABEL: Record<Level, string> = {
+  'start here': 'Start here',
+  core: 'Core',
+  deep: 'Go deep',
+};
+
+/**
+ * Roughly what a resource costs a reader, in coarse ordinal buckets.
+ *
+ * Deliberately not hour counts. Nobody can honestly say how many hours someone
+ * else's 1,200-page book takes, and a fabricated 47 reads as measurement when
+ * it is a guess. Four buckets are defensible; a number is not.
+ *
+ *   afternoon — one sitting. A site you skim, a reference you dip into.
+ *   weekend   — two or three sittings and you are through it.
+ *   weeks     — a course you work at a few evenings a week for a month or so.
+ *   months    — a textbook or a video series measured in hundreds of hours.
+ *
+ * The distinction this exists to draw: Ray Tracing in One Weekend is `weekend`,
+ * Physically Based Rendering is 1,200 pages and is `months`. Before this field
+ * existed /learn drew them as two identical cards.
+ */
+export type Weight = 'afternoon' | 'weekend' | 'weeks' | 'months';
+
+/**
+ * Each bucket in evenings — the unit a reader actually budgets in. These are
+ * the numbers the route map measures with, so they are ordinal weights, not a
+ * claim about anybody's calendar: `months` is forty times `afternoon` because
+ * it should draw forty times as long, not because it is 40 evenings exactly.
+ */
+export const WEIGHT_EVENINGS: Record<Weight, number> = {
+  afternoon: 1,
+  weekend: 3,
+  weeks: 12,
+  months: 40,
+};
+
+export const WEIGHT_LABEL: Record<Weight, string> = {
+  afternoon: 'An afternoon',
+  weekend: 'A weekend',
+  weeks: 'A few weeks',
+  months: 'Months',
+};
+
 export interface Resource {
   title: string;
   author: string;
   url: string;
   kind: ResourceKind;
   level: Level;
+  /** What it costs a reader. See `Weight` for what each bucket means. */
+  weight: Weight;
   free: boolean;
   why: string;
   /**
@@ -39,6 +93,20 @@ export interface Stage {
   title: string;
   summary: string;
   resources: Resource[];
+  /**
+   * Slugs of this site's own labs that cover this stage's ground — the join
+   * between the reading path and what render-quest teaches directly.
+   *
+   * Deliberately on the stage rather than on the resource. A lab covers the
+   * subject a stage is about, not one particular book about it, and claiming
+   * otherwise would mean thirty-seven judgements where nine are honest.
+   *
+   * Both cardinalities are real and both are load-bearing: a stage can list
+   * several labs, and a stage can list none. The absent ones are the point —
+   * all four Games stages have no lab, and the route map draws that emptiness
+   * as a statement about what this site does not cover.
+   */
+  labs?: string[];
 }
 
 export interface Track {
@@ -62,6 +130,7 @@ export const TRACKS: Track[] = [
         title: 'Build the intuition',
         summary:
           'Before any API. Graphics is linear algebra you can see, so start with the people who make it visible.',
+        labs: ['transform'],
         resources: [
           {
             title: 'Essence of Linear Algebra',
@@ -78,6 +147,7 @@ export const TRACKS: Track[] = [
             url: 'https://www.3blue1brown.com/topics/linear-algebra',
             kind: 'video',
             level: 'start here',
+            weight: 'weekend',
             free: true,
             why: 'Fifteen short films that turn matrices from a table of numbers into a motion. If one thing on this page changes how you see the subject, it is this. Their site was not answering when this list was last checked, on 10 September 2026 — if it hangs, the same series is on the 3Blue1Brown YouTube channel.',
           },
@@ -87,6 +157,7 @@ export const TRACKS: Track[] = [
             url: 'https://immersivemath.com/ila/',
             kind: 'interactive',
             level: 'start here',
+            weight: 'weeks',
             free: true,
             why: 'A linear algebra book where every figure is draggable. The same idea as this site, applied to the maths underneath it.',
           },
@@ -96,6 +167,7 @@ export const TRACKS: Track[] = [
             url: 'https://ciechanow.ski/',
             kind: 'interactive',
             level: 'core',
+            weight: 'weeks',
             free: true,
             why: 'The high-water mark for interactive explanation on the web. Read the ones on lights, cameras and curves, then read the rest anyway.',
           },
@@ -105,6 +177,7 @@ export const TRACKS: Track[] = [
             url: 'https://www.youtube.com/@acegikmo',
             kind: 'video',
             level: 'core',
+            weight: 'weeks',
             free: true,
             why: 'Splines, quaternions and the geometry you actually reach for, taught with unusual care about why the standard explanation confuses people.',
           },
@@ -115,6 +188,7 @@ export const TRACKS: Track[] = [
         title: 'Learn the pipeline',
         summary:
           'What the GPU does with your vertices, and the API you use to tell it.',
+        labs: ['projection', 'pipeline', 'textures', 'depth'],
         resources: [
           {
             title: 'WebGL Fundamentals',
@@ -122,6 +196,7 @@ export const TRACKS: Track[] = [
             url: 'https://webglfundamentals.org/',
             kind: 'course',
             level: 'start here',
+            weight: 'weeks',
             free: true,
             why: 'The best WebGL introduction there is, and refreshingly willing to say which of the conventions you have been taught are arbitrary.',
           },
@@ -131,6 +206,7 @@ export const TRACKS: Track[] = [
             url: 'https://webgl2fundamentals.org/',
             kind: 'course',
             level: 'core',
+            weight: 'weeks',
             free: true,
             why: 'The sequel, for when you want instancing, transform feedback and the things WebGL1 makes painful.',
           },
@@ -140,6 +216,7 @@ export const TRACKS: Track[] = [
             url: 'https://learnopengl.com/',
             kind: 'course',
             level: 'core',
+            weight: 'months',
             free: true,
             why: 'The canonical modern OpenGL course. Chapter for chapter it is still the clearest tour of the whole pipeline, and it translates directly to WebGL.',
           },
@@ -149,6 +226,7 @@ export const TRACKS: Track[] = [
             url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial',
             kind: 'reference',
             level: 'core',
+            weight: 'weekend',
             free: true,
             why: 'The reference you will keep open in a second tab. Accurate about what each call actually requires.',
           },
@@ -158,6 +236,7 @@ export const TRACKS: Track[] = [
             url: 'https://www.scratchapixel.com/',
             kind: 'course',
             level: 'deep',
+            weight: 'months',
             free: true,
             why: 'Derives rasterisation and ray tracing from first principles, with the algebra written out. Where to go when you want the proof, not the recipe.',
           },
@@ -168,6 +247,7 @@ export const TRACKS: Track[] = [
         title: 'Write shaders',
         summary:
           'The part where you stop arranging other people’s pixels and start computing your own.',
+        labs: ['shader'],
         resources: [
           {
             title: 'The Book of Shaders',
@@ -175,6 +255,7 @@ export const TRACKS: Track[] = [
             url: 'https://thebookofshaders.com/',
             kind: 'interactive',
             level: 'start here',
+            weight: 'weeks',
             free: true,
             why: 'Fragment shaders taught as a craft, with an editable canvas on every page. Unfinished for years and still the best starting point.',
           },
@@ -184,6 +265,7 @@ export const TRACKS: Track[] = [
             url: 'https://www.shadertoy.com/',
             kind: 'tool',
             level: 'core',
+            weight: 'afternoon',
             free: true,
             botBlockedVerified: '2026-08-29',
             why: 'Thousands of shaders you can read and edit live. The fastest way to see how far a single fragment function can be pushed.',
@@ -194,6 +276,7 @@ export const TRACKS: Track[] = [
             url: 'https://iquilezles.org/articles/',
             kind: 'reference',
             level: 'deep',
+            weight: 'weeks',
             free: true,
             why: 'Signed distance functions, raymarching, noise and analytic tricks, from the person who worked most of them out.',
           },
@@ -204,6 +287,7 @@ export const TRACKS: Track[] = [
         title: 'Get light right',
         summary:
           'Shading models, materials, and the physics they are approximating.',
+        labs: ['shading', 'colour'],
         resources: [
           {
             title: 'Ray Tracing in One Weekend',
@@ -211,6 +295,7 @@ export const TRACKS: Track[] = [
             url: 'https://raytracing.github.io/',
             kind: 'book',
             level: 'start here',
+            weight: 'weekend',
             free: true,
             why: 'You will have written a working ray tracer by Sunday evening. Nothing else teaches the light transport ideas so quickly.',
           },
@@ -220,6 +305,7 @@ export const TRACKS: Track[] = [
             url: 'https://www.pbr-book.org/',
             kind: 'book',
             level: 'deep',
+            weight: 'months',
             free: true,
             why: 'The field’s standard reference, free online, and a literate program you can read end to end. Also an Academy Award winner, which is rare for a textbook.',
           },
@@ -229,6 +315,7 @@ export const TRACKS: Track[] = [
             url: 'https://google.github.io/filament/Filament.html',
             kind: 'reference',
             level: 'deep',
+            weight: 'weekend',
             free: true,
             why: 'The clearest write-up of a real-time PBR implementation, with every approximation and its cost stated plainly.',
           },
@@ -238,6 +325,7 @@ export const TRACKS: Track[] = [
             url: 'https://www.realtimerendering.com/',
             kind: 'reference',
             level: 'deep',
+            weight: 'afternoon',
             free: true,
             botBlockedVerified: '2026-08-29',
             why: 'The companion site to the field’s reference book: a maintained index of papers, courses and links for nearly every real-time topic.',
@@ -249,6 +337,7 @@ export const TRACKS: Track[] = [
         title: 'Move to modern GPU',
         summary:
           'WebGPU is where the web is going. The concepts carry over; the API is stricter and far more capable.',
+        labs: ['compute', 'instancing'],
         resources: [
           {
             title: 'WebGPU Fundamentals',
@@ -256,6 +345,7 @@ export const TRACKS: Track[] = [
             url: 'https://webgpufundamentals.org/',
             kind: 'course',
             level: 'start here',
+            weight: 'weeks',
             free: true,
             why: 'The same clarity as the WebGL series, aimed at the API that replaces it. Start here rather than at the spec.',
           },
@@ -265,6 +355,7 @@ export const TRACKS: Track[] = [
             url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API',
             kind: 'reference',
             level: 'core',
+            weight: 'afternoon',
             free: true,
             why: 'Reference for the API surface, including the bits the tutorials skip over.',
           },
@@ -274,6 +365,7 @@ export const TRACKS: Track[] = [
             url: 'https://vgpu.sh/',
             kind: 'tool',
             level: 'core',
+            weight: 'afternoon',
             free: true,
             why: 'A small WebGPU library with typed WGSL imports that runs the same code in the browser, in Node, and in tests. Good once you know what it is abstracting.',
           },
@@ -283,6 +375,7 @@ export const TRACKS: Track[] = [
             url: 'https://threejs.org/docs/',
             kind: 'reference',
             level: 'core',
+            weight: 'weeks',
             free: true,
             why: 'When you want a scene rather than a pipeline. Worth learning after the fundamentals, so you know what it is doing for you.',
           },
@@ -292,6 +385,7 @@ export const TRACKS: Track[] = [
             url: 'https://threejs-journey.com/',
             kind: 'course',
             level: 'core',
+            weight: 'months',
             free: false,
             why: 'The most thorough Three.js course available, and unusually strong on shaders. Paid, and generally judged worth it.',
           },
@@ -318,6 +412,7 @@ export const TRACKS: Track[] = [
             url: 'https://gameprogrammingpatterns.com/',
             kind: 'book',
             level: 'start here',
+            weight: 'weeks',
             free: true,
             why: 'Free online and the single best explanation of why game code is shaped the way it is. Read the game loop and component chapters before you write an engine.',
           },
@@ -327,6 +422,7 @@ export const TRACKS: Track[] = [
             url: 'https://natureofcode.com/',
             kind: 'book',
             level: 'start here',
+            weight: 'weeks',
             free: true,
             why: 'Forces, particles, flocking and physics, taught so approachably you forget you are learning simulation. Free to read online.',
           },
@@ -336,6 +432,7 @@ export const TRACKS: Track[] = [
             url: 'https://www.redblobgames.com/',
             kind: 'interactive',
             level: 'core',
+            weight: 'weeks',
             free: true,
             why: 'Pathfinding, hex grids and procedural generation, each with diagrams you can drag. The A* guide is the one everyone links.',
           },
@@ -345,6 +442,7 @@ export const TRACKS: Track[] = [
             url: 'https://handmadehero.org/',
             kind: 'video',
             level: 'deep',
+            weight: 'months',
             free: true,
             why: 'A complete game and engine written from scratch on camera, with no libraries. Enormous, and unmatched if you want to see every layer.',
           },
@@ -362,6 +460,7 @@ export const TRACKS: Track[] = [
             url: 'https://docs.godotengine.org/en/stable/',
             kind: 'reference',
             level: 'start here',
+            weight: 'weeks',
             free: true,
             why: 'Open source, small download, genuinely good docs, and the fastest path from nothing to a running 2D or 3D game.',
           },
@@ -371,6 +470,7 @@ export const TRACKS: Track[] = [
             url: 'https://learn.unity.com/',
             kind: 'course',
             level: 'core',
+            weight: 'months',
             free: true,
             why: 'The largest ecosystem and the most jobs. Start with the official pathways rather than the ocean of outdated tutorials.',
           },
@@ -380,6 +480,7 @@ export const TRACKS: Track[] = [
             url: 'https://dev.epicgames.com/documentation/en-us/unreal-engine',
             kind: 'reference',
             level: 'core',
+            weight: 'months',
             free: true,
             why: 'Where to go for high-end rendering out of the box. Heavier to learn, and the source is available to read.',
           },
@@ -389,6 +490,7 @@ export const TRACKS: Track[] = [
             url: 'https://bevyengine.org/learn/',
             kind: 'reference',
             level: 'deep',
+            weight: 'weeks',
             free: true,
             why: 'A Rust engine built around ECS, with a rendering stack worth reading. Good if you want to understand an engine rather than only drive one.',
           },
@@ -398,6 +500,7 @@ export const TRACKS: Track[] = [
             url: 'https://catlikecoding.com/unity/tutorials/',
             kind: 'course',
             level: 'deep',
+            weight: 'months',
             free: true,
             why: 'Long-form Unity tutorials that explain the maths and the rendering rather than just the clicks. The mesh and shader series are exceptional.',
           },
@@ -415,6 +518,7 @@ export const TRACKS: Track[] = [
             url: 'https://gafferongames.com/',
             kind: 'reference',
             level: 'start here',
+            weight: 'weekend',
             free: true,
             why: 'The reference on game networking and physics integration. If you are building anything multiplayer, read the networked physics series first.',
           },
@@ -424,6 +528,7 @@ export const TRACKS: Track[] = [
             url: 'https://box2d.org/documentation/',
             kind: 'reference',
             level: 'core',
+            weight: 'weekend',
             free: true,
             why: 'The 2D physics engine most others learned from, documented by its author. The solver discussion is worth reading even for 3D.',
           },
@@ -433,6 +538,7 @@ export const TRACKS: Track[] = [
             url: 'https://www.gameaipro.com/',
             kind: 'book',
             level: 'deep',
+            weight: 'weeks',
             free: true,
             why: 'Free chapters from shipped games on behaviour trees, steering and planning. Practice rather than academic AI.',
           },
@@ -450,6 +556,7 @@ export const TRACKS: Track[] = [
             url: 'https://www.youtube.com/@GMTK',
             kind: 'video',
             level: 'start here',
+            weight: 'weekend',
             free: true,
             why: 'Design criticism that will change how you look at every game you play. Also runs the largest game jam in the world.',
           },
@@ -459,6 +566,7 @@ export const TRACKS: Track[] = [
             url: 'https://www.youtube.com/@SebastianLague',
             kind: 'video',
             level: 'core',
+            weight: 'weekend',
             free: true,
             why: 'Ray marching, erosion, boids and marching cubes, built on camera. The best argument that graphics work is play.',
           },
@@ -468,6 +576,7 @@ export const TRACKS: Track[] = [
             url: 'https://itch.io/jams',
             kind: 'tool',
             level: 'core',
+            weight: 'weekend',
             free: true,
             why: 'Build something in 48 hours. Finishing one bad game teaches more than half-finishing five ambitious ones, and there is a jam starting most weeks.',
           },
@@ -477,6 +586,7 @@ export const TRACKS: Track[] = [
             url: 'https://itch.io/',
             kind: 'tool',
             level: 'core',
+            weight: 'afternoon',
             free: true,
             why: 'Where to publish it. No gatekeeping, a real audience for odd small games, and it takes about ten minutes.',
           },
@@ -498,3 +608,83 @@ export const KIND_LABEL: Record<ResourceKind, string> = {
   reference: 'Reference',
   tool: 'Tool',
 };
+
+/**
+ * A stable, readable anchor for one resource.
+ *
+ * Derived from the URL rather than the title because the URL is what progress
+ * is already keyed by under `rq-progress`, and because two entries here are
+ * both called "Articles"-shaped generic names — "WebGL tutorial", "WebGPU API",
+ * "Explanations" — which would collide the moment a third arrived.
+ *
+ * `'https://thebookofshaders.com/'` → `'thebookofshaders-com'`.
+ *
+ * One caveat for callers: an id can begin with a digit, because one URL does
+ * (`3blue1brown-com-topics-linear-algebra`). That is a legal HTML id but not a
+ * legal bare CSS selector, so reach for `getElementById` or `CSS.escape` and
+ * never for `querySelector('#' + id)`.
+ */
+export function resourceId(url: string): string {
+  return url
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/+$/, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/** One resource, placed in the path with the running cost of getting to it. */
+export interface PathEntry {
+  resource: Resource;
+  trackId: Track['id'];
+  stageId: string;
+  /** 1-based position of the stage within its track, as the reader counts it. */
+  stageNumber: number;
+  /** 0-based position of this resource within its track. */
+  order: number;
+  /** This resource's own cost. */
+  evenings: number;
+  /** Evenings spent by the end of this resource, this one included. */
+  cumulative: number;
+}
+
+/**
+ * The whole reading path, flattened once at module scope, in registry order.
+ *
+ * Built here rather than in each consumer so that "how far along is this, and
+ * what has it cost so far" has exactly one answer. The route map, the cost
+ * gauge and the progress line all read the same `cumulative`, so they cannot
+ * disagree about where a reader is.
+ */
+export const PATH: PathEntry[] = TRACKS.flatMap((track) => {
+  let cumulative = 0;
+  return track.stages.flatMap((stage, stageIndex, stages) =>
+    stage.resources.map((resource, index) => {
+      const evenings = WEIGHT_EVENINGS[resource.weight];
+      cumulative += evenings;
+      return {
+        resource,
+        trackId: track.id,
+        stageId: stage.id,
+        stageNumber: stageIndex + 1,
+        order:
+          stages
+            .slice(0, stageIndex)
+            .reduce((n, earlier) => n + earlier.resources.length, 0) + index,
+        evenings,
+        cumulative,
+      };
+    }),
+  );
+});
+
+export function trackPath(id: Track['id']): PathEntry[] {
+  return PATH.filter((entry) => entry.trackId === id);
+}
+
+/** What the whole track asks of a reader, in evenings. */
+export function trackEvenings(id: Track['id']): number {
+  const path = trackPath(id);
+  return path.length === 0 ? 0 : path[path.length - 1].cumulative;
+}

@@ -87,7 +87,7 @@ deploys with.
 ## Tests
 
 ```bash
-npm test         # nine suites, no browser — runs as part of npm run build
+npm test         # twelve suites, no browser — runs as part of npm run build
 ```
 
 `npm test` covers the matrix core and frustum derivation (composition order, the

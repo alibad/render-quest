@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { SITE_NAME, SITE_URL } from './site';
+import { SITE_NAME, SITE_URL, TWITTER_CREATOR } from './site';
 
 /**
  * Per-page metadata, including the social card.
@@ -45,6 +45,11 @@ export function pageMetadata({
     },
     twitter: {
       card: 'summary_large_image',
+      // Spread rather than a field: empty while lib/site.ts has no handle, so
+      // the tag is absent instead of blank. Without this line the root layout's
+      // creator would be dropped by Next's shallow merge on every page that
+      // calls this — which is all 22 of them.
+      ...TWITTER_CREATOR,
       title: social,
       description,
     },

@@ -54,10 +54,21 @@ const PAGES: { title: string; description: string; href: string }[] = [
     href: '/tech',
   },
   {
+    title: 'Symptoms',
+    description:
+      'What you are seeing, what it usually means, and the lab that reproduces it.',
+    href: '/symptoms',
+  },
+  {
     title: 'Roadmap',
     description:
       'Everything that shipped and why, and the proposals that were turned down.',
     href: '/roadmap',
+  },
+  {
+    title: 'Changelog',
+    description: 'What changed on the site and when, newest first, with an Atom feed.',
+    href: '/changelog',
   },
   {
     title: 'Privacy',

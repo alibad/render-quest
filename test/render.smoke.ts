@@ -26,11 +26,15 @@
 
 import { spawn, type ChildProcess } from 'node:child_process';
 import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { chromium, type Browser, type ConsoleMessage, type Page } from 'playwright';
 
 import { LIVE_LABS } from '../lib/labs.ts';
 import { TECHNOLOGIES } from '../lib/technologies.ts';
+
+const ROOT = new URL('..', import.meta.url).pathname;
 
 /**
  * Every route, built from the registries rather than listed by hand — the last
@@ -45,7 +49,9 @@ const STATIC_ROUTES = [
   ...TECHNOLOGIES.map((tech) => `/tech/${tech.slug}`),
   '/learn',
   '/glossary',
+  '/symptoms',
   '/roadmap',
+  '/changelog',
   '/about',
   '/privacy',
 ];
@@ -78,9 +84,38 @@ let skipped = 0;
  * Eight of the ten labs have a camera; the shader lab and the compute lab do
  * not. Counted, because a lab that loses its camera altogether would otherwise
  * turn the arrow-key check into a skip nobody reads.
+ *
+ * The expectation is derived rather than written down, because a written-down 8
+ * was wrong on half the machines that run this. One of the eight — instancing —
+ * is WebGPU, and a browser with no adapter renders its unsupported card instead
+ * of a canvas. That is CI: this check hard-coded 8, found 7 and failed there,
+ * while passing locally where swiftshader does supply an adapter. So it asks
+ * the source how many cameras exist, then subtracts the ones this particular
+ * browser cannot show.
  */
 let labsWithCamera = 0;
-const LABS_WITH_A_CAMERA = 8;
+
+/**
+ * A lab offers an orbiting canvas if it hands `onDrag` to a GLCanvas — which is
+ * what makes that component focusable and append "Arrow keys orbit the camera."
+ * to its label — or, for the one WebGPU lab that draws its own canvas, if it
+ * writes that sentence itself. Both are the same contract the ORBITING selector
+ * matches on at runtime, read from the source instead of the page.
+ */
+function labsOfferingACamera(): string[] {
+  return LIVE_LABS.filter((lab) => {
+    const guesses = [
+      `${lab.slug[0].toUpperCase()}${lab.slug.slice(1)}Lab.tsx`,
+      `${lab.slug[0].toUpperCase()}${lab.slug.slice(1).replace(/s$/, '')}Lab.tsx`,
+    ];
+    const file = guesses
+      .map((name) => join(ROOT, 'components/labs', name))
+      .find((path) => existsSync(path));
+    if (!file) return false;
+    const source = readFileSync(file, 'utf8');
+    return source.includes('onDrag') || source.includes('Arrow keys orbit');
+  }).map((lab) => lab.slug);
+}
 const failures: string[] = [];
 
 function check(name: string, fn: () => void) {
@@ -1174,10 +1209,24 @@ async function main() {
     }
 
     check('every lab that invites arrow keys was found', () => {
+      const cameras = labsOfferingACamera();
+      const reachable = cameras.filter(
+        (slug) => webgpu || LIVE_LABS.find((lab) => lab.slug === slug)?.technology !== 'webgpu',
+      );
+      const unreachable = cameras.filter((slug) => !reachable.includes(slug));
+      assert.ok(
+        cameras.length > 0,
+        'no lab source offers an orbiting canvas — either every camera has gone, or the ' +
+          'signal this reads for (onDrag, or the words "Arrow keys orbit") has been renamed',
+      );
       assert.equal(
         labsWithCamera,
-        LABS_WITH_A_CAMERA,
-        `${labsWithCamera} labs offered an orbiting canvas, not ${LABS_WITH_A_CAMERA}`,
+        reachable.length,
+        `${labsWithCamera} labs offered an orbiting canvas, not ${reachable.length}. ` +
+          `The source says ${cameras.length} have a camera (${cameras.join(', ')})` +
+          (unreachable.length
+            ? `, of which ${unreachable.join(', ')} needs WebGPU and this browser has no adapter`
+            : ''),
       );
     });
 

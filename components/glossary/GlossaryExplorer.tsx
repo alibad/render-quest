@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
-import { GLOSSARY_SORTED, termId, type Term } from '@/lib/glossary';
+import { GLOSSARY_SORTED, demoHref, termId, type Term } from '@/lib/glossary';
 import { getLab } from '@/lib/labs';
 
 export function GlossaryExplorer() {
@@ -127,6 +127,11 @@ export function GlossaryExplorer() {
 
 function Entry({ entry }: { entry: Term }) {
   const lab = entry.lab ? getLab(entry.lab) : undefined;
+  // The chip is one link either way, and where there is a demo it is the demo's
+  // address. A second chip beside it would be two links to the same lab in an
+  // entry three lines long, and the sentence under the definition is what tells
+  // the reader the controls have been moved before they follow it.
+  const demo = demoHref(entry);
 
   return (
     <>
@@ -139,16 +144,30 @@ function Entry({ entry }: { entry: Term }) {
         </a>
         {lab ? (
           <Link
-            href={`/labs/${lab.slug}`}
+            href={demo ?? `/labs/${lab.slug}`}
             className="rounded border border-accent/35 bg-accent/10 px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wider text-accent transition-colors hover:bg-accent/20"
           >
-            See it · {lab.title}
+            {demo ? 'See it happen' : 'See it'} · {lab.title}
           </Link>
         ) : null}
       </dt>
       <dd className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">
         {entry.definition}
       </dd>
+      {entry.demo ? (
+        /* One flow rather than the flex row the "See also" line uses. Its items
+           are two words each and wrap as units; this sentence never fits beside
+           its own label, so flexing it would leave the label alone on a line of
+           its own at every width. Inline, it runs on from the label and wraps
+           under it — and with nothing nowrap the entry's min-content width is
+           one word, so a 375px page still does not scroll sideways. */
+        <dd className="mt-2.5 max-w-prose text-xs leading-relaxed text-fg-muted">
+          <span className="mr-2 font-mono text-2xs uppercase tracking-wider text-fg-faint">
+            What to look at
+          </span>
+          {entry.demo.look}
+        </dd>
+      ) : null}
       {entry.see && entry.see.length > 0 ? (
         <dd className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="font-mono text-2xs uppercase tracking-wider text-fg-faint">

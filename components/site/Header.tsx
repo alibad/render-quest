@@ -4,13 +4,25 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { REPO_URL } from '@/lib/site';
+import { ASK_URL, REPO_URL } from '@/lib/site';
 
 import { Wordmark } from './Mark';
 import { SearchDialog } from './SearchDialog';
 import { ThemeToggle } from './ThemeToggle';
 
+/**
+ * One list, rendered twice — the wide bar and the menu read from it, so the two
+ * cannot drift apart.
+ *
+ * Symptoms leads. Labs / Tech / Learn / Glossary / About reads as a syllabus,
+ * and a syllabus asks a stranger to accept that they are at lesson one; almost
+ * nobody arrives that way. They arrive with the bug already open in the next
+ * tab, and /symptoms is the only entry that meets them there. It is first
+ * rather than second because the first slot is the one read before the reader
+ * decides this is a course they have no time for.
+ */
 const NAV = [
+  { href: '/symptoms', label: 'Symptoms' },
   { href: '/labs', label: 'Labs' },
   { href: '/tech', label: 'Tech' },
   { href: '/learn', label: 'Learn' },
@@ -47,8 +59,18 @@ export function Header() {
           <Wordmark />
         </Link>
 
-        {/* Desktop navigation */}
-        <ul className="ml-4 hidden items-center gap-1 md:flex">
+        {/* Desktop navigation.
+            lg, not md. Measured in Chromium on a replica of this row built
+            from the same box model and the site's own Inter subset: the six
+            items are 55.8, 94.2, 56.4, 61.8, 82.2 and 63.5px
+            wide, 433.9px with their gaps, and the row around them costs a
+            133.6px wordmark plus 160px of controls. Six items first fit at
+            795px, so at the md breakpoint's own 768px the header overflows by
+            27px — and a header wider than the viewport scrolls the whole page
+            sideways, on every route at once. Tightening the item padding
+            recovers 24px at most (px-3 to px-2, six items), which is still
+            three short, so the breakpoint is the only lever that works. */}
+        <ul className="ml-4 hidden items-center gap-1 lg:flex">
           {NAV.map((item) => {
             const active = isActive(item.href);
             return (
@@ -93,7 +115,7 @@ export function Header() {
             aria-expanded={menuOpen}
             aria-controls="site-menu"
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-            className="grid h-8 w-8 place-items-center rounded-md border border-line text-fg-muted transition-colors hover:border-line-strong hover:text-fg md:hidden"
+            className="grid h-8 w-8 place-items-center rounded-md border border-line text-fg-muted transition-colors hover:border-line-strong hover:text-fg lg:hidden"
           >
             <svg
               viewBox="0 0 20 20"
@@ -114,9 +136,11 @@ export function Header() {
         </div>
       </nav>
 
-      {/* Mobile menu */}
+      {/* Mobile menu. Now the only navigation from 375px to 1023px, which is why
+          the way to reach a person lives in it too rather than in the wide bar
+          alone. */}
       {menuOpen ? (
-        <div id="site-menu" className="border-t border-line/70 bg-ink-900 md:hidden">
+        <div id="site-menu" className="border-t border-line/70 bg-ink-900 lg:hidden">
           <ul className="mx-auto max-w-6xl px-4 py-2">
             {NAV.map((item) => {
               const active = isActive(item.href);
@@ -141,6 +165,17 @@ export function Header() {
               );
             })}
             <li className="mt-1 border-t border-line pt-1">
+              <a
+                href={ASK_URL}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="flex items-center gap-2.5 rounded-md px-2 py-2.5 text-sm text-fg-muted transition-colors hover:text-fg"
+              >
+                <span aria-hidden className="h-1 w-1 rounded-full bg-line-strong" />
+                Ask a question
+              </a>
+            </li>
+            <li>
               <a
                 href={REPO_URL}
                 target="_blank"

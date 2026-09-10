@@ -5,27 +5,18 @@ import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
 import { LABS } from '@/lib/labs';
 import { NOT_DOING, ROADMAP, ROADMAP_COUNTS, ROADMAP_THESIS } from '@/lib/roadmap';
-import { REPO_URL } from '@/lib/site';
+import { ASK_URL, REPO_URL, REPORT_URL } from '@/lib/site';
 import { pageMetadata } from '@/lib/metadata';
 
 export const metadata: Metadata = pageMetadata({
   title: 'Roadmap',
   description:
-    'Everything that shipped on Render Quest and why, and the five proposals that were considered and turned down — with the reason for each.',
+    `Everything that shipped on Render Quest and why, and the ${NOT_DOING.length} proposals that were considered and turned down — with the reason for each. What is coming is in the issue tracker.`,
   path: '/roadmap',
 });
 
-const STATE_LABEL = {
-  done: 'Shipped',
-  next: 'Next',
-  later: 'Later',
-} as const;
-
-const STATE_CLASS = {
-  done: 'border-axis-y/40 bg-axis-y/10 text-axis-y',
-  next: 'border-accent/40 bg-accent/10 text-accent',
-  later: 'border-line-strong text-fg-faint',
-} as const;
+/** Open issues anyone could pick up, as GitHub's own filter spells it. */
+const GOOD_FIRST_ISSUES = `${REPO_URL}/issues?q=${encodeURIComponent('is:issue is:open label:"good first issue"')}`;
 
 export default function Roadmap() {
   const building = LABS.filter((lab) => lab.status === 'building');
@@ -36,50 +27,79 @@ export default function Roadmap() {
       <main id="main-content" className="mx-auto max-w-4xl px-5 py-14">
         <p className="eyebrow">Roadmap</p>
         <h1 className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-          What is being built, and what is not.
+          What shipped, and what was turned down.
         </h1>
         <p className="mt-4 max-w-prose text-sm leading-relaxed text-fg-muted">
           {ROADMAP_THESIS}
         </p>
 
         <dl className="mt-8 flex flex-wrap gap-x-8 gap-y-3">
-          <Stat value={ROADMAP_COUNTS.done} label="shipped" />
-          <Stat value={ROADMAP_COUNTS.next} label="next" />
-          <Stat value={ROADMAP_COUNTS.later} label="later" />
-          <Stat value={NOT_DOING.length} label="declined" />
+          <Stat value={ROADMAP_COUNTS.shipped} label="shipped" />
+          <Stat value={ROADMAP_COUNTS.declined} label="declined" />
         </dl>
 
         {/*
-          A page headed "what is being built" showing two zeroes and no
-          explanation reads as a page that failed to load its own contents.
-          Saying plainly that the plan is finished is both true and more useful
-          than an empty column.
+          This page used to end its front half with a panel explaining that
+          nothing was in progress, because the roadmap carried the plan and the
+          plan was finished. Issue #40: the repository is public now and the
+          tracker holds the backlog, so the honest answer to "what is next" is a
+          link rather than a list. The reasoning is on the page and not only
+          here, because a reader arriving from three "what is next" links
+          deserves to know why the page they landed on does not answer it
+          directly.
         */}
-        {ROADMAP_COUNTS.next + ROADMAP_COUNTS.later === 0 ? (
-          <section className="mt-8 rounded-xl border border-dashed border-line-strong p-5">
-            <p className="eyebrow">Nothing is in progress</p>
-            <p className="mt-3 max-w-prose text-sm leading-relaxed text-fg-muted">
-              Every item below has shipped, which is a strange thing for a roadmap
-              to say and the honest state of this one. The plan it was written
-              against is finished: the labs run, the claims are checked, and the
-              things that were declined are still declined.
-            </p>
-            <p className="mt-3 max-w-prose text-sm leading-relaxed text-fg-muted">
-              What gets added next depends on what turns out to be missing, and the
-              most useful thing anyone can do is say which part did not teach them
-              what it promised.{' '}
-              <a
-                href={`${REPO_URL}/issues/new`}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="link-accent"
-              >
-                That is the whole intake process
-              </a>
-              .
-            </p>
-          </section>
-        ) : null}
+        <section className="mt-8 rounded-xl border border-dashed border-line-strong p-5">
+          <p className="eyebrow">What is next is in the issue tracker</p>
+          <p className="mt-3 max-w-prose text-sm leading-relaxed text-fg-muted">
+            Everything below has shipped. This page used to carry the plan as well as
+            the record, and it stopped doing that the day the repository went public:
+            the backlog is on the tracker, it changes there, and a second list typed
+            here would be a copy of it. The copy is the one that goes stale, and the
+            copy is the one on the website.
+          </p>
+          <p className="mt-3 max-w-prose text-sm leading-relaxed text-fg-muted">
+            So the open list lives over there, some of it tagged for someone arriving
+            for the first time. There is deliberately no count of it on this page,
+            because a number typed here is exactly the thing that rots. What this page
+            keeps is the half a tracker is bad at — a closed issue is invisible,
+            while &ldquo;this was proposed, and here is why not&rdquo; is worth reading
+            and lives nowhere else.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+            <a
+              href={`${REPO_URL}/issues`}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="font-mono text-2xs uppercase tracking-wider text-accent transition-colors hover:underline"
+            >
+              Open issues →
+            </a>
+            <a
+              href={GOOD_FIRST_ISSUES}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="font-mono text-2xs uppercase tracking-wider text-accent transition-colors hover:underline"
+            >
+              Good first issues →
+            </a>
+            <a
+              href={REPORT_URL}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="font-mono text-2xs uppercase tracking-wider text-fg-faint transition-colors hover:text-fg-muted"
+            >
+              Report something wrong →
+            </a>
+            <a
+              href={ASK_URL}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="font-mono text-2xs uppercase tracking-wider text-fg-faint transition-colors hover:text-fg-muted"
+            >
+              Ask a question →
+            </a>
+          </div>
+        </section>
 
         <ol className="mt-14 space-y-14">
           {ROADMAP.map((phase, index) => (
@@ -98,20 +118,13 @@ export default function Roadmap() {
 
               <ul className="mt-5 space-y-3 sm:pl-8">
                 {phase.items.map((item) => (
-                  <li
-                    key={item.title}
-                    className={`panel p-4 ${item.state === 'done' ? 'opacity-70' : ''}`}
-                  >
+                  <li key={item.title} className="panel p-4 opacity-70">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
                       <h3 className="text-sm font-semibold tracking-tight text-fg">
                         {item.title}
                       </h3>
-                      <span
-                        className={`rounded border px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wider ${
-                          STATE_CLASS[item.state]
-                        }`}
-                      >
-                        {STATE_LABEL[item.state]}
+                      <span className="rounded border border-axis-y/40 bg-axis-y/10 px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wider text-axis-y">
+                        Shipped
                       </span>
                     </div>
                     <p className="mt-2 text-sm leading-relaxed text-fg-muted">
@@ -167,9 +180,9 @@ export default function Roadmap() {
         ) : null}
 
         <p className="mt-14 border-t border-line pt-8 text-sm leading-relaxed text-fg-muted">
-          Think something here is in the wrong order, or missing?{' '}
+          Think something here was declined for the wrong reason, or is missing?{' '}
           <a
-            href={`${REPO_URL}/issues/new`}
+            href={REPORT_URL}
             target="_blank"
             rel="noreferrer noopener"
             className="link-accent"
@@ -177,8 +190,12 @@ export default function Roadmap() {
             Say so
           </a>
           . The last two rounds of this plan were reordered by people arguing with it.
-          Otherwise, the <Link href="/labs" className="link-accent">labs</Link> are the
-          part that already exists.
+          What changed and when is on the{' '}
+          <Link href="/changelog" className="link-accent">
+            changelog
+          </Link>
+          , and the <Link href="/labs" className="link-accent">labs</Link> are the part
+          you can actually use.
         </p>
       </main>
       <Footer />

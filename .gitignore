@@ -42,3 +42,7 @@ next-env.d.ts
 # Frames kept by `scripts/capture-readme-media.ts --frames`, for looking at a
 # recording that came out wrong. The captures themselves are committed, in docs/media.
 /.capture-frames
+
+# Agent worktrees. Real git worktrees live here during a multi-agent run; they
+# are checkouts of this same repository and must never be committed into it.
+/.claude/worktrees

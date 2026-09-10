@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 
 import { ThemeProvider } from '@/components/site/ThemeProvider';
+import { FEED_TITLE, FEED_URL } from '@/lib/changelog';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
 import {
   AUTHOR,
@@ -10,6 +11,7 @@ import {
   SITE_NAME,
   SITE_TITLE,
   SITE_URL,
+  TWITTER_CREATOR,
 } from '@/lib/site';
 
 import './globals.css';
@@ -55,8 +57,14 @@ export const metadata: Metadata = {
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
   },
+  // Spread, not a plain field: while lib/site.ts has no handle TWITTER_CREATOR
+  // is `{}`, so twitter:creator is absent rather than empty. This covers `/`
+  // only — Next merges metadata shallowly, so a page that sets its own
+  // `twitter` object replaces this one whole. The other 22 routes build theirs
+  // in lib/metadata.ts and need the same spread there.
   twitter: {
     card: 'summary_large_image',
+    ...TWITTER_CREATOR,
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
   },
@@ -101,6 +109,12 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
+        {/* A literal tag rather than `alternates.types`, because this is the
+            only place that reaches every route: Next merges metadata shallowly,
+            so each page's own `alternates` would replace the root's whole and
+            the feed would be advertised on `/` alone. /changelog also sets it in
+            its own metadata; a duplicate link is harmless, a missing one is not. */}
+        <link rel="alternate" type="application/atom+xml" title={FEED_TITLE} href={FEED_URL} />
       </head>
       <body className="min-h-screen font-sans">
         {/* First focusable element on every page, so keyboard users can jump

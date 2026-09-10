@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { LearnExplorer } from '@/components/learn/LearnExplorer';
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
-import { ALL_RESOURCES } from '@/lib/resources';
+import { ALL_RESOURCES, TRACKS, trackEvenings } from '@/lib/resources';
 import { pageMetadata } from '@/lib/metadata';
 
 export const metadata: Metadata = pageMetadata({
@@ -13,6 +13,37 @@ export const metadata: Metadata = pageMetadata({
     'A curated path through computer graphics and game development — the best courses, books, interactive explainers and tools on the web, in the order that makes sense.',
   path: '/learn',
 });
+
+/**
+ * The facts the old four-sentence intro buried, as a readout row.
+ *
+ * Every number is computed from the registry rather than typed, for the reason
+ * the whole codebase derives instead of restating: a hand-written "37" beside a
+ * list that grows to 38 is a lie with no test to catch it. The hand-checked
+ * count and its date come from `botBlockedVerified` — the field has existed
+ * since the link checker started crying wolf on Cloudflare-fronted hosts, and
+ * this is the first time the page has shown its working rather than claiming in
+ * prose that every link is checked.
+ */
+function readout(): string[] {
+  const stages = TRACKS.flatMap((track) => track.stages);
+  const withLab = stages.filter((stage) => (stage.labs ?? []).length > 0).length;
+  const free = ALL_RESOURCES.filter((resource) => resource.free).length;
+  const evenings = TRACKS.map((track) => trackEvenings(track.id)).join(' + ');
+  const byHand = ALL_RESOURCES.map((resource) => resource.botBlockedVerified).filter(
+    (date): date is string => date !== undefined,
+  );
+  const latest = byHand.slice().sort().pop();
+
+  return [
+    `${ALL_RESOURCES.length} resources`,
+    `${stages.length} stages`,
+    `${withLab} with a lab here`,
+    `${free} free`,
+    `${evenings} evenings`,
+    `${byHand.length} checked by hand ${latest}`,
+  ];
+}
 
 export default function Learn() {
   return (
@@ -25,13 +56,25 @@ export default function Learn() {
         </h1>
         <p className="mt-4 max-w-prose text-sm leading-relaxed text-fg-muted">
           {ALL_RESOURCES.length} hand-picked resources across graphics and game
-          development. Not a link dump — every one says why it earns your evenings,
-          and they are arranged so each stage makes the next one easier. Most are
-          free, and a job checks every link each Monday — one that stops answering says
-          so on its own card.
+          development, in the order that makes each stage easier than the last.
         </p>
 
-        <div className="mt-12">
+        {/*
+          A wrapping flex row rather than `divide-x`: a divider on a wrapped row
+          leaves an orphan rule hanging at the end of every line but the last.
+        */}
+        <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-1 border-y border-line py-2">
+          {readout().map((cell) => (
+            <li
+              key={cell}
+              className="tabular font-mono text-2xs uppercase tracking-wider text-fg-faint"
+            >
+              {cell}
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-8">
           <LearnExplorer />
         </div>
 
