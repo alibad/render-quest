@@ -14,7 +14,10 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    // Next 16 requires the automatic runtime and rewrites this on every build
+    // if it is anything else. It was "preserve", which only worked because
+    // Next's own compiler was doing the transform behind tsc's back.
+    "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
       {
@@ -25,6 +28,15 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["webgpu.d.ts", "next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  // .next/dev/types is where Next 16 writes the generated route types; the old
+  // .next/types path stays so a tree built by an older Next still type-checks.
+  "include": [
+    "webgpu.d.ts",
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
   "exclude": ["node_modules"]
 }

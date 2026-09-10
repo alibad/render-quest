@@ -31,7 +31,9 @@ export function useCopyLink(hash = '') {
   // browsers have none. The reader gets a selectable field instead of a
   // failure, and no native dialog is involved.
   const [manual, setManual] = useState('');
-  const timer = useRef<ReturnType<typeof setTimeout>>();
+  // React 19's `useRef` has no zero-argument overload any more — a ref that
+  // starts life empty has to say so. `undefined` is what it held before.
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => () => clearTimeout(timer.current), []);
 

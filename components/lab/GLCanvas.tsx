@@ -360,7 +360,6 @@ export function GLCanvas<P>({
       pendingRelease.set(canvas, release);
     };
     // The scene is built once per mount; `create` is read through a ref.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Deliberately without a dependency list. Params arrive as a fresh object

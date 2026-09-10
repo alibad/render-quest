@@ -15,8 +15,15 @@ export const alt = 'Render Quest — technology guide';
  * correct and what the page actually needs.
  */
 
-export default function Image({ params }: { params: { slug: string } }) {
-  const tech = getTechnology(params.slug);
+// `params` is a promise here for the same reason it is on the page: Next 15
+// made every dynamic API async, and an image route is a route.
+export default async function Image({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const tech = getTechnology(slug);
   return renderOgImage({
     eyebrow: tech?.kind ?? 'Technology',
     title: tech?.name ?? 'Technologies',

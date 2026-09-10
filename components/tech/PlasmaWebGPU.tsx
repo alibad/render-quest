@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 /**
@@ -172,9 +173,9 @@ export function PlasmaWebGPU() {
               ) : status === 'unsupported' ? (
                 <>
                   <span className="text-fg">This browser has no WebGPU.</span> The{' '}
-                  <a href="/tech/webgl" className="link-accent">
+                  <Link href="/tech/webgl" className="link-accent">
                     WebGL page
-                  </a>{' '}
+                  </Link>{' '}
                   renders this same scene and will run here; this one cannot. That
                   gap is the whole practical argument for keeping a fallback.
                 </>

@@ -19,16 +19,23 @@ import {
 } from '@/lib/technologies';
 
 
+/**
+ * `params` is a promise from Next 15 onwards, on a statically generated route
+ * as much as on a dynamic one. Awaiting it is the whole of the change here —
+ * `generateStaticParams` below still hands back plain objects, and the four
+ * pages are still prerendered at build time.
+ */
 interface Params {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export function generateStaticParams() {
   return TECHNOLOGIES.map((tech) => ({ slug: tech.slug }));
 }
 
-export function generateMetadata({ params }: Params): Metadata {
-  const tech = getTechnology(params.slug);
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const { slug } = await params;
+  const tech = getTechnology(slug);
   if (!tech) return {};
   return pageMetadata({
     title: tech.name,
@@ -37,8 +44,9 @@ export function generateMetadata({ params }: Params): Metadata {
   });
 }
 
-export default function TechnologyPage({ params }: Params) {
-  const tech = getTechnology(params.slug);
+export default async function TechnologyPage({ params }: Params) {
+  const { slug } = await params;
+  const tech = getTechnology(slug);
   if (!tech) notFound();
 
   const index = TECHNOLOGIES.findIndex((t) => t.slug === tech.slug);

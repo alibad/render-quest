@@ -153,7 +153,6 @@ export function ShaderLab() {
   const [presetLoads, setPresetLoads] = useState(0);
   useEffect(() => {
     setSource(PRESETS_SOURCE[controls.preset] ?? STARTER);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controls.preset, presetLoads]);
 
   useEffect(() => {

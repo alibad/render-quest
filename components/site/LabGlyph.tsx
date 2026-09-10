@@ -12,6 +12,10 @@
  * lab registry — a lab added without a glyph now fails the build.
  */
 
+// React 19 removed the global `JSX` namespace: it lives on the `react`
+// package now, so the type has to be imported like any other.
+import type { JSX } from 'react';
+
 const BOX = 'h-full w-full';
 
 const GLYPHS: Record<string, () => JSX.Element> = {
