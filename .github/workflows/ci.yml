@@ -21,7 +21,7 @@ jobs:
           # the tip fails to resolve, so the check would skip here for good.
           # The render job below does not need history and keeps the default.
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           # Matches engines.node, which is what Vercel deploys with.
           node-version: 24
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
