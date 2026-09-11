@@ -1,10 +1,20 @@
-# Kept deliberately quiet. This is a one-person repository with three runtime
-# dependencies, so the useful signal is "a patch is available", not a pull
-# request per package. Minor and patch updates are grouped into a single weekly
-# pull request; a major bump arrives on its own, because it is a decision.
+# Version updates are OFF. Security updates are ON.
 #
-# CI runs npm test and next build on every one of these, so a green Dependabot
-# pull request is usually just a merge.
+# `open-pull-requests-limit: 0` disables version updates for an ecosystem.
+# Security updates are explicitly exempt from this limit — GitHub opens those
+# from the alert, not from this file — so a real advisory still arrives as a
+# pull request. A Monday morning "bump @types/node" does not.
+#
+# The trade this makes: this repository has three runtime dependencies and
+# ships a static site with no accounts, no user data and no server to attack.
+# The cost of dependency drift here is low and the cost of a weekly pull
+# request that must be read, waited on and merged is not. Drift is picked up
+# when someone is already in the dependency file, or when a security update
+# forces the issue.
+#
+# To turn version updates back on, raise both limits (3 and 2 were the previous
+# values). The grouping below is kept so that turning them back on restores the
+# quiet shape rather than a pull request per package.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -13,13 +23,11 @@ updates:
       interval: weekly
       day: monday
       time: "09:00"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     # Tailwind 4 is a rewrite, not a bump: configuration moves out of
     # tailwind.config.ts and into CSS, which is the file lib/theme.ts mirrors by
-    # hand so the GPU can read the same colours. Dependabot proposed it within
-    # minutes of this file landing, CI went red on it, and it would have gone red
-    # again every Monday until someone decided. The decision is recorded in
-    # issue #66; remove this block when it is made, not before.
+    # hand so the GPU can read the same colours. The decision is recorded in
+    # issue #66. Kept here so it survives version updates being switched on again.
     ignore:
       - dependency-name: tailwindcss
         update-types:
@@ -39,7 +47,7 @@ updates:
       interval: weekly
       day: monday
       time: "09:00"
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 0
     groups:
       actions:
         update-types:
