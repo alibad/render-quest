@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 
+import { fraunces, instrumentSans } from '@/components/hq-path/fonts';
 import { ThemeProvider } from '@/components/site/ThemeProvider';
 import { FEED_TITLE, FEED_URL } from '@/lib/changelog';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
@@ -15,6 +16,10 @@ import {
 } from '@/lib/site';
 
 import './globals.css';
+// The Human Quest family look (The Path) on every route, after the site's own
+// tokens so its layer can warm them; see the top of render-quest-path.css.
+import '@/components/hq-path/hq-path.css';
+import '@/components/hq-path/render-quest-path.css';
 
 const sans = Inter({
   subsets: ['latin'],
@@ -101,7 +106,12 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${sans.variable} ${mono.variable} ${fraunces.variable} ${instrumentSans.variable}`}
+      data-hqp-t="tools"
+      suppressHydrationWarning
+    >
       <head>
         {/* Stamps the theme before first paint so the page never flashes. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />

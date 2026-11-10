@@ -23,7 +23,7 @@ import {
 } from '@/lib/math/mat4';
 import { orbitToCartesian } from '@/lib/math/vec3';
 import { useTheme } from '@/components/site/ThemeProvider';
-import type { CanvasPalette } from '@/lib/theme';
+import type { CanvasPalette, Theme } from '@/lib/theme';
 
 const SUBJECTS: { position: [number, number, number]; scale: number; spin: number }[] = [
   { position: [0, 0.68, -1], scale: 1.35, spin: 0.25 },
@@ -99,8 +99,20 @@ const createHero: SceneFactory<HeroParams> = (gl) => {
   };
 };
 
-export function HeroCanvas({ className }: { className?: string }) {
-  const { palette } = useTheme();
+/**
+ * `palettes` lets a page dress the same scene in its own colours, one per
+ * theme — the home page draws it in the Human Quest family's warm paper and
+ * ember. Without it the scene uses the site palette, as every lab does.
+ */
+export function HeroCanvas({
+  className,
+  palettes,
+}: {
+  className?: string;
+  palettes?: Record<Theme, CanvasPalette>;
+}) {
+  const { palette: sitePalette, theme } = useTheme();
+  const palette = palettes?.[theme] ?? sitePalette;
   return (
     <GLCanvas
       create={createHero}

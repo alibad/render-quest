@@ -28,7 +28,7 @@ export default function Privacy() {
             Render Quest has no accounts, no sign-in, no newsletter and no comment
             section. It sets no cookies and runs no analytics, advertising or
             fingerprinting scripts. It makes no request to any third party either —
-            the two typefaces are self-hosted at build time rather than fetched from
+            the typefaces are self-hosted at build time rather than fetched from
             Google — so opening a lab contacts the server the page came from and
             nothing else. Slider positions and camera angles live in page memory and
             are gone when you close the tab.
